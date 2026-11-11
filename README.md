@@ -9,13 +9,15 @@ perangkat, dan manajemen pekerjaan IT rumah sakit.
 |---|---|
 | 0 — Analisis & arsitektur | Selesai |
 | 1 — Foundation | Selesai |
-| 2 — QR Ticketing | **Selesai, menunggu validasi** |
-| 3 — Work Management | Belum dimulai |
+| 2 — QR Ticketing | Selesai |
+| 3 — Work Management | **Selesai, menunggu validasi** |
+| 4 — Asset Maintenance | Belum dimulai |
 
 Fitur yang sudah berjalan: login & keamanan, RBAC, master data, perangkat,
 pengguna, pengaturan sistem, jejak audit, QR ruangan/perangkat, pengajuan
 tiket tanpa login, prioritas otomatis, pemantauan tiket pelapor, antrean & klaim
-tiket, pencatatan tiket via telepon/WA. Rincian di [CHANGELOG.md](CHANGELOG.md).
+tiket, pencatatan tiket via telepon/WA, alur kerja tiket lengkap (tunda, selesai,
+konfirmasi pelapor, ambil alih, prioritas manual), tutup otomatis, kegiatan internal IT. Rincian di [CHANGELOG.md](CHANGELOG.md).
 
 ## Mulai cepat
 

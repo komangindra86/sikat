@@ -12,6 +12,7 @@ import (
 	"sikat/internal/reqctx"
 	"sikat/internal/settings"
 	"sikat/internal/web"
+	"sikat/internal/workflows"
 )
 
 // PublicHandler melayani pelapor tanpa login: form dari scan QR dan halaman
@@ -32,6 +33,8 @@ func (h *PublicHandler) Routes(r chi.Router) {
 	r.Post("/q/{token}", h.submit)
 	r.Get("/t/{token}", h.track)
 	r.Get("/t/{token}/foto/{id}", h.photo)
+	r.Post("/t/{token}/konfirmasi", h.feedback)
+	r.Post("/t/{token}/keterangan", h.comment)
 }
 
 type reportData struct {
@@ -54,10 +57,16 @@ type trackData struct {
 	Ticket      Ticket
 	Histories   []History
 	Attachments []Attachment
+	Comments    []Comment
 	Token       string
 	TrackURL    string
 	New         bool
+	Form        map[string]string
+	Open        string
 }
+
+// CanComment: pelapor masih dapat menambah keterangan.
+func (d trackData) CanComment() bool { return !workflows.IsTerminal(d.Ticket.Status) }
 
 func (h *PublicHandler) target(w http.ResponseWriter, r *http.Request) (qrcodes.Target, string, bool) {
 	token := chi.URLParam(r, "token")
@@ -178,7 +187,7 @@ func (h *PublicHandler) submit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/t/"+created.Token+"?baru=1", http.StatusSeeOther)
 }
 
-func (h *PublicHandler) track(w http.ResponseWriter, r *http.Request) {
+func (h *PublicHandler) renderTrack(w http.ResponseWriter, r *http.Request, status int, open string, form, errs map[string]string) {
 	token := chi.URLParam(r, "token")
 	t, hist, atts, err := h.Service.GetPublic(r.Context(), token)
 	if errors.Is(err, ErrNotFound) {
@@ -189,11 +198,62 @@ func (h *PublicHandler) track(w http.ResponseWriter, r *http.Request) {
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
+	comments, err := h.Service.Comments(r.Context(), t.ID, true)
+	if err != nil {
+		h.Renderer.ServerError(w, r, err)
+		return
+	}
+	if form == nil {
+		form = map[string]string{}
+	}
 	w.Header().Set("Cache-Control", "no-store")
-	h.Renderer.Render(w, r, http.StatusOK, "public/track", web.Page{
-		Title: t.TicketNo,
-		Data: trackData{Ticket: t, Histories: hist, Attachments: atts, Token: token,
-			TrackURL: h.BaseURL + "/t/" + token, New: r.URL.Query().Get("baru") == "1"},
+	h.Renderer.Render(w, r, status, "public/track", web.Page{
+		Title: t.TicketNo, Errors: errs,
+		Data: trackData{Ticket: t, Histories: hist, Attachments: atts, Comments: comments, Token: token,
+			TrackURL: h.BaseURL + "/t/" + token, New: r.URL.Query().Get("baru") == "1", Form: form, Open: open},
+	})
+}
+
+func (h *PublicHandler) track(w http.ResponseWriter, r *http.Request) {
+	h.renderTrack(w, r, http.StatusOK, "", nil, nil)
+}
+
+// publicAct menjalankan aksi pelapor dengan pembatasan laju & penanganan error seragam.
+func (h *PublicHandler) publicAct(w http.ResponseWriter, r *http.Request, open, success string, fn func(token string) (map[string]string, error)) {
+	if !h.IPLimiter.Allow(reqctx.InfoFrom(r.Context()).IP) {
+		h.Renderer.Error(w, r, http.StatusTooManyRequests, "")
+		return
+	}
+	token := chi.URLParam(r, "token")
+	errs, err := fn(token)
+	switch {
+	case errors.Is(err, ErrNotFound):
+		h.Renderer.Error(w, r, http.StatusNotFound, "Tiket tidak ditemukan.")
+	case errors.Is(err, ErrTransition):
+		h.Renderer.Redirect(w, r, "/t/"+token, "error", "Status tiket sudah berubah. Halaman telah diperbarui.")
+	case err != nil:
+		h.Renderer.ServerError(w, r, err)
+	case len(errs) > 0:
+		h.renderTrack(w, r, http.StatusUnprocessableEntity, open, web.FormValues(r), errs)
+	default:
+		h.Renderer.Redirect(w, r, "/t/"+token, "success", success)
+	}
+}
+
+func (h *PublicHandler) feedback(w http.ResponseWriter, r *http.Request) {
+	ok := r.PostFormValue("ok") == "1"
+	msg := "Terima kasih. Tiket ditutup."
+	if !ok {
+		msg = "Terima kasih. Tiket dibuka kembali dan petugas akan menindaklanjuti."
+	}
+	h.publicAct(w, r, "feedback", msg, func(token string) (map[string]string, error) {
+		return h.Service.ReporterFeedback(r.Context(), token, ok, r.PostFormValue("feedback_note"))
+	})
+}
+
+func (h *PublicHandler) comment(w http.ResponseWriter, r *http.Request) {
+	h.publicAct(w, r, "comment", "Keterangan terkirim ke petugas IT.", func(token string) (map[string]string, error) {
+		return h.Service.AddReporterComment(r.Context(), token, r.PostFormValue("comment"))
 	})
 }
 

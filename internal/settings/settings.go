@@ -26,6 +26,7 @@ const (
 	KeyLoginLockoutMinutes = "security.login_lockout_minutes"
 	KeyUploadMaxMB         = "upload.max_mb"
 	KeyUploadMaxFiles      = "upload.max_files"
+	KeyAutoCloseDays       = "ticket.auto_close_days"
 )
 
 // Def mendefinisikan satu pengaturan.
@@ -48,6 +49,7 @@ var Defs = []Def{
 	{Key: KeyLoginMaxAttempts, Label: "Batas gagal login", Help: "Jumlah percobaan gagal berturut-turut sebelum akun dikunci sementara.", Type: "INT", Default: "5", Min: 3, Max: 20, Group: "Keamanan"},
 	{Key: KeyLoginLockoutMinutes, Label: "Lama kunci akun (menit)", Help: "Lama akun dikunci setelah melewati batas gagal login.", Type: "INT", Default: "15", Min: 1, Max: 1440, Group: "Keamanan"},
 	{Key: KeyUploadMaxMB, Label: "Ukuran maksimal foto (MB)", Help: "Batas ukuran satu foto yang diunggah. Foto dari HP dikompres otomatis sebelum dikirim.", Type: "INT", Default: "8", Min: 1, Max: 20, Group: "Lampiran"},
+	{Key: KeyAutoCloseDays, Label: "Tutup otomatis tiket selesai (hari)", Help: "Tiket berstatus Selesai ditutup otomatis bila pelapor tidak mengonfirmasi dalam jangka ini.", Type: "INT", Default: "3", Min: 1, Max: 30, Group: "Tiket"},
 	{Key: KeyUploadMaxFiles, Label: "Jumlah foto per pengajuan", Help: "Jumlah foto maksimal dalam satu laporan.", Type: "INT", Default: "3", Min: 1, Max: 5, Group: "Lampiran"},
 }
 

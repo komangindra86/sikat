@@ -70,6 +70,10 @@
   .muted { @apply text-sm text-slate-500; }
 }
 
+/* Form yang hanya tampil saat menjadi target anchor (#id), tanpa JS */
+.target-reveal { display: none; }
+.target-reveal:target { display: block; }
+
 /* Honeypot anti-bot: tidak terlihat oleh manusia, tetap ada di DOM */
 .hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 

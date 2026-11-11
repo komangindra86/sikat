@@ -86,6 +86,7 @@
 {{define "nav"}}
 <a href="/app" class="nav-link {{if eq .Nav "home"}}nav-link-active{{end}}">Beranda</a>
 {{if .User.Can "ticket.view_queue"}}<a href="/app/tickets" class="nav-link {{if eq .Nav "tickets"}}nav-link-active{{end}}">Tiket</a>{{end}}
+{{if .User.Can "activity.create"}}<a href="/app/activities" class="nav-link {{if eq .Nav "activities"}}nav-link-active{{end}}">Kegiatan</a>{{end}}
 {{if .User.Can "asset.view"}}<a href="/app/assets" class="nav-link {{if eq .Nav "assets"}}nav-link-active{{end}}">Perangkat</a>{{end}}
 {{if .User.Can "master.manage"}}<a href="/app/master" class="nav-link {{if eq .Nav "master"}}nav-link-active{{end}}">Master Data</a>{{end}}
 {{if .User.Can "user.manage"}}<a href="/app/users" class="nav-link {{if eq .Nav "users"}}nav-link-active{{end}}">Pengguna</a>{{end}}

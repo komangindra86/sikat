@@ -190,6 +190,20 @@ func CheckConstraint(err error) (string, bool) {
 	return "", false
 }
 
+// NextSequence mengalokasikan nomor urut tahunan (mis. TKT/KEG) secara atomik
+// dalam transaksi tx. Baris sequence terkunci sampai commit; bila transaksi
+// rollback, nomor ikut batal sehingga tidak ada lubang dari kegagalan.
+func NextSequence(ctx context.Context, tx *sql.Tx, name string, year int) (int64, error) {
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO number_sequences (name, year, current_value) VALUES (?, ?, LAST_INSERT_ID(1))
+		ON DUPLICATE KEY UPDATE current_value = LAST_INSERT_ID(current_value + 1)`, name, year); err != nil {
+		return 0, err
+	}
+	var n int64
+	err := tx.QueryRowContext(ctx, `SELECT LAST_INSERT_ID()`).Scan(&n)
+	return n, err
+}
+
 // IsRetryable bernilai true untuk deadlock (1213) dan lock wait timeout (1205):
 // transaksi aman diulang dari awal.
 func IsRetryable(err error) bool {

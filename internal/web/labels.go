@@ -41,6 +41,21 @@ var labelGroups = map[string][]Option{
 	"qr_type": {
 		{"ROOM", "Ruangan"}, {"ASSET", "Perangkat"},
 	},
+	"resolution_result": {
+		{"FIXED", "Berfungsi normal"}, {"WORKAROUND", "Solusi sementara"}, {"REPLACED", "Perangkat diganti"},
+		{"VENDOR", "Diteruskan ke vendor"}, {"NOT_REPRODUCIBLE", "Tidak ditemukan masalah"}, {"CANNOT_FIX", "Tidak dapat diperbaiki"},
+	},
+	"ticket_event": {
+		{"CREATED", "Tiket dibuat"}, {"CLAIMED", "Tiket diambil"}, {"STARTED", "Mulai dikerjakan"},
+		{"PENDING", "Ditunda"}, {"RESUMED", "Dilanjutkan"}, {"RESOLVED", "Diselesaikan"},
+		{"RELEASED", "Dikembalikan ke antrean"}, {"CANCELLED", "Dibatalkan"}, {"CLOSED", "Ditutup"},
+		{"AUTO_CLOSED", "Ditutup otomatis"}, {"REOPENED", "Dibuka kembali"}, {"REPORTER_CONFIRMED", "Dikonfirmasi pelapor"},
+		{"TAKEN_OVER", "Diambil alih"}, {"SUPPORT_ADDED", "Anggota pendukung ditambahkan"},
+		{"SUPPORT_REMOVED", "Anggota pendukung dilepas"}, {"PRIORITY_CHANGED", "Prioritas diubah"}, {"PHOTO_ADDED", "Foto ditambahkan"},
+	},
+	"activity_status": {
+		{"PLANNED", "Direncanakan"}, {"IN_PROGRESS", "Berlangsung"}, {"DONE", "Selesai"}, {"CANCELLED", "Dibatalkan"},
+	},
 }
 
 // tones memetakan kode ke kelas warna badge yang konsisten di seluruh aplikasi.
@@ -54,6 +69,9 @@ var tones = map[string]map[string]string{
 	"ticket_status": {
 		"NEW": "blue", "CLAIMED": "indigo", "IN_PROGRESS": "amber", "PENDING": "orange",
 		"RESOLVED": "green", "CLOSED": "gray", "CANCELLED": "gray",
+	},
+	"activity_status": {
+		"PLANNED": "blue", "IN_PROGRESS": "amber", "DONE": "green", "CANCELLED": "gray",
 	},
 }
 

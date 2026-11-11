@@ -2,7 +2,34 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
-## [Unreleased] — PHASE 2: QR Ticketing (2026-11-11)
+## [Unreleased] — PHASE 3: Work Management (2026-11-11)
+
+### Ditambahkan
+- State machine status tiket (`internal/workflows`): hanya transisi sah yang
+  dapat dijalankan; tombol aksi di halaman tiket mengikuti status & hak akses.
+- Aksi penanggung jawab: mulai kerjakan, tunda (alasan wajib dari daftar; "Lainnya"
+  wajib keterangan), lanjutkan, kembalikan ke antrean (alasan wajib), selesaikan
+  (tindakan + hasil wajib, template tindakan, waktu layanan pulih).
+- Aksi koordinator: ambil alih (alasan wajib), ubah prioritas (alasan wajib,
+  histori dari → ke, sumber MANUAL), tutup, buka kembali (siklus baru);
+  koordinator/admin: batalkan (alasan wajib).
+- Anggota pendukung tiket (tambah/lepas), catatan internal vs terlihat pelapor,
+  unggah foto oleh petugas (opsional terlihat pelapor). Semua tercatat di histori.
+- Pelapor: konfirmasi "Sudah beres" (tiket ditutup) atau "Belum beres" (wajib
+  keterangan, tiket dibuka kembali ke petugas yang sama), tambah keterangan,
+  melihat catatan publik & ringkasan penyelesaian.
+- Worker latar belakang dengan leader lock MySQL (`GET_LOCK`); job pertama:
+  tutup otomatis tiket Selesai setelah N hari (default 3, pengaturan
+  `ticket.auto_close_days`) — idempoten.
+- Kegiatan internal IT: nomor `KEG-YYYY-NNNNNN`, jenis, bidang (otomatis dari
+  jenis), unit/ruangan/perangkat, tiket terkait, pelaksana & pendukung, status,
+  waktu mulai/selesai dengan durasi otomatis (kolom generated), hasil wajib bila
+  selesai, lampiran foto, filter bulan/jenis/bidang/petugas/status. Petugas
+  melihat kegiatannya sendiri; koordinator melihat & mengubah semua.
+- Migrasi `00005_activities`. 82 automated test (matriks transisi lengkap,
+  siklus hidup tiket penuh, hak akses, tutup otomatis, leader worker, kegiatan, HTTP).
+
+## PHASE 2: QR Ticketing (2026-11-11)
 
 ### Ditambahkan
 - Migrasi `00003_qr_tickets` (qr_codes, priority_rules, number_sequences, tickets,

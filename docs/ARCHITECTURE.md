@@ -176,6 +176,18 @@ internal/tickets/
 - FK kolom SLA di `tickets` ditambahkan di migrasi PHASE 5; FK lampiran untuk
   kegiatan/pemeliharaan ditambahkan di PHASE 3/4.
 
+**Penyesuaian PHASE 3:**
+
+- State machine murni di `internal/workflows` (tanpa DB, diuji matriks penuh);
+  eksekusi transisi, penugasan, dan hak akses per aksi ada di `internal/tickets/workflow.go`
+  (paket `assignments` tidak dipisah karena logikanya kecil dan terikat transaksi tiket).
+- Aturan hak aksi: perubahan status hanya oleh penanggung jawab utama; koordinator
+  harus mengambil alih dulu. Tutup/buka kembali/ubah prioritas oleh koordinator;
+  batal oleh koordinator/admin.
+- Worker (`internal/worker`) dijalankan dari `sikat serve`; leader lock pada koneksi
+  khusus, job dihentikan bila koneksi lock putus.
+- Nomor urut tahunan dipindah ke `database.NextSequence` (dipakai TKT dan KEG).
+
 Aturan dependensi: `handler → service → repository`. Service boleh memanggil
 service modul lain lewat interface kecil (mis. `tickets.Service` memakai
 `priority.Engine`, `sla.Calculator`, `notifications.Publisher`). Repository tidak

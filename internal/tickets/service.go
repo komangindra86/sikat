@@ -180,7 +180,7 @@ func (s *Service) Create(ctx context.Context, d Draft, photos []Photo) (Created,
 		}
 
 		year := now.In(clock.Location).Year()
-		seq, err := s.repo.nextNumber(ctx, tx, "TKT", year)
+		seq, err := database.NextSequence(ctx, tx, "TKT", year)
 		if err != nil {
 			return err
 		}

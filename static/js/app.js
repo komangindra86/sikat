@@ -98,6 +98,28 @@
   });
   document.addEventListener("DOMContentLoaded", syncRoleSections);
 
+  // Pilihan yang mengisi select lain: <select data-sets-target="#id"><option data-set="5">
+  document.addEventListener("change", function (e) {
+    var sel = e.target;
+    if (!sel.matches("[data-sets-target]")) return;
+    var opt = sel.options[sel.selectedIndex];
+    var target = document.querySelector(sel.getAttribute("data-sets-target"));
+    var v = opt && opt.getAttribute("data-set");
+    if (target && v) target.value = v;
+  });
+
+  // Isi textarea dari template: <select data-fill-target="#id"><option data-body="...">
+  document.addEventListener("change", function (e) {
+    var sel = e.target;
+    if (!sel.matches("[data-fill-target]")) return;
+    var opt = sel.options[sel.selectedIndex];
+    var target = document.querySelector(sel.getAttribute("data-fill-target"));
+    if (!opt || !target || !opt.getAttribute("data-body")) return;
+    if (target.value.trim() && !window.confirm("Ganti isi tindakan dengan template?")) return;
+    target.value = opt.getAttribute("data-body");
+    target.focus();
+  });
+
   // Ingat nama/kontak pelapor di perangkat ini (hanya di browser pelapor).
   function storageGet(k) { try { return window.localStorage.getItem(k); } catch (_) { return null; } }
   function storageSet(k, v) { try { window.localStorage.setItem(k, v); } catch (_) { /* abaikan */ } }

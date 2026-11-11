@@ -1,13 +1,14 @@
 # SIKAT — Implementation Plan, Asumsi & Risiko
 
-> Status (11 November 2026): **PHASE 0–1 selesai. PHASE 2 selesai, menunggu validasi.**
-> PHASE 1 memakai default untuk Q1 (VPS publik + HTTPS) dan Q6 (Admin IT tidak
-> menangani tiket). Q5 diputuskan: petugas boleh mencatat tiket atas nama pelapor.
+> Status (11 November 2026): **PHASE 0–2 selesai. PHASE 3 selesai, menunggu validasi.**
+> Default yang dipakai karena belum dijawab: Q1 (VPS publik + HTTPS), Q3 (tutup
+> otomatis 3 hari, dapat diubah di Pengaturan), Q6 (Admin IT tidak menangani tiket).
+> Q5 diputuskan: petugas boleh mencatat tiket atas nama pelapor.
 >
-> Hasil PHASE 2: 69 automated test lulus (MySQL 8.0.30 lokal), termasuk uji kritis
-> klaim bersamaan; alur scan QR → kirim → antrean → klaim diuji manual di browser.
-> Ditunda sesuai rencana: SLA (PHASE 5) dan notifikasi/push (PHASE 6) — kolom SLA
-> tiket sudah ada tetapi belum diisi; antrean menampilkan lama menunggu.
+> Hasil PHASE 3: 82 automated test lulus (MySQL 8.0.30 lokal); alur mulai →
+> selesai → konfirmasi pelapor dan form kegiatan diuji manual di browser.
+> Ditunda sesuai rencana: entri riwayat perangkat otomatis saat tiket selesai,
+> sparepart & biaya (PHASE 4), SLA (PHASE 5), notifikasi/push (PHASE 6).
 > Belum diuji: race detector (`go test -race` butuh compiler C di Windows) dan
 > build/deploy di Linux (PHASE 9).
 

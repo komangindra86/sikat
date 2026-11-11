@@ -36,6 +36,20 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(h.Require(rbac.PermTicketCreate)).Post("/", h.create)
 	r.With(h.Require(rbac.PermTicketClaim)).Post("/{id}/claim", h.claim)
 	r.Get("/{id}", h.detail)
+	r.Post("/{id}/start", h.start)
+	r.Post("/{id}/pend", h.pend)
+	r.Post("/{id}/resume", h.resume)
+	r.Post("/{id}/resolve", h.resolve)
+	r.Post("/{id}/release", h.release)
+	r.Post("/{id}/cancel", h.cancel)
+	r.Post("/{id}/close", h.closeTicket)
+	r.Post("/{id}/reopen", h.reopen)
+	r.Post("/{id}/takeover", h.takeOver)
+	r.Post("/{id}/priority", h.changePriority)
+	r.Post("/{id}/support", h.addSupport)
+	r.Post("/{id}/support/{uid}/remove", h.removeSupport)
+	r.Post("/{id}/comments", h.addComment)
+	r.Post("/{id}/photos", h.addPhotos)
 }
 
 type queueData struct {
@@ -59,14 +73,6 @@ type cardData struct {
 	Result   *ClaimResult
 	UserID   int64
 	CSRF     string
-}
-
-type detailData struct {
-	Ticket      Ticket
-	Histories   []History
-	Attachments []Attachment
-	CanClaim    bool
-	NewLink     string
 }
 
 type newData struct {
@@ -163,30 +169,6 @@ func (h *Handler) claim(w http.ResponseWriter, r *http.Request) {
 		msg = "Tiket ini sudah diambil oleh " + res.ClaimedBy + "."
 	}
 	h.Renderer.Redirect(w, r, url, "error", msg)
-}
-
-func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
-	id, ok := web.IDParam(r, "id")
-	if !ok {
-		h.Renderer.Error(w, r, http.StatusNotFound, "")
-		return
-	}
-	t, hist, atts, err := h.Service.Get(r.Context(), id)
-	if errors.Is(err, ErrNotFound) {
-		h.Renderer.Error(w, r, http.StatusNotFound, "")
-		return
-	}
-	if err != nil {
-		h.Renderer.ServerError(w, r, err)
-		return
-	}
-	u := reqctx.UserFrom(r.Context())
-	link := h.Sessions.PopString(r.Context(), "ticket_link_"+strconv.FormatInt(id, 10))
-	h.Renderer.Render(w, r, http.StatusOK, "tickets/detail", web.Page{
-		Title: t.TicketNo, Nav: "tickets",
-		Data: detailData{Ticket: t, Histories: hist, Attachments: atts,
-			CanClaim: u.Has(rbac.PermTicketClaim) && t.Status == StatusNew, NewLink: link},
-	})
 }
 
 func (h *Handler) attachment(w http.ResponseWriter, r *http.Request) {

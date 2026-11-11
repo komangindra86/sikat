@@ -23,7 +23,9 @@ const selectTicket = `
 	       t.reporter_name, t.reporter_phone, rd.name, tc.name, ic.name, t.description,
 	       t.impact_level, t.affected_scope, t.replacement_available, t.critical_service, t.incident_started_at,
 	       t.assignee_id, au.full_name, cu.full_name, t.first_response_at, t.created_at,
-	       (SELECT COUNT(*) FROM attachments x WHERE x.ticket_id = t.id)
+	       (SELECT COUNT(*) FROM attachments x WHERE x.ticket_id = t.id),
+	       t.work_started_at, t.pending_since, prs.label, t.resolved_at, t.closed_at, t.service_restored_at,
+	       t.resolution_action, t.resolution_result, t.resolution_note, t.reporter_feedback, t.cancel_reason, t.sla_cycle
 	  FROM tickets t
 	  JOIN ticket_categories tc ON tc.id = t.ticket_category_id
 	  JOIN it_categories ic ON ic.id = t.it_category_id
@@ -33,7 +35,8 @@ const selectTicket = `
 	  LEFT JOIN assets a ON a.id = t.asset_id
 	  LEFT JOIN departments rd ON rd.id = t.reporter_department_id
 	  LEFT JOIN users au ON au.id = t.assignee_id
-	  LEFT JOIN users cu ON cu.id = t.created_by_user_id`
+	  LEFT JOIN users cu ON cu.id = t.created_by_user_id
+	  LEFT JOIN pending_reasons prs ON prs.id = t.pending_reason_id`
 
 func scanTicket(sc interface{ Scan(...any) error }) (Ticket, error) {
 	var t Ticket
@@ -41,7 +44,9 @@ func scanTicket(sc interface{ Scan(...any) error }) (Ticket, error) {
 		&t.DepartmentID, &t.DepartmentName, &t.RoomName, &t.RoomLocation, &t.AssetID, &t.AssetCode, &t.AssetName,
 		&t.ReporterName, &t.ReporterPhone, &t.ReporterDeptName, &t.CategoryName, &t.ITCategoryName, &t.Description,
 		&t.Impact, &t.Scope, &t.Replacement, &t.CriticalService, &t.IncidentStartedAt,
-		&t.AssigneeID, &t.AssigneeName, &t.CreatedByName, &t.FirstResponseAt, &t.CreatedAt, &t.AttachmentCount)
+		&t.AssigneeID, &t.AssigneeName, &t.CreatedByName, &t.FirstResponseAt, &t.CreatedAt, &t.AttachmentCount,
+		&t.WorkStartedAt, &t.PendingSince, &t.PendingReason, &t.ResolvedAt, &t.ClosedAt, &t.ServiceRestoredAt,
+		&t.ResolutionAction, &t.ResolutionResult, &t.ResolutionNote, &t.ReporterFeedback, &t.CancelReason, &t.SLACycle)
 	return t, err
 }
 
@@ -68,7 +73,8 @@ func (repository) getByToken(ctx context.Context, db database.DBTX, token string
 
 func (repository) histories(ctx context.Context, db database.DBTX, ticketID int64) ([]History, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT h.id, h.event_type, h.from_status, h.to_status, h.actor_type, u.full_name, h.note, h.created_at
+		SELECT h.id, h.event_type, h.from_status, h.to_status, h.from_priority, h.to_priority, h.meta,
+		       h.actor_type, u.full_name, h.note, h.created_at
 		  FROM ticket_histories h LEFT JOIN users u ON u.id = h.actor_user_id
 		 WHERE h.ticket_id = ? ORDER BY h.created_at DESC, h.id DESC`, ticketID)
 	if err != nil {
@@ -78,7 +84,8 @@ func (repository) histories(ctx context.Context, db database.DBTX, ticketID int6
 	var out []History
 	for rows.Next() {
 		var h History
-		if err := rows.Scan(&h.ID, &h.EventType, &h.FromStatus, &h.ToStatus, &h.ActorType, &h.ActorName, &h.Note, &h.CreatedAt); err != nil {
+		if err := rows.Scan(&h.ID, &h.EventType, &h.FromStatus, &h.ToStatus, &h.FromPrio, &h.ToPrio, &h.Meta,
+			&h.ActorType, &h.ActorName, &h.Note, &h.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, h)
@@ -105,18 +112,6 @@ func (repository) attachments(ctx context.Context, db database.DBTX, ticketID in
 		out = append(out, a)
 	}
 	return out, rows.Err()
-}
-
-// nextNumber mengalokasikan nomor urut tahunan secara atomik dalam transaksi.
-func (repository) nextNumber(ctx context.Context, tx *sql.Tx, name string, year int) (int64, error) {
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO number_sequences (name, year, current_value) VALUES (?, ?, LAST_INSERT_ID(1))
-		ON DUPLICATE KEY UPDATE current_value = LAST_INSERT_ID(current_value + 1)`, name, year); err != nil {
-		return 0, err
-	}
-	var n int64
-	err := tx.QueryRowContext(ctx, `SELECT LAST_INSERT_ID()`).Scan(&n)
-	return n, err
 }
 
 type categoryInfo struct {

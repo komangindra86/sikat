@@ -148,6 +148,7 @@ func serve(ctx context.Context, cfg config.Config, db *sql.DB, log *slog.Logger)
 	if err != nil {
 		return err
 	}
+	go app.Worker.Run(ctx) // pekerjaan latar belakang (hanya berjalan di instance pemegang lock)
 	srv := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           app.Handler,

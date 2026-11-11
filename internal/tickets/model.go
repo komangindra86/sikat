@@ -4,6 +4,8 @@ package tickets
 
 import (
 	"database/sql"
+	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -65,6 +67,18 @@ type Ticket struct {
 	FirstResponseAt   sql.NullTime
 	CreatedAt         time.Time
 	AttachmentCount   int
+	WorkStartedAt     sql.NullTime
+	PendingSince      sql.NullTime
+	PendingReason     sql.NullString
+	ResolvedAt        sql.NullTime
+	ClosedAt          sql.NullTime
+	ServiceRestoredAt sql.NullTime
+	ResolutionAction  sql.NullString
+	ResolutionResult  sql.NullString
+	ResolutionNote    sql.NullString
+	ReporterFeedback  sql.NullString
+	CancelReason      sql.NullString
+	SLACycle          int
 }
 
 // AssigneeFirstName untuk halaman pelapor (tanpa nama lengkap petugas).
@@ -97,10 +111,36 @@ type History struct {
 	EventType  string
 	FromStatus sql.NullString
 	ToStatus   sql.NullString
+	FromPrio   sql.NullString
+	ToPrio     sql.NullString
+	Meta       sql.NullString
 	ActorType  string
 	ActorName  sql.NullString
 	Note       sql.NullString
 	CreatedAt  time.Time
+}
+
+// MetaValue membaca satu nilai teks dari kolom meta (JSON).
+func (h History) MetaValue(key string) string {
+	if !h.Meta.Valid {
+		return ""
+	}
+	var m map[string]any
+	if json.Unmarshal([]byte(h.Meta.String), &m) != nil {
+		return ""
+	}
+	switch v := m[key].(type) {
+	case string:
+		return v
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case bool:
+		if v {
+			return "ya"
+		}
+		return "tidak"
+	}
+	return ""
 }
 
 // ActorFirstName untuk tampilan pelapor.

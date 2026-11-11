@@ -15,6 +15,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 
+	"sikat/internal/activities"
 	"sikat/internal/assets"
 	"sikat/internal/attachments"
 	"sikat/internal/auth"
@@ -30,6 +31,7 @@ import (
 	"sikat/internal/tickets"
 	"sikat/internal/users"
 	"sikat/internal/web"
+	"sikat/internal/worker"
 )
 
 // Deps adalah dependensi untuk membangun server.
@@ -57,6 +59,8 @@ type App struct {
 	Handler  http.Handler
 	Sessions *scs.SessionManager
 	Settings *settings.Service
+	// Worker menjalankan pekerjaan latar belakang; dijalankan pemanggil dengan go app.Worker.Run(ctx).
+	Worker *worker.Runner
 }
 
 // New merakit handler HTTP.
@@ -136,6 +140,17 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	qrLimiter := middleware.NewRateLimiter(d.QRRate, 10*time.Minute, d.QRRate)
 	go publicLimiter.Cleanup(ctx, 5*time.Minute)
 	go qrLimiter.Cleanup(ctx, 5*time.Minute)
+	activityH := &activities.Handler{Service: activities.NewService(d.DB, d.Clock, store), Settings: settingsSvc, Renderer: renderer}
+	runner := &worker.Runner{DB: d.DB, Log: d.Log, LockName: "sikat_worker", Jobs: []worker.Job{{
+		Name: "tutup-otomatis-tiket", Interval: time.Hour,
+		Run: func(ctx context.Context) error {
+			n, err := ticketSvc.AutoClose(ctx, settingsSvc.Int(ctx, settings.KeyAutoCloseDays))
+			if n > 0 {
+				d.Log.Info("tiket ditutup otomatis", "jumlah", n)
+			}
+			return err
+		},
+	}}}
 	publicH := &tickets.PublicHandler{Service: ticketSvc, QR: qrSvc, Settings: settingsSvc, Renderer: renderer,
 		BaseURL: d.Config.BaseURL, IPLimiter: publicLimiter, QRLimiter: qrLimiter}
 	userH := &users.Handler{Service: users.NewService(d.DB, d.Clock), Renderer: renderer}
@@ -181,6 +196,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.With(guard.Require(rbac.PermMasterManage)).Route("/qr", qrH.Routes)
 		r.With(guard.Require(rbac.PermConfigManage)).Get("/priority/test", priorityH.Test)
 		r.With(guard.Require(rbac.PermTicketQueue)).Route("/tickets", ticketH.Routes)
+		r.With(guard.Require(rbac.PermActivityCreate)).Route("/activities", activityH.Routes)
 	})
 
 	// Router luar: aset statis & health check tanpa session.
@@ -220,5 +236,5 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	h = middleware.Logger(d.Log)(h)
 	h = middleware.RequestInfo(d.Config.TrustProxyHeaders)(h)
 
-	return &App{Handler: h, Sessions: sessions, Settings: settingsSvc}, nil
+	return &App{Handler: h, Sessions: sessions, Settings: settingsSvc, Worker: runner}, nil
 }
