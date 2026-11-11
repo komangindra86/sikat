@@ -1,0 +1,32 @@
+{{template "base" .}}
+{{define "content"}}
+{{$p := .}}
+<div class="mx-auto max-w-2xl">
+  <h1 class="page-title">Pengaturan sistem</h1>
+  <p class="muted mt-1">Setiap perubahan tercatat di jejak audit.</p>
+  <form method="post" action="/app/settings" class="mt-4 space-y-4" novalidate>
+    {{template "csrf" .CSRFToken}}
+    {{template "form-errors" .}}
+    {{range .Data.Groups}}
+    <fieldset class="card card-body space-y-4">
+      <legend class="sr-only">{{.Name}}</legend>
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">{{.Name}}</h2>
+      {{range .Items}}
+      {{$err := $p.Err .Key}}
+      <div>
+        <label class="label" for="s-{{.Key}}">{{.Label}}</label>
+        {{if eq .Type "INT"}}
+        <input class="input {{if $err}}input-error{{end}} sm:max-w-[10rem]" id="s-{{.Key}}" name="{{.Key}}" type="number" inputmode="numeric" min="{{.Min}}" max="{{.Max}}" value="{{.Value}}">
+        {{else}}
+        <input class="input {{if $err}}input-error{{end}}" id="s-{{.Key}}" name="{{.Key}}" type="text" maxlength="{{.MaxLen}}" value="{{.Value}}">
+        {{end}}
+        {{with .Help}}<p class="help">{{.}}</p>{{end}}
+        {{with $err}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      {{end}}
+    </fieldset>
+    {{end}}
+    <div class="flex justify-end"><button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Simpan pengaturan</button></div>
+  </form>
+</div>
+{{end}}

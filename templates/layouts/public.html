@@ -1,0 +1,19 @@
+{{define "public"}}<!doctype html>
+<html lang="id">
+<head>{{template "head" .}}</head>
+<body class="min-h-screen bg-gradient-to-b from-teal-50 to-slate-50">
+<main id="main" class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
+  <div class="mb-6 flex items-center gap-3">
+    <span class="grid h-11 w-11 place-items-center rounded-xl bg-teal-700 text-lg font-black text-white">S</span>
+    <div class="leading-tight">
+      <div class="text-lg font-bold text-slate-900">SIKAT</div>
+      <div class="text-sm text-slate-600">{{.HospitalName}}</div>
+    </div>
+  </div>
+  <div id="toasts" class="mb-4 space-y-2" aria-live="polite">{{template "flash" .}}</div>
+  {{template "content" .}}
+  <p class="mt-8 text-center text-xs text-slate-500">Sistem Informasi Kelola Aduan &amp; Tindak Lanjut</p>
+</main>
+</body>
+</html>
+{{end}}

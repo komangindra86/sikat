@@ -1,0 +1,38 @@
+{{define "flash"}}
+{{with .Flash}}
+<div class="flash flash-{{if eq .Kind "error"}}error{{else if eq .Kind "info"}}info{{else}}success{{end}}" data-flash="{{.Kind}}" role="{{if eq .Kind "error"}}alert{{else}}status{{end}}">
+  <span class="flex-1">{{.Message}}</span>
+  <button type="button" class="-mr-1 rounded px-1 text-lg leading-none opacity-60 hover:opacity-100" data-dismiss aria-label="Tutup">&times;</button>
+</div>
+{{end}}
+{{end}}
+
+{{define "csrf"}}<input type="hidden" name="csrf_token" value="{{.}}">{{end}}
+
+{{/* form-errors: pesan error tingkat form (kunci "_form") */}}
+{{define "form-errors"}}
+{{with .Err "_form"}}<div class="flash flash-error mb-4" role="alert">{{.}}</div>{{end}}
+{{if .Errors}}{{if not (.Err "_form")}}<div class="flash flash-error mb-4" role="alert">Periksa kembali isian yang ditandai.</div>{{end}}{{end}}
+{{end}}
+
+{{/* pagination: dipanggil dengan Pager */}}
+{{define "pagination"}}
+{{if gt .Total 0}}
+<div class="mt-4 flex flex-col items-center justify-between gap-3 text-sm text-slate-600 sm:flex-row">
+  <div>Menampilkan {{.From}}–{{.To}} dari {{.Total}}</div>
+  {{if gt .Pages 1}}
+  <div class="flex items-center gap-2">
+    {{if .HasPrev}}<a class="btn btn-secondary btn-sm" href="{{queryWith .Query "page" (add .Page -1)}}">‹ Sebelumnya</a>{{end}}
+    <span>Hal. {{.Page}} / {{.Pages}}</span>
+    {{if .HasNext}}<a class="btn btn-secondary btn-sm" href="{{queryWith .Query "page" (add .Page 1)}}">Berikutnya ›</a>{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+{{end}}
+
+{{define "empty"}}
+<div class="card card-body text-center">
+  <p class="font-medium text-slate-700">{{.}}</p>
+</div>
+{{end}}

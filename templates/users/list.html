@@ -1,0 +1,62 @@
+{{template "base" .}}
+{{define "content"}}
+{{$d := .Data}}{{$csrf := .CSRFToken}}
+<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="page-title">Pengguna</h1>
+    <p class="muted mt-1">Akun petugas IT. Pelapor tidak memerlukan akun.</p>
+  </div>
+  <a href="/app/users/new" class="btn btn-primary">+ Tambah pengguna</a>
+</div>
+
+<form method="get" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+  <input class="input sm:max-w-xs" type="search" name="q" value="{{$d.Search}}" placeholder="Cari nama, username, NIP" aria-label="Cari">
+  <select class="input sm:max-w-[12rem]" name="role_id" aria-label="Role">
+    <option value="">Semua role</option>
+    {{range $d.Roles}}<option value="{{.ID}}" {{if eq .ID $d.RoleID}}selected{{end}}>{{.Name}}</option>{{end}}
+  </select>
+  <label class="flex min-h-11 items-center gap-2 text-sm text-slate-700">
+    <input class="checkbox" type="checkbox" name="inactive" value="1" {{if $d.Inactive}}checked{{end}}> Tampilkan nonaktif
+  </label>
+  <button class="btn btn-secondary" type="submit" data-no-busy>Terapkan</button>
+</form>
+
+{{if not $d.Users}}
+<div class="mt-4">{{template "empty" "Tidak ada pengguna yang cocok."}}</div>
+{{else}}
+<div class="mt-4 grid gap-3 lg:grid-cols-2">
+  {{range $d.Users}}
+  <div class="card card-body {{if not .IsActive}}bg-slate-50{{end}}">
+    <div class="flex items-start justify-between gap-2">
+      <div class="min-w-0">
+        <div class="font-semibold text-slate-900">{{.FullName}}{{if eq .ID $d.SelfID}} <span class="text-xs font-normal text-slate-500">(Anda)</span>{{end}}</div>
+        <div class="font-mono text-xs text-slate-500">{{.Username}}{{if .NIP.Valid}} · NIP {{.NIP.String}}{{end}}</div>
+      </div>
+      <div class="flex shrink-0 flex-col items-end gap-1">
+        <span class="badge badge-indigo">{{.RoleName}}</span>
+        {{if not .IsActive}}<span class="badge badge-gray">Nonaktif</span>{{end}}
+        {{if .MustChangePassword}}<span class="badge badge-amber">Password sementara</span>{{end}}
+      </div>
+    </div>
+    <div class="mt-2 text-sm text-slate-600">
+      {{if .DepartmentName.Valid}}{{.DepartmentName.String}} · {{end}}Login terakhir: {{wita .LastLoginAt}}
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <a href="/app/users/{{.ID}}/edit" class="btn btn-secondary btn-sm">Ubah</a>
+      <form method="post" action="/app/users/{{.ID}}/reset-password" data-confirm="Reset password {{.Username}}? Password lama langsung tidak berlaku.">
+        {{template "csrf" $csrf}}<button type="submit" class="btn btn-ghost btn-sm">Reset password</button>
+      </form>
+      {{if ne .ID $d.SelfID}}
+      <form method="post" action="/app/users/{{.ID}}/active" {{if .IsActive}}data-confirm="Nonaktifkan akun {{.Username}}? Pengguna langsung keluar dari aplikasi."{{end}}>
+        {{template "csrf" $csrf}}
+        <input type="hidden" name="active" value="{{if .IsActive}}0{{else}}1{{end}}">
+        <button type="submit" class="btn btn-ghost btn-sm {{if .IsActive}}text-red-700{{end}}">{{if .IsActive}}Nonaktifkan{{else}}Aktifkan{{end}}</button>
+      </form>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+</div>
+{{template "pagination" $d.Pager}}
+{{end}}
+{{end}}

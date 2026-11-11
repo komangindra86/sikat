@@ -1,0 +1,96 @@
+{{define "head"}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"selfRequestsOnly":true}'>
+{{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
+<meta name="theme-color" content="#0f766e">
+<title>{{if .Title}}{{.Title}} · {{end}}SIKAT</title>
+<link rel="stylesheet" href="{{static "css/app.css"}}">
+<script src="{{static "js/htmx.min.js"}}" defer></script>
+<script src="{{static "js/app.js"}}" defer></script>
+{{end}}
+
+{{define "base"}}<!doctype html>
+<html lang="id">
+<head>{{template "head" .}}</head>
+<body class="min-h-screen">
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">Lompat ke konten</a>
+
+<header class="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+  <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
+    <button type="button" class="btn btn-ghost -ml-2 px-2 lg:hidden" data-menu-toggle aria-controls="mobile-menu" aria-expanded="false" aria-label="Buka menu">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <a href="/app" class="flex min-w-0 items-center gap-2">
+      <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-teal-700 text-sm font-black text-white">S</span>
+      <span class="min-w-0 leading-tight">
+        <span class="block text-sm font-bold text-slate-900">SIKAT</span>
+        <span class="block truncate text-xs text-slate-500">{{.HospitalName}}</span>
+      </span>
+    </a>
+    <div class="ml-auto flex items-center gap-2">
+      <div class="hidden text-right leading-tight sm:block">
+        <div class="text-sm font-semibold text-slate-800">{{.User.FullName}}</div>
+        <div class="text-xs text-slate-500">{{.User.RoleName}}</div>
+      </div>
+      <form method="post" action="/logout" class="hidden lg:block">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button type="submit" class="btn btn-secondary btn-sm" data-no-busy>Keluar</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<div class="mx-auto flex max-w-7xl">
+  <aside class="no-print hidden w-60 shrink-0 border-r border-slate-200 bg-white lg:block">
+    <nav class="sticky top-14 space-y-1 p-3" aria-label="Menu utama">{{template "nav" .}}</nav>
+  </aside>
+
+  <div id="mobile-menu" class="no-print fixed inset-0 z-40 lg:hidden" hidden>
+    <div class="absolute inset-0 bg-slate-900/40" data-menu-toggle></div>
+    <nav class="absolute inset-y-0 left-0 w-72 max-w-[85%] space-y-1 overflow-y-auto bg-white p-3 shadow-xl" aria-label="Menu utama">
+      <div class="mb-3 border-b border-slate-100 px-3 pb-3">
+        <div class="font-semibold text-slate-900">{{.User.FullName}}</div>
+        <div class="text-xs text-slate-500">{{.User.RoleName}}</div>
+      </div>
+      {{template "nav" .}}
+      <form method="post" action="/logout" class="pt-2">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button type="submit" class="nav-link w-full text-red-700" data-no-busy>Keluar</button>
+      </form>
+    </nav>
+  </div>
+
+  <main id="main" class="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 lg:pb-10">
+    <div id="toasts" class="fixed inset-x-4 top-16 z-50 space-y-2 sm:left-auto sm:right-6 sm:w-96" aria-live="polite">
+      {{template "flash" .}}
+    </div>
+    {{template "content" .}}
+  </main>
+</div>
+
+<nav class="no-print fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white lg:hidden" aria-label="Navigasi cepat">
+  <a href="/app" class="flex min-h-14 flex-col items-center justify-center text-xs font-medium {{if eq .Nav "home"}}text-teal-700{{else}}text-slate-500{{end}}">
+    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11.5 12 4l9 7.5M5 10v10h14V10"/></svg>Beranda</a>
+  <a href="/app/tickets" class="flex min-h-14 flex-col items-center justify-center text-xs font-medium {{if eq .Nav "tickets"}}text-teal-700{{else}}text-slate-500{{end}}">
+    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4V7z"/></svg>Tiket</a>
+  <a href="/app/assets" class="flex min-h-14 flex-col items-center justify-center text-xs font-medium {{if eq .Nav "assets"}}text-teal-700{{else}}text-slate-500{{end}}">
+    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path stroke-linecap="round" d="M8 20h8M12 16v4"/></svg>Perangkat</a>
+  <button type="button" class="flex min-h-14 flex-col items-center justify-center text-xs font-medium text-slate-500" data-menu-toggle aria-controls="mobile-menu" aria-expanded="false">
+    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>Menu</button>
+</nav>
+</body>
+</html>
+{{end}}
+
+{{define "nav"}}
+<a href="/app" class="nav-link {{if eq .Nav "home"}}nav-link-active{{end}}">Beranda</a>
+{{if .User.Can "ticket.view_queue"}}<a href="/app/tickets" class="nav-link {{if eq .Nav "tickets"}}nav-link-active{{end}}">Tiket</a>{{end}}
+{{if .User.Can "asset.view"}}<a href="/app/assets" class="nav-link {{if eq .Nav "assets"}}nav-link-active{{end}}">Perangkat</a>{{end}}
+{{if .User.Can "master.manage"}}<a href="/app/master" class="nav-link {{if eq .Nav "master"}}nav-link-active{{end}}">Master Data</a>{{end}}
+{{if .User.Can "user.manage"}}<a href="/app/users" class="nav-link {{if eq .Nav "users"}}nav-link-active{{end}}">Pengguna</a>{{end}}
+{{if .User.Can "config.manage"}}<a href="/app/settings" class="nav-link {{if eq .Nav "settings"}}nav-link-active{{end}}">Pengaturan</a>{{end}}
+{{if .User.Can "audit.view"}}<a href="/app/audit" class="nav-link {{if eq .Nav "audit"}}nav-link-active{{end}}">Jejak Audit</a>{{end}}
+<div class="my-2 border-t border-slate-100"></div>
+<a href="/app/password" class="nav-link {{if eq .Nav "password"}}nav-link-active{{end}}">Ganti Password</a>
+{{end}}

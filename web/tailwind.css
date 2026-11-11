@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@source "../templates";
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-slate-50 text-slate-800 antialiased; }
+  /* 16px mencegah iOS melakukan zoom otomatis saat fokus input */
+  input, select, textarea { font-size: 16px; }
+  [hidden] { display: none !important; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary { @apply bg-teal-700 text-white hover:bg-teal-800 focus-visible:ring-teal-600; }
+  .btn-secondary { @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-400; }
+  .btn-danger { @apply bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500; }
+  .btn-ghost { @apply text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400; }
+  .btn-sm { @apply min-h-9 px-3 text-xs; }
+  .btn-block { @apply w-full; }
+
+  .card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+  .card-body { @apply p-4 sm:p-5; }
+
+  .label { @apply mb-1 block text-sm font-medium text-slate-700; }
+  .input {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm
+      placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30;
+  }
+  .input-error { @apply border-red-500 focus:border-red-600 focus:ring-red-600/30; }
+  .help { @apply mt-1 text-xs text-slate-500; }
+  .error-text { @apply mt-1 text-sm font-medium text-red-600; }
+  .checkbox { @apply h-5 w-5 rounded border-slate-300 text-teal-700 focus:ring-teal-600; }
+
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset; }
+  .badge-green { @apply bg-green-50 text-green-800 ring-green-600/30; }
+  .badge-red { @apply bg-red-50 text-red-800 ring-red-600/30; }
+  .badge-amber { @apply bg-amber-50 text-amber-800 ring-amber-600/30; }
+  .badge-orange { @apply bg-orange-50 text-orange-800 ring-orange-600/30; }
+  .badge-blue { @apply bg-blue-50 text-blue-800 ring-blue-600/30; }
+  .badge-indigo { @apply bg-indigo-50 text-indigo-800 ring-indigo-600/30; }
+  .badge-gray { @apply bg-slate-100 text-slate-700 ring-slate-500/30; }
+
+  .table { @apply w-full text-left text-sm; }
+  .table th { @apply border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .table td { @apply border-b border-slate-100 px-3 py-3 align-top; }
+  .table tr:last-child td { @apply border-b-0; }
+
+  .nav-link { @apply flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
+  .nav-link-active { @apply bg-teal-50 text-teal-800 hover:bg-teal-50 hover:text-teal-800; }
+
+  .flash { @apply flex items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-sm; }
+  .flash-success { @apply border-green-200 bg-green-50 text-green-900; }
+  .flash-error { @apply border-red-200 bg-red-50 text-red-900; }
+  .flash-info { @apply border-blue-200 bg-blue-50 text-blue-900; }
+
+  .choice {
+    @apply block min-h-11 cursor-pointer rounded-lg border border-slate-300 bg-white p-3 hover:border-teal-400
+      has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50 has-[:checked]:ring-2 has-[:checked]:ring-teal-600/30
+      has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-600;
+  }
+  .page-title { @apply text-xl font-bold text-slate-900 sm:text-2xl; }
+  .muted { @apply text-sm text-slate-500; }
+}
+
+/* Honeypot anti-bot: tidak terlihat oleh manusia, tetap ada di DOM */
+.hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+/* Indikator HTMX tanpa style inline (CSP) */
+.htmx-indicator { opacity: 0; transition: opacity 150ms ease-in; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+
+@media print {
+  .no-print { display: none !important; }
+}

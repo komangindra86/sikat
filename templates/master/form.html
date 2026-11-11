@@ -1,0 +1,52 @@
+{{template "base" .}}
+{{define "content"}}
+{{$d := .Data}}{{$e := .Data.Entity}}{{$p := .}}
+<nav class="mb-2 text-sm text-slate-500"><a href="/app/master" class="hover:underline">Master data</a> › <a href="/app/master/{{$e.Slug}}" class="hover:underline">{{$e.Title}}</a></nav>
+<div class="mx-auto max-w-2xl">
+  <h1 class="page-title">{{.Title}}</h1>
+  {{if and $d.Record (ne $d.Record.Source "LOCAL") (ne $d.Record.Source "")}}
+  <div class="flash flash-info mt-3">Data ini berasal dari {{label "source" $d.Record.Source}}. Perubahan manual akan ditandai agar tidak ditimpa sinkronisasi.</div>
+  {{end}}
+  <form method="post" action="/app/master/{{$e.Slug}}{{if $d.ID}}/{{$d.ID}}{{end}}" class="card card-body mt-4 space-y-4" novalidate>
+    {{template "csrf" .CSRFToken}}
+    {{template "form-errors" .}}
+    {{range $f := $e.Fields}}
+    {{$val := index $d.Form $f.Column}}{{$err := $p.Err $f.Column}}
+    <div>
+      {{if $f.IsBool}}
+        <label class="flex min-h-11 items-center gap-3">
+          <input class="checkbox" type="checkbox" name="{{$f.Column}}" value="1" {{if eq $val "1"}}checked{{end}}>
+          <span class="text-sm font-medium text-slate-800">{{$f.Label}}</span>
+        </label>
+      {{else}}
+        <label class="label" for="f-{{$f.Column}}">{{$f.Label}}{{if $f.Required}} <span class="text-red-600" aria-hidden="true">*</span>{{end}}</label>
+        {{if $f.IsTextarea}}
+          <textarea class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" rows="5" {{if $f.MaxLen}}maxlength="{{$f.MaxLen}}"{{end}} {{if $f.Required}}required{{end}}>{{$val}}</textarea>
+        {{else if $f.IsSelect}}
+          <select class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" {{if $f.Required}}required{{end}}>
+            <option value="">{{if $f.Required}}— Pilih —{{else}}— Tidak ada —{{end}}</option>
+            {{range index $d.Options $f.Column}}<option value="{{.Value}}" {{if eq .Value $val}}selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+        {{else if $f.IsEnum}}
+          <select class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" {{if $f.Required}}required{{end}}>
+            {{range $f.Choices}}<option value="{{.Value}}" {{if eq .Value $val}}selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+        {{else if $f.IsInt}}
+          <input class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="number" inputmode="numeric" min="{{$f.Min}}" {{if $f.Max}}max="{{$f.Max}}"{{end}} value="{{$val}}">
+        {{else if $f.IsMoney}}
+          <input class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="text" inputmode="decimal" value="{{$val}}" placeholder="0">
+        {{else}}
+          <input class="input {{if $err}}input-error{{end}} {{if $f.Upper}}uppercase{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="text" value="{{$val}}" {{if $f.MaxLen}}maxlength="{{$f.MaxLen}}"{{end}} {{if $f.Required}}required{{end}}>
+        {{end}}
+      {{end}}
+      {{with $f.Help}}<p class="help">{{.}}</p>{{end}}
+      {{with $err}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    {{end}}
+    <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+      <a href="/app/master/{{$e.Slug}}" class="btn btn-secondary">Batal</a>
+      <button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Simpan</button>
+    </div>
+  </form>
+</div>
+{{end}}

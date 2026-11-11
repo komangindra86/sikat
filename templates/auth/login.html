@@ -1,0 +1,22 @@
+{{template "public" .}}
+{{define "content"}}
+<div class="card card-body">
+  <h1 class="mb-1 text-xl font-bold text-slate-900">Masuk petugas IT</h1>
+  <p class="mb-5 text-sm text-slate-600">Gunakan akun yang diberikan Admin IT.</p>
+  <form method="post" action="/login" class="space-y-4" novalidate>
+    {{template "csrf" .CSRFToken}}
+    <div>
+      <label class="label" for="username">Username</label>
+      <input class="input" id="username" name="username" type="text" value="{{.Data.Username}}" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+    </div>
+    <div>
+      <label class="label" for="password">Password</label>
+      <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block" data-busy-text="Memeriksa…">Masuk</button>
+  </form>
+</div>
+<p class="mt-4 text-center text-sm text-slate-600">
+  Lupa password? Hubungi Admin IT{{with .ITContact}} ({{.}}){{end}}.
+</p>
+{{end}}

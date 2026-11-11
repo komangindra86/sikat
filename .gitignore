@@ -1,0 +1,9 @@
+# rahasia & konfigurasi lokal
+.env
+# hasil build
+/bin/
+*.exe
+# dependensi tooling frontend
+/node_modules/
+# data runtime
+/storage/

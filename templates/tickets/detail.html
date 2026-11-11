@@ -1,0 +1,101 @@
+{{template "base" .}}
+{{define "content"}}
+{{$d := .Data}}{{$t := $d.Ticket}}
+<nav class="mb-2 text-sm text-slate-500"><a href="/app/tickets" class="hover:underline">Tiket</a> › {{$t.TicketNo}}</nav>
+
+{{if $d.NewLink}}
+<div class="card card-body mb-4 border-teal-300 bg-teal-50">
+  <div class="text-sm font-semibold text-teal-900">Link pemantauan untuk pelapor</div>
+  <p class="text-xs text-teal-900">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali.</p>
+  <div id="new-link" class="mt-2 break-all rounded bg-white p-2 font-mono text-xs">{{$d.NewLink}}</div>
+  <div class="mt-2"><button type="button" class="btn btn-secondary btn-sm" data-copy="#new-link">Salin link</button></div>
+</div>
+{{end}}
+
+<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+  <div>
+    <div class="font-mono text-sm font-semibold text-slate-500">{{$t.TicketNo}}</div>
+    <h1 class="page-title">{{$t.CategoryName}}</h1>
+    <div class="mt-2 flex flex-wrap gap-1.5">
+      <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
+      <span class="badge badge-{{tone "priority" $t.Priority}}">{{if eq $t.Priority "CRITICAL"}}⚠ {{end}}Prioritas {{label "priority" $t.Priority}}</span>
+      <span class="badge badge-gray">{{label "channel" $t.Channel}}</span>
+    </div>
+  </div>
+  {{if $d.CanClaim}}
+  <form method="post" action="/app/tickets/{{$t.ID}}/claim">
+    {{template "csrf" .CSRFToken}}
+    <button type="submit" class="btn btn-primary w-full sm:w-auto" data-busy-text="Mengambil…">Ambil tiket</button>
+  </form>
+  {{end}}
+</div>
+
+<div class="mt-4 grid gap-4 lg:grid-cols-[1fr_20rem]">
+  <div class="space-y-4">
+    <section class="card card-body" aria-labelledby="detail-masalah">
+      <h2 id="detail-masalah" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Masalah</h2>
+      <p class="whitespace-pre-line text-slate-800">{{$t.Description}}</p>
+      <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+        <div><dt class="text-slate-500">Dampak pelayanan</dt><dd class="font-medium">{{label "impact" (printf "%d" $t.Impact)}}</dd></div>
+        <div><dt class="text-slate-500">Yang terdampak</dt><dd class="font-medium">{{label "scope" (printf "%d" $t.Scope)}}</dd></div>
+        <div><dt class="text-slate-500">Perangkat pengganti</dt><dd class="font-medium">{{label "replacement" $t.Replacement}}</dd></div>
+        <div><dt class="text-slate-500">Perkiraan awal gangguan</dt><dd class="font-medium">{{wita $t.IncidentStartedAt}}</dd></div>
+        <div><dt class="text-slate-500">Bidang</dt><dd class="font-medium">{{$t.ITCategoryName}}</dd></div>
+        <div><dt class="text-slate-500">Layanan klinis kritis</dt><dd class="font-medium">{{if $t.CriticalService}}Ya{{else}}Tidak{{end}}</dd></div>
+      </dl>
+      <div class="mt-4 rounded-lg bg-slate-50 p-3 text-sm">
+        Prioritas <strong>{{label "priority" $t.Priority}}</strong> ditentukan
+        {{if eq $t.PrioritySource "MANUAL"}}manual oleh koordinator{{else if $t.PriorityRuleName.Valid}}oleh aturan "<strong>{{$t.PriorityRuleName.String}}</strong>"{{else}}dari prioritas bawaan jenis gangguan{{end}}.
+      </div>
+    </section>
+
+    {{if $d.Attachments}}
+    <section class="card card-body" aria-labelledby="foto">
+      <h2 id="foto" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Foto ({{len $d.Attachments}})</h2>
+      <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {{range $d.Attachments}}<a href="/app/tickets/attachments/{{.ID}}" target="_blank" rel="noopener"><img src="/app/tickets/attachments/{{.ID}}" alt="Foto lampiran" class="aspect-square w-full rounded-lg object-cover" loading="lazy"></a>{{end}}
+      </div>
+    </section>
+    {{end}}
+
+    <section class="card card-body" aria-labelledby="histori">
+      <h2 id="histori" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Histori</h2>
+      <ol class="space-y-3">
+        {{range $d.Histories}}
+        <li class="border-l-2 border-teal-200 pl-3">
+          <div class="text-sm font-medium">
+            {{if eq .EventType "CREATED"}}Tiket dibuat{{else if eq .EventType "CLAIMED"}}Diambil{{else}}{{.EventType}}{{end}}
+            oleh {{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}
+            {{if .ToStatus.Valid}}<span class="badge badge-{{tone "ticket_status" .ToStatus.String}} ml-1">{{label "ticket_status" .ToStatus.String}}</span>{{end}}
+          </div>
+          {{if .Note.Valid}}<div class="text-sm text-slate-700">{{.Note.String}}</div>{{end}}
+          <div class="text-xs text-slate-500">{{wita .CreatedAt}} WITA</div>
+        </li>
+        {{end}}
+      </ol>
+    </section>
+  </div>
+
+  <aside class="space-y-4">
+    <section class="card card-body text-sm">
+      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Lokasi</h2>
+      <div class="font-medium">{{$t.Location}}</div>
+      {{if $t.RoomLocation.Valid}}<div class="text-slate-600">{{$t.RoomLocation.String}}</div>{{end}}
+      {{if $t.AssetID.Valid}}<div class="mt-2">Perangkat: <a class="font-semibold text-teal-700 hover:underline" href="/app/assets/{{$t.AssetID.Int64}}">{{$t.AssetName.String}} ({{$t.AssetCode.String}})</a></div>{{end}}
+    </section>
+    <section class="card card-body text-sm">
+      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Pelapor</h2>
+      <div class="font-medium">{{$t.ReporterName}}</div>
+      {{if $t.ReporterDeptName.Valid}}<div class="text-slate-600">{{$t.ReporterDeptName.String}}</div>{{end}}
+      {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-semibold text-teal-700" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
+      {{if $t.CreatedByName.Valid}}<div class="mt-2 text-xs text-slate-500">Dicatat oleh {{$t.CreatedByName.String}}</div>{{end}}
+    </section>
+    <section class="card card-body text-sm">
+      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Penanganan</h2>
+      <div>Penanggung jawab: <strong>{{if $t.AssigneeName.Valid}}{{$t.AssigneeName.String}}{{else}}belum ada{{end}}</strong></div>
+      <div class="mt-1 text-slate-600">Masuk {{wita $t.CreatedAt}} ({{since $t.CreatedAt}} lalu)</div>
+      {{if $t.FirstResponseAt.Valid}}<div class="text-slate-600">Diterima {{wita $t.FirstResponseAt}}</div>{{end}}
+    </section>
+  </aside>
+</div>
+{{end}}

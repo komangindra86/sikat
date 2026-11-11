@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="id">
+<head>{{template "head" .}}</head>
+<body class="bg-white">
+<div class="no-print mx-auto flex max-w-5xl items-center justify-between gap-3 p-4">
+  <div>
+    <div class="font-semibold">Cetak QR ({{len .Data.QRs}})</div>
+    <div class="muted">Gunakan kertas A4 atau kertas stiker. Pilih "Cetak" dari menu browser (Ctrl+P).</div>
+  </div>
+  <a href="/app/qr" class="btn btn-secondary">Kembali</a>
+</div>
+{{if not .Data.QRs}}<p class="p-4 text-center text-slate-600">Tidak ada QR aktif untuk dicetak.</p>{{end}}
+<main class="mx-auto grid max-w-5xl grid-cols-2 gap-4 p-4 sm:grid-cols-3 print:max-w-none print:grid-cols-3 print:gap-3 print:p-0">
+  {{range .Data.QRs}}
+  <div class="flex break-inside-avoid flex-col items-center rounded-lg border-2 border-dashed border-slate-300 p-3 text-center">
+    <div class="text-sm font-bold text-teal-800">Lapor Gangguan IT</div>
+    <img src="/app/qr/{{.ID}}/png" alt="" class="my-1 h-40 w-40" width="160" height="160">
+    <div class="text-xs font-semibold">Scan dengan kamera HP</div>
+    <div class="mt-1 font-mono text-[11px] text-slate-700">{{.TargetCode}}</div>
+    <div class="text-[11px] leading-tight text-slate-700">{{.TargetName}}{{if .DepartmentName.Valid}} · {{.DepartmentName.String}}{{end}}</div>
+    <div class="mt-1 text-[10px] text-slate-400">SIKAT · {{$.HospitalName}}</div>
+  </div>
+  {{end}}
+</main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{{template "base" .}}
+{{define "content"}}
+<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">Jejak audit</h1>
+    <p class="muted">Catatan login dan perubahan data. Tidak dapat diubah atau dihapus.</p>
+  </div>
+  <form method="get" class="flex gap-2">
+    <input class="input" type="search" name="action" value="{{.Data.Action}}" placeholder="Awalan aksi, mis. login">
+    <button class="btn btn-secondary" type="submit" data-no-busy>Saring</button>
+  </form>
+</div>
+
+<div class="mt-4 space-y-2 md:hidden">
+  {{range .Data.Logs}}
+  <div class="card card-body">
+    <div class="font-mono text-xs text-slate-700">{{.Action}}</div>
+    <div class="mt-1 text-sm">{{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}</div>
+    <div class="text-xs text-slate-500">{{wita .CreatedAt}}{{if .EntityType.Valid}} · {{.EntityType.String}}{{if .EntityID.Valid}} #{{.EntityID.Int64}}{{end}}{{end}}</div>
+  </div>
+  {{else}}{{template "empty" "Belum ada catatan."}}{{end}}
+</div>
+
+<div class="card mt-4 hidden overflow-x-auto md:block">
+  <table class="table">
+    <thead><tr><th>Waktu (WITA)</th><th>Pelaku</th><th>Aksi</th><th>Data</th><th>Perubahan</th><th>IP</th></tr></thead>
+    <tbody>
+    {{range .Data.Logs}}
+      <tr>
+        <td class="whitespace-nowrap">{{wita .CreatedAt}}</td>
+        <td>{{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}</td>
+        <td class="font-mono text-xs">{{.Action}}</td>
+        <td class="whitespace-nowrap text-xs">{{if .EntityType.Valid}}{{.EntityType.String}}{{if .EntityID.Valid}} #{{.EntityID.Int64}}{{end}}{{else}}–{{end}}</td>
+        <td class="max-w-md text-xs">
+          {{if .BeforeData.Valid}}<div class="truncate text-slate-500" title="{{.BeforeData.String}}">sebelum: {{.BeforeData.String}}</div>{{end}}
+          {{if .AfterData.Valid}}<div class="truncate" title="{{.AfterData.String}}">sesudah: {{.AfterData.String}}</div>{{end}}
+        </td>
+        <td class="text-xs">{{nullStr .IPAddress}}</td>
+      </tr>
+    {{else}}<tr><td colspan="6" class="text-center text-slate-500">Belum ada catatan.</td></tr>{{end}}
+    </tbody>
+  </table>
+</div>
+{{template "pagination" .Data.Pager}}
+{{end}}

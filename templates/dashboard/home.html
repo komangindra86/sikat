@@ -1,0 +1,78 @@
+{{template "base" .}}
+{{define "content"}}
+<h1 class="page-title">Halo, {{.User.FirstName}}</h1>
+<p class="muted mt-1">{{.User.RoleName}} · {{.HospitalName}}</p>
+
+{{if .Data.ShowTickets}}{{$ts := .Data.Tickets}}
+{{if gt $ts.CriticalNew 0}}
+<a href="/app/tickets?priority=CRITICAL&semua=1" class="flash flash-error mt-4 font-semibold" role="alert">
+  <span>⚠ {{$ts.CriticalNew}} tiket KRITIS belum diambil. Segera tangani.</span>
+</a>
+{{end}}
+<section class="mt-5" aria-labelledby="ringkasan-tiket">
+  <h2 id="ringkasan-tiket" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Tiket</h2>
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    {{if .User.Can "ticket.claim"}}
+    <a href="/app/tickets" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{$ts.AvailableForMe}}</div><div class="text-sm text-slate-600">Tersedia untuk saya</div></a>
+    <a href="/app/tickets?mode=mine" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{$ts.MineActive}}</div><div class="text-sm text-slate-600">Tiket saya</div></a>
+    {{end}}
+    <a href="/app/tickets?semua=1" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{index $ts.ByStatus "NEW"}}</div><div class="text-sm text-slate-600">Baru masuk</div></a>
+    <a href="/app/tickets?mode=active" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{index $ts.ByStatus "CLAIMED"}}</div><div class="text-sm text-slate-600">Diterima</div></a>
+    <div class="card card-body"><div class="text-2xl font-bold">{{$ts.CreatedToday}}</div><div class="text-sm text-slate-600">Masuk hari ini</div></div>
+    <div class="card card-body {{if gt $ts.CriticalNew 0}}border-red-300{{end}}"><div class="text-2xl font-bold {{if gt $ts.CriticalNew 0}}text-red-700{{end}}">{{$ts.CriticalNew}}</div><div class="text-sm text-slate-600">Kritis belum diambil</div></div>
+  </div>
+</section>
+{{end}}
+
+<section class="mt-5" aria-labelledby="ringkasan-perangkat">
+  <h2 id="ringkasan-perangkat" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Perangkat</h2>
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <a href="/app/assets" class="card card-body hover:border-teal-300">
+      <div class="text-2xl font-bold text-slate-900">{{.Data.AssetsTotal}}</div>
+      <div class="text-sm text-slate-600">Perangkat terdaftar</div>
+    </a>
+    {{range .Data.AssetsByState}}
+    <a href="/app/assets?status={{.Status}}" class="card card-body hover:border-teal-300">
+      <div class="text-2xl font-bold text-slate-900">{{.Count}}</div>
+      <div class="mt-1"><span class="badge badge-{{tone "asset_status" .Status}}">{{label "asset_status" .Status}}</span></div>
+    </a>
+    {{end}}
+  </div>
+  {{if eq .Data.AssetsTotal 0}}
+  <p class="muted mt-3">Belum ada perangkat terdaftar.{{if .User.Can "master.manage"}} <a class="font-semibold text-teal-700 underline" href="/app/assets/new">Tambah perangkat</a>.{{end}}</p>
+  {{end}}
+</section>
+
+{{if .User.Can "master.manage"}}
+<section class="mt-6" aria-labelledby="ringkasan-master">
+  <h2 id="ringkasan-master" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Master data aktif</h2>
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <a href="/app/users" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{.Data.ActiveUsers}}</div><div class="text-sm text-slate-600">Pengguna aktif</div></a>
+    <a href="/app/master/departments" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{.Data.Departments}}</div><div class="text-sm text-slate-600">Unit</div></a>
+    <a href="/app/master/rooms" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{.Data.Rooms}}</div><div class="text-sm text-slate-600">Ruangan</div></a>
+    <a href="/app/master/it-categories" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{.Data.ITCategories}}</div><div class="text-sm text-slate-600">Bidang</div></a>
+    <a href="/app/master/ticket-categories" class="card card-body hover:border-teal-300"><div class="text-2xl font-bold">{{.Data.TicketKinds}}</div><div class="text-sm text-slate-600">Jenis gangguan</div></a>
+  </div>
+  {{if eq .Data.Departments 0}}
+  <div class="flash flash-info mt-4"><p>Langkah awal: isi <a class="font-semibold underline" href="/app/master/departments/new">Unit</a>, lalu <a class="font-semibold underline" href="/app/master/rooms/new">Ruangan</a>, <a class="font-semibold underline" href="/app/master/asset-categories/new">Kategori perangkat</a>, dan <a class="font-semibold underline" href="/app/assets/new">Perangkat</a>.</p></div>
+  {{end}}
+</section>
+{{end}}
+
+{{if .Data.RecentAudit}}
+<section class="mt-6" aria-labelledby="aktivitas">
+  <div class="mb-3 flex items-center justify-between">
+    <h2 id="aktivitas" class="text-sm font-semibold uppercase tracking-wide text-slate-500">Aktivitas terbaru</h2>
+    <a href="/app/audit" class="text-sm font-semibold text-teal-700">Lihat semua</a>
+  </div>
+  <div class="card divide-y divide-slate-100">
+    {{range .Data.RecentAudit}}
+    <div class="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="text-sm"><span class="font-medium">{{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}</span> · <span class="font-mono text-xs text-slate-600">{{.Action}}</span></div>
+      <div class="text-xs text-slate-500">{{wita .CreatedAt}}</div>
+    </div>
+    {{end}}
+  </div>
+</section>
+{{end}}
+{{end}}

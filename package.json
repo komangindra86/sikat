@@ -1,0 +1,15 @@
+{
+  "name": "sikat-assets",
+  "private": true,
+  "description": "Tooling build aset frontend SIKAT (hanya untuk development; produksi tidak membutuhkan Node).",
+  "scripts": {
+    "build:css": "tailwindcss -i ./web/tailwind.css -o ./static/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./web/tailwind.css -o ./static/css/app.css --watch",
+    "vendor:js": "node -e \"require('fs').copyFileSync('node_modules/htmx.org/dist/htmx.min.js','static/js/htmx.min.js')\""
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.5",
+    "htmx.org": "2.0.11",
+    "tailwindcss": "4.3.5"
+  }
+}

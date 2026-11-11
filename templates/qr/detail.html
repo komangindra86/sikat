@@ -1,0 +1,43 @@
+{{template "base" .}}
+{{define "content"}}
+{{$q := .Data.QR}}
+<nav class="mb-2 text-sm text-slate-500"><a href="/app/qr" class="hover:underline">QR Code</a> › {{$q.TargetCode}}</nav>
+<div class="grid gap-4 lg:grid-cols-[auto_1fr]">
+  <div class="card card-body flex flex-col items-center">
+    <img src="/app/qr/{{$q.ID}}/png" alt="QR {{$q.TargetCode}}" class="h-64 w-64" width="256" height="256">
+    <div class="mt-2 text-center text-sm font-semibold">{{$q.TargetCode}} · {{$q.TargetName}}</div>
+    {{if $q.IsActive}}
+    <div class="mt-3 flex flex-wrap justify-center gap-2">
+      <a class="btn btn-primary btn-sm" href="/app/qr/{{$q.ID}}/png?download=1">Unduh PNG</a>
+      <a class="btn btn-secondary btn-sm" href="/app/qr/print?ids={{$q.ID}}" target="_blank" rel="noopener">Cetak</a>
+    </div>
+    {{end}}
+  </div>
+  <div class="card card-body">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="badge badge-indigo">QR {{label "qr_type" $q.Type}}</span>
+      {{if $q.IsActive}}<span class="badge badge-green">Aktif</span>{{else}}<span class="badge badge-gray">Nonaktif</span>{{end}}
+      <span class="text-xs text-slate-500">Generasi ke-{{$q.Generation}}</span>
+    </div>
+    <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+      <div><dt class="text-slate-500">Sasaran</dt><dd class="font-medium">{{if eq $q.Type "ASSET"}}<a class="text-teal-700 hover:underline" href="/app/assets/{{$q.AssetID.Int64}}">{{$q.TargetName}}</a>{{else}}{{$q.TargetName}}{{end}}</dd></div>
+      <div><dt class="text-slate-500">Unit</dt><dd class="font-medium">{{if $q.DepartmentName.Valid}}{{$q.DepartmentName.String}}{{else}}–{{end}}</dd></div>
+      {{if eq $q.Type "ASSET"}}<div><dt class="text-slate-500">Ruangan perangkat saat ini</dt><dd class="font-medium">{{if $q.RoomName.Valid}}{{$q.RoomName.String}}{{else}}–{{end}}</dd></div>{{end}}
+      <div><dt class="text-slate-500">Dibuat</dt><dd class="font-medium">{{wita $q.CreatedAt}}</dd></div>
+      <div><dt class="text-slate-500">Dipindai</dt><dd class="font-medium">{{$q.ScanCount}} kali{{if $q.LastScannedAt.Valid}}, terakhir {{wita $q.LastScannedAt}}{{end}}</dd></div>
+      {{if $q.DeactivatedAt.Valid}}<div><dt class="text-slate-500">Dinonaktifkan</dt><dd class="font-medium">{{wita $q.DeactivatedAt}}</dd></div>{{end}}
+      {{if $q.IsActive}}<div class="sm:col-span-2"><dt class="text-slate-500">Alamat yang dikodekan</dt><dd class="break-all font-mono text-xs">{{.Data.URL}}</dd></div>{{end}}
+    </dl>
+    <div class="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+      <form method="post" action="/app/qr/{{$q.ID}}/regenerate" data-confirm="Buat QR baru? QR lama langsung tidak berlaku dan stiker harus diganti.">
+        {{template "csrf" .CSRFToken}}<button type="submit" class="btn btn-secondary">Buat ulang (regenerate)</button>
+      </form>
+      {{if $q.IsActive}}
+      <form method="post" action="/app/qr/{{$q.ID}}/deactivate" data-confirm="Nonaktifkan QR ini? Pegawai tidak bisa melapor lewat stiker ini lagi.">
+        {{template "csrf" .CSRFToken}}<button type="submit" class="btn btn-ghost text-red-700">Nonaktifkan</button>
+      </form>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

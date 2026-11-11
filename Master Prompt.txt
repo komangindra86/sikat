@@ -1,0 +1,1269 @@
+
+# MASTER PROMPT
+# IT HELPDESK, ASSET MAINTENANCE & WORK MANAGEMENT SYSTEM
+
+==================================================
+1. ROLE DAN TANGGUNG JAWAB
+==================================================
+
+Bertindak sebagai:
+
+- Senior Software Architect
+- Senior Go Developer
+- Database Architect
+- UI/UX Designer
+- System Analyst
+- DevOps Engineer
+- QA Engineer
+
+Tugas utama adalah membangun aplikasi production-ready
+untuk mengelola seluruh pekerjaan IT rumah sakit.
+
+Nama aplikasi:
+SIKAT (Sistem Informasi Kelola Aduan & Tindak Lanjut)
+
+Aplikasi ini bukan sekadar sistem pengaduan.
+
+Aplikasi harus mampu mengelola:
+1. Pengaduan gangguan IT.
+2. Penanganan dan penugasan pekerjaan IT.
+3. Monitoring pekerjaan petugas.
+4. Histori kerusakan perangkat.
+5. Preventive dan corrective maintenance.
+6. SLA dan eskalasi otomatis.
+7. Kegiatan internal IT.
+8. Inventaris perangkat IT.
+9. Laporan kegiatan dan kinerja IT.
+10. Integrasi master data SIMRS.
+
+Hasil akhir harus berupa aplikasi yang benar-benar
+berfungsi, bukan prototype atau tampilan statis.
+
+==================================================
+2. TUJUAN DAN PRINSIP SISTEM
+==================================================
+
+Tujuan:
+
+- Mempermudah pegawai mengajukan gangguan IT.
+- Mengurangi pekerjaan administrasi manual.
+- Mempercepat penanganan gangguan.
+- Memudahkan petugas mengambil pekerjaan.
+- Memantau beban kerja petugas.
+- Mengukur waktu respons dan penyelesaian.
+- Mengetahui perangkat yang sering bermasalah.
+- Menghasilkan laporan otomatis.
+- Menyediakan histori pekerjaan yang dapat ditelusuri.
+
+Prinsip utama:
+
+1. Sederhana untuk pengguna awam.
+2. Mobile-first.
+3. Scan QR untuk pengajuan tiket.
+4. Pelapor tidak wajib login.
+5. Petugas mengambil tiket sendiri.
+6. Prioritas ditentukan otomatis.
+7. Histori tercatat otomatis.
+8. SLA dihitung otomatis.
+9. Laporan tidak perlu diketik ulang.
+10. Tidak ada input manual jika data dapat diambil
+    atau dihitung oleh sistem.
+
+==================================================
+3. TECHNOLOGY STACK
+==================================================
+
+Backend:
+- Go (Golang)
+- Chi Router atau Gin
+- Go HTML Templates
+- database/sql
+- sqlc atau repository pattern
+- MySQL 8
+
+Frontend:
+- Tailwind CSS
+- HTMX
+- HTML5
+- Vanilla JavaScript seperlunya
+
+PWA:
+- Web App Manifest
+- Service Worker
+- Web Push API
+- VAPID
+
+Infrastructure:
+- Linux VPS
+- Nginx
+- HTTPS
+- Background worker
+- Automated backup
+
+Ketentuan:
+
+- Hindari React dan Vue.
+- Jangan membuat frontend SPA terpisah.
+- Gunakan server-rendered application.
+- Pilih dependency stabil dan terpelihara.
+- Pisahkan business logic dari HTTP handler.
+- Hindari overengineering.
+
+==================================================
+4. UI/UX DESIGN
+==================================================
+
+Target pengguna:
+
+- Dokter
+- Perawat
+- Bidan
+- Petugas administrasi
+- Kasir
+- Farmasi
+- Seluruh unit rumah sakit
+- Petugas IT
+
+Pengguna sebagian besar bukan orang IT.
+
+Ketentuan desain:
+
+- Bahasa Indonesia.
+- Mobile-first.
+- Tampilan bersih dan profesional.
+- Tombol besar.
+- Form sederhana.
+- Hindari istilah teknis.
+- Gunakan pilihan siap pakai.
+- Hindari input berulang.
+- Navigasi sederhana.
+- Responsif untuk HP, tablet, desktop.
+- Gunakan card pada tampilan HP.
+- Tampilkan status dengan warna konsisten.
+- Berikan feedback setiap tindakan.
+
+Jangan membuat tampilan yang terlalu padat.
+
+Prioritaskan kemudahan penggunaan dibanding
+banyaknya fitur dalam satu halaman.
+
+==================================================
+5. USER ROLES
+==================================================
+
+ADMIN IT:
+- Mengelola akun.
+- Mengelola role.
+- Mengelola master data.
+- Mengelola perangkat.
+- Mengelola QR Code.
+- Mengelola kategori.
+- Mengelola SLA.
+- Mengelola aturan prioritas.
+- Mengelola integrasi.
+- Mengatur sistem.
+
+KOORDINATOR IT:
+- Melihat semua tiket.
+- Melihat antrean pekerjaan.
+- Mengambil alih tiket.
+- Mengubah prioritas dengan alasan.
+- Melihat beban kerja petugas.
+- Melihat SLA dan eskalasi.
+- Melihat histori perangkat.
+- Mengelola kegiatan internal.
+- Melihat seluruh laporan.
+
+PETUGAS IT:
+- Melihat antrean tiket.
+- Mengambil tiket sendiri.
+- Melihat tiket yang ditangani.
+- Mengubah status pekerjaan.
+- Mencatat tindakan.
+- Mengunggah foto.
+- Menambahkan anggota pendukung.
+- Membuat kegiatan internal.
+- Melihat histori pekerjaannya.
+
+PELAPOR:
+- Tidak wajib login.
+- Scan QR Code.
+- Membuat tiket.
+- Melihat status tiket menggunakan token.
+- Melihat perkembangan penanganan.
+- Memberikan konfirmasi penyelesaian jika diperlukan.
+
+==================================================
+6. MASTER DATA
+==================================================
+
+Buat modul:
+
+1. Users.
+2. Roles.
+3. Departments.
+4. Rooms.
+5. Asset Categories.
+6. Assets.
+7. IT Categories.
+8. Ticket Categories.
+9. Action Templates.
+10. QR Codes.
+11. Priority Rules.
+12. SLA Policies.
+13. System Settings.
+
+MASTER PERANGKAT:
+
+Field:
+- Asset code.
+- Nama perangkat.
+- Kategori.
+- Merk.
+- Model.
+- Serial number.
+- Unit.
+- Ruangan.
+- Tanggal pengadaan jika tersedia.
+- Status perangkat.
+- QR Code.
+- Keterangan.
+
+Status aset:
+- Aktif.
+- Rusak.
+- Dalam perbaikan.
+- Tidak digunakan.
+- Dihapus dari inventaris.
+
+Jangan mewajibkan semua field diisi.
+
+Setiap perangkat harus memiliki identitas unik
+dan dapat memiliki histori pemeliharaan.
+
+==================================================
+7. QR CODE TICKETING
+==================================================
+
+Sediakan dua jenis QR Code.
+
+A. QR RUANGAN
+
+Ketika dipindai:
+- Sistem mengenali ruangan.
+- Sistem mengenali unit.
+- Form pengajuan otomatis mengisi lokasi.
+
+B. QR PERANGKAT
+
+Ketika dipindai:
+- Sistem mengenali perangkat.
+- Sistem mengenali ruangan.
+- Sistem mengenali unit.
+- Form otomatis mengisi seluruh informasi tersebut.
+
+Fitur QR:
+- Generate otomatis.
+- Download PNG.
+- Cetak QR.
+- Generate massal.
+- Preview.
+- Nonaktifkan.
+- Regenerate.
+
+Gunakan secure random token.
+Jangan menggunakan ID database berurutan
+sebagai token publik.
+
+Satu QR dapat digunakan berkali-kali.
+
+==================================================
+8. PENGAJUAN TIKET
+==================================================
+
+Flow:
+
+1. Pegawai scan QR.
+2. Sistem mengenali lokasi/perangkat.
+3. Pegawai memasukkan nama.
+4. Unit diisi otomatis jika tersedia.
+5. Pegawai memilih jenis gangguan.
+6. Pegawai menuliskan kendala.
+7. Sistem menanyakan dampak gangguan.
+8. Pegawai dapat melampirkan foto.
+9. Pegawai mengirim tiket.
+10. Sistem membuat nomor tiket.
+11. Sistem menentukan prioritas otomatis.
+12. Tiket masuk antrean.
+13. Sistem mengirim notifikasi.
+
+Nomor tiket:
+TKT-2026-000001
+
+Identitas pelapor:
+- Nama.
+- Unit/bagian.
+- Kontak opsional jika diperlukan.
+
+Jangan mewajibkan login.
+
+Sediakan halaman konfirmasi yang menampilkan:
+- Nomor tiket.
+- Lokasi.
+- Jenis masalah.
+- Prioritas.
+- Link pemantauan tiket.
+
+Gunakan secure access token untuk melihat tiket.
+
+Pelapor hanya boleh melihat tiket miliknya.
+
+Jangan meminta nama pasien, diagnosis,
+atau data rekam medis.
+
+==================================================
+9. AUTOMATIC PRIORITY ENGINE
+==================================================
+
+Prioritas:
+
+LOW = Rendah
+MEDIUM = Sedang
+HIGH = Tinggi
+CRITICAL = Kritis
+
+Pertimbangkan:
+- Kategori gangguan.
+- Dampak terhadap pelayanan.
+- Jumlah pengguna terdampak.
+- Ketersediaan perangkat pengganti.
+- Dampak terhadap pelayanan klinis kritis.
+
+Jangan hanya menggunakan kategori perangkat
+untuk menentukan prioritas.
+
+Contoh:
+- Satu komputer rusak tetapi tersedia pengganti:
+  Sedang.
+- Seluruh komputer satu unit tidak berfungsi:
+  Tinggi.
+- Gangguan jaringan yang berdampak pada layanan
+  klinis kritis:
+  Kritis.
+
+Buat configurable priority rules.
+
+Admin dapat mengatur aturan prioritas
+tanpa mengubah source code.
+
+Koordinator dapat mengubah prioritas dengan alasan.
+
+Semua perubahan harus masuk histori.
+
+Prioritas kritis:
+- Notifikasi segera.
+- Alert dashboard.
+- Eskalasi kepada koordinator.
+- Monitoring khusus.
+
+Sistem tidak menggantikan prosedur darurat rumah sakit.
+
+==================================================
+10. SELF ASSIGNMENT
+==================================================
+
+Semua tiket baru masuk ke antrean bersama.
+
+Petugas IT dapat mengambil tiket sendiri.
+
+Tampilkan:
+- Nomor tiket.
+- Lokasi.
+- Kategori.
+- Deskripsi.
+- Prioritas.
+- Waktu pengajuan.
+- SLA.
+- Status.
+
+Aturan:
+
+- Satu tiket hanya memiliki satu penanggung jawab
+  utama pada satu waktu.
+- Gunakan database transaction.
+- Gunakan SELECT FOR UPDATE atau atomic update.
+- Cegah dua petugas mengambil tiket yang sama.
+- Jika sudah diambil, tampilkan pemberitahuan.
+- Koordinator dapat mengambil alih.
+- Petugas dapat menambahkan anggota pendukung.
+- Semua perubahan penugasan tercatat.
+
+Tampilkan beban kerja petugas.
+
+Siapkan pengaturan kompetensi petugas berdasarkan
+kategori pekerjaan, agar petugas dapat memfilter
+tiket yang sesuai kemampuannya.
+
+Jangan membuat distribusi tiket manual sebagai
+proses wajib.
+
+==================================================
+11. WORKFLOW TIKET
+==================================================
+
+Status internal:
+
+NEW
+CLAIMED
+IN_PROGRESS
+PENDING
+RESOLVED
+CLOSED
+CANCELLED
+
+Label:
+
+Baru Masuk
+Diterima
+Sedang Dikerjakan
+Tertunda
+Selesai
+Ditutup
+Dibatalkan
+
+Setiap transisi status:
+- Memiliki timestamp.
+- Memiliki user pelaksana.
+- Tercatat di histori.
+- Dapat memiliki catatan.
+- Menghasilkan notifikasi sesuai aturan.
+
+Tiket tertunda wajib memiliki alasan.
+
+Tiket selesai wajib memiliki:
+- Tindakan yang dilakukan.
+- Hasil penyelesaian.
+
+Jangan menghapus histori.
+
+==================================================
+12. ASSET MAINTENANCE HISTORY
+==================================================
+
+INI ADALAH FITUR UTAMA.
+
+Tujuan:
+Koordinator dapat mengetahui riwayat kerusakan
+dan perbaikan setiap perangkat.
+
+Setiap tiket yang berkaitan dengan perangkat
+harus terhubung dengan asset_id.
+
+Buat halaman detail perangkat.
+
+Tampilkan:
+
+IDENTITAS:
+- Kode inventaris.
+- Nama perangkat.
+- Merk dan model.
+- Serial number.
+- Unit.
+- Ruangan.
+- Status.
+
+RIWAYAT:
+- Tanggal kerusakan.
+- Nomor tiket.
+- Jenis kerusakan.
+- Keluhan.
+- Petugas penanganan.
+- Tindakan perbaikan.
+- Sparepart yang digunakan.
+- Biaya jika tersedia.
+- Durasi perbaikan.
+- Hasil akhir.
+
+STATISTIK:
+- Jumlah kerusakan.
+- Jumlah perbaikan.
+- Gangguan berulang.
+- Total waktu downtime.
+- Total biaya perbaikan jika dicatat.
+- Tanggal perawatan terakhir.
+
+Buat indikator perangkat sering rusak.
+
+Contoh:
+Jika perangkat yang sama mengalami gangguan
+berulang dalam periode tertentu, sistem memberikan
+peringatan kepada koordinator.
+
+Contoh notifikasi:
+"Perhatian: Komputer IGD-01 telah mengalami
+5 gangguan dalam 90 hari terakhir."
+
+Ambang batas harus dapat dikonfigurasi.
+
+Buat rekomendasi berbasis aturan:
+- Evaluasi perangkat.
+- Pemeriksaan lanjutan.
+- Pertimbangan penggantian.
+
+Jangan otomatis memutuskan penggantian perangkat.
+Keputusan tetap berada pada koordinator/manajemen.
+
+Hubungkan histori perangkat dengan:
+- Tiket.
+- Maintenance.
+- Sparepart.
+- Kegiatan internal.
+
+==================================================
+13. SLA & AUTOMATIC ESCALATION
+==================================================
+
+Buat modul SLA configurable.
+
+Admin dapat menentukan SLA berdasarkan:
+- Prioritas.
+- Kategori.
+- Jenis gangguan.
+- Unit tertentu jika diperlukan.
+
+Sediakan konfigurasi:
+- Target waktu respons.
+- Target waktu penyelesaian.
+- Waktu operasional.
+- Kalender kerja.
+- Hari libur.
+- Aturan eskalasi.
+
+Jangan hardcode angka SLA.
+Nilai default hanya boleh berupa konfigurasi awal
+yang dapat diubah admin.
+
+PENGHITUNGAN:
+
+Response time:
+Waktu tiket dibuat sampai pertama kali diterima
+oleh petugas.
+
+Resolution time:
+Waktu tiket dibuat sampai status RESOLVED.
+
+Downtime:
+Waktu gangguan sampai layanan dinyatakan pulih,
+jika data waktu awal gangguan tersedia.
+
+Buat penghitungan yang membedakan:
+- Waktu kalender.
+- Waktu operasional.
+- Waktu tertunda karena alasan tertentu.
+
+Jangan otomatis menghentikan SLA tanpa aturan
+yang dikonfigurasi.
+
+ESCALATION:
+
+Jika target respons terlewati:
+- Notifikasi petugas.
+- Notifikasi koordinator.
+
+Jika target penyelesaian mendekati batas:
+- Pengingat otomatis.
+
+Jika target terlewati:
+- Eskalasi.
+- Alert dashboard.
+- Catatan histori.
+
+Untuk prioritas kritis:
+- Eskalasi segera.
+
+Buat background worker untuk memeriksa SLA.
+
+Gunakan database untuk menyimpan status eskalasi
+dan mencegah notifikasi duplikat.
+
+Tampilkan:
+- SLA berjalan.
+- Sisa waktu.
+- Persentase pemakaian SLA.
+- Status aman/peringatan/terlambat.
+
+SLA breach harus dapat dilaporkan secara bulanan.
+
+==================================================
+14. MODUL KEGIATAN INTERNAL IT
+==================================================
+
+Pekerjaan internal tidak selalu berasal dari tiket.
+
+Contoh:
+- Maintenance.
+- Instalasi.
+- Pemasangan jaringan.
+- Pengecekan server.
+- Inventarisasi.
+- Pendampingan.
+- Rapat.
+- Pekerjaan proyek.
+- Audit dan evaluasi.
+
+Field:
+- Nomor kegiatan.
+- Tanggal.
+- Bidang.
+- Unit.
+- Kegiatan.
+- Pelaksana.
+- Pendukung.
+- Hasil.
+- Lampiran.
+- Waktu mulai.
+- Waktu selesai.
+
+Durasi dihitung otomatis.
+
+Kegiatan internal harus masuk ke laporan kegiatan IT.
+
+Jangan mencampur data kegiatan internal dengan
+tiket pengaduan tanpa identifikasi jenis pekerjaan.
+
+==================================================
+15. PWA DAN PUSH NOTIFICATION
+==================================================
+
+Implementasikan:
+- Manifest.
+- Service Worker.
+- Installable PWA.
+- Web Push.
+- VAPID.
+- Subscription management.
+- Notification inbox.
+
+Notifikasi:
+- Tiket baru.
+- Tiket diambil.
+- Tiket mulai dikerjakan.
+- Tiket tertunda.
+- Tiket selesai.
+- Tiket kritis.
+- SLA hampir habis.
+- SLA terlewati.
+- Perangkat mengalami kerusakan berulang.
+
+Sediakan pengaturan notifikasi per role.
+
+Gunakan event-based notification.
+
+Cegah notifikasi duplikat.
+
+Notifikasi lock screen tidak boleh menampilkan
+informasi sensitif rumah sakit.
+
+Push merupakan pelengkap.
+Informasi juga harus tersedia di aplikasi.
+
+==================================================
+16. INTEGRASI SIMRS
+==================================================
+
+Sistem harus siap diintegrasikan dengan SIMRS
+tanpa menjadikan integrasi sebagai ketergantungan
+untuk menjalankan aplikasi pada tahap pertama.
+
+Buat integration layer terpisah.
+
+Target data integrasi:
+
+1. Master unit/departemen.
+2. Master ruangan.
+3. Master pegawai.
+4. Master inventaris/perangkat jika tersedia.
+
+Sediakan kemungkinan metode integrasi:
+
+- REST API.
+- Database read-only connection.
+- Scheduled data synchronization.
+- Import CSV sebagai alternatif.
+
+PRINSIP INTEGRASI:
+
+- Jangan mengubah data SIMRS.
+- Gunakan akses read-only jika melalui database.
+- Jangan melakukan query berat ke database produksi.
+- Jangan membuat foreign key langsung ke database SIMRS.
+- Gunakan external_id untuk pemetaan data.
+- Simpan hasil sinkronisasi ke database lokal.
+- Catat waktu sinkronisasi terakhir.
+- Catat error sinkronisasi.
+- Sediakan manual sync untuk admin.
+- Siapkan mekanisme retry.
+- Jangan menimpa data lokal yang memiliki perubahan
+  manual tanpa aturan yang jelas.
+
+Buat interface seperti:
+
+OrganizationProvider
+RoomProvider
+EmployeeProvider
+AssetProvider
+
+Implementasi awal menggunakan LocalProvider.
+
+Di masa depan dapat dibuat:
+SimrsApiProvider
+SimrsDatabaseProvider
+CsvImportProvider
+
+Sediakan halaman konfigurasi integrasi.
+
+Jangan membuat integrasi palsu.
+Jika koneksi SIMRS belum tersedia, aplikasi harus
+tetap berjalan menggunakan master data lokal.
+
+==================================================
+17. DASHBOARD
+==================================================
+
+DASHBOARD PETUGAS:
+
+- Tiket baru.
+- Tiket tersedia.
+- Tiket saya.
+- Sedang dikerjakan.
+- Tertunda.
+- Selesai.
+- Tiket kritis.
+- Beban kerja.
+- SLA mendekati batas.
+
+DASHBOARD KOORDINATOR:
+
+- Total tiket.
+- Tiket baru.
+- Tiket dikerjakan.
+- Tiket tertunda.
+- Tiket selesai.
+- Tiket kritis.
+- Tiket belum diambil.
+- SLA terlewati.
+- Kinerja petugas.
+- Distribusi gangguan.
+- Perangkat sering rusak.
+- Total kegiatan internal.
+
+DASHBOARD ADMIN:
+
+- Pengguna aktif.
+- Master data.
+- Jumlah perangkat.
+- Status integrasi.
+- Status sistem.
+- Riwayat backup.
+
+Semua data dashboard dihasilkan dari database.
+
+==================================================
+18. LAPORAN DAN ANALITIK
+==================================================
+
+Laporan:
+
+1. Rekap tiket bulanan.
+2. Rekap berdasarkan bidang.
+3. Rekap berdasarkan unit.
+4. Rekap berdasarkan petugas.
+5. Rekap berdasarkan prioritas.
+6. Rekap tiket tertunda.
+7. Rekap SLA.
+8. Waktu respons.
+9. Waktu penyelesaian.
+10. Laporan kegiatan internal.
+11. Laporan perangkat sering rusak.
+12. Riwayat maintenance perangkat.
+13. Downtime perangkat.
+14. Beban kerja petugas.
+
+Filter:
+- Tanggal.
+- Bulan.
+- Tahun.
+- Unit.
+- Bidang.
+- Petugas.
+- Prioritas.
+- Status.
+
+Export:
+- Excel.
+- PDF.
+
+Buat laporan koordinator IT yang menggantikan
+format spreadsheet lama.
+
+Kolom laporan:
+- No.
+- Tanggal.
+- Unit/Bagian.
+- Bidang.
+- Kegiatan.
+- Pelaksana.
+- Pendukung.
+- Status.
+- Hasil/Keterangan.
+
+Data harus diambil otomatis dari tiket dan kegiatan
+internal.
+
+Jangan meminta petugas mengisi ulang laporan
+yang sudah tersedia di sistem.
+
+==================================================
+19. DATABASE DESIGN
+==================================================
+
+Buat migration SQL dan ERD.
+
+Tabel utama:
+
+users
+roles
+departments
+rooms
+
+asset_categories
+assets
+asset_maintenance_histories
+
+qr_codes
+
+it_categories
+ticket_categories
+tickets
+ticket_assignments
+ticket_histories
+ticket_comments
+attachments
+
+priority_rules
+sla_policies
+sla_calendars
+sla_escalations
+
+internal_activities
+activity_members
+
+action_templates
+spare_parts
+maintenance_parts
+
+notifications
+push_subscriptions
+
+integration_configs
+integration_sync_logs
+external_id_mappings
+
+audit_logs
+system_settings
+
+Perhatikan:
+- Foreign keys.
+- Index.
+- Unique constraints.
+- Transaction.
+- Data integrity.
+- Timestamp.
+- Soft delete jika diperlukan.
+
+Gunakan UTC untuk penyimpanan timestamp.
+Tampilkan waktu menggunakan Asia/Makassar.
+
+Jangan membuat satu tabel besar.
+
+Pastikan histori tiket dan histori perangkat
+memiliki relasi yang konsisten.
+
+==================================================
+20. AUTOMATION ENGINE
+==================================================
+
+Semua pekerjaan yang bisa dilakukan otomatis
+harus dilakukan oleh sistem.
+
+Prioritas otomatisasi:
+
+- Generate nomor tiket.
+- Generate QR Code.
+- Isi lokasi dari QR.
+- Penentuan prioritas.
+- Histori perubahan.
+- Timestamp.
+- Penghitungan SLA.
+- Pengingat SLA.
+- Eskalasi.
+- Notifikasi.
+- Perhitungan durasi.
+- Monitoring kerusakan berulang.
+- Rekap laporan.
+- Grafik dashboard.
+- Riwayat perangkat.
+- Sinkronisasi master data terjadwal.
+- Backup database.
+
+Gunakan background worker.
+
+Untuk proses penting:
+- Retry.
+- Logging.
+- Error handling.
+- Idempotency.
+- Duplicate prevention.
+
+Jangan menjalankan pekerjaan berat di HTTP request.
+
+==================================================
+21. SECURITY
+==================================================
+
+Wajib:
+
+- Password hashing Argon2id atau bcrypt.
+- CSRF protection.
+- SQL parameterization.
+- XSS protection.
+- Authentication middleware.
+- RBAC.
+- Rate limiting.
+- Secure random token.
+- File validation.
+- Session security.
+- Audit log.
+- HTTPS.
+- Secret management.
+
+QR publik tidak boleh membuka dashboard internal.
+
+Token tiket tidak boleh mudah ditebak.
+
+Jangan menyimpan data pasien atau rekam medis.
+
+Lampiran harus dibatasi ukuran dan tipe.
+
+Berikan peringatan agar pengguna tidak mengunggah
+foto yang menampilkan data pasien.
+
+==================================================
+22. PROJECT STRUCTURE
+==================================================
+
+Gunakan struktur modular:
+
+cmd/
+  server/
+
+internal/
+  auth/
+  users/
+  departments/
+  rooms/
+  assets/
+  maintenance/
+  qrcodes/
+  tickets/
+  assignments/
+  workflows/
+  priority/
+  sla/
+  escalation/
+  activities/
+  notifications/
+  reports/
+  integrations/
+  audit/
+  database/
+  middleware/
+  config/
+
+templates/
+  layouts/
+  components/
+  auth/
+  dashboard/
+  tickets/
+  assets/
+  maintenance/
+  sla/
+  activities/
+  reports/
+  master/
+  integrations/
+
+static/
+  css/
+  js/
+  icons/
+  images/
+
+migrations/
+tests/
+docs/
+
+Pisahkan:
+- Handler.
+- Service.
+- Repository.
+- Model.
+- Validation.
+
+Jangan menaruh seluruh business logic di handler.
+
+==================================================
+23. TESTING
+==================================================
+
+Buat automated tests:
+
+- Authentication.
+- Authorization.
+- QR token.
+- Ticket creation.
+- Ticket numbering.
+- Automatic priority.
+- Self assignment.
+- Concurrent assignment.
+- Status workflow.
+- Ticket history.
+- Asset history.
+- Repeated damage detection.
+- SLA calculation.
+- Escalation.
+- Notification.
+- Internal activities.
+- Report calculation.
+- SIMRS data mapping.
+- Sync failure and retry.
+
+TEST KRITIS:
+
+Dua petugas mengambil tiket yang sama
+secara bersamaan.
+
+Hanya satu yang berhasil.
+
+Uji SLA dengan waktu operasional dan hari libur.
+
+Uji agar eskalasi tidak mengirim notifikasi
+berulang untuk kejadian yang sama.
+
+Uji agar sinkronisasi SIMRS tidak menimpa
+perubahan data lokal yang belum diselesaikan.
+
+Jalankan seluruh automated tests sebelum
+menyatakan phase selesai.
+
+==================================================
+24. TAHAP IMPLEMENTASI
+==================================================
+
+PHASE 0 — ANALISIS DAN ARSITEKTUR
+
+- Periksa direktori proyek.
+- Periksa source code jika sudah ada.
+- Susun architecture.
+- Buat ERD.
+- Buat database design.
+- Buat UI wireframe.
+- Buat implementation plan.
+- Identifikasi risiko.
+
+PHASE 1 — FOUNDATION
+
+- Project initialization.
+- Configuration.
+- Database.
+- Migration.
+- Authentication.
+- RBAC.
+- Master data.
+- Layout responsive.
+
+PHASE 2 — QR TICKETING
+
+- Generate QR.
+- Form pengajuan.
+- Ticket creation.
+- Priority engine.
+- Ticket queue.
+- Self assignment.
+
+PHASE 3 — WORK MANAGEMENT
+
+- Workflow.
+- Catatan tindakan.
+- Attachments.
+- Ticket history.
+- Internal activities.
+- Multi-person support.
+
+PHASE 4 — ASSET MAINTENANCE
+
+- Master perangkat.
+- Detail perangkat.
+- Riwayat kerusakan.
+- Riwayat perbaikan.
+- Deteksi kerusakan berulang.
+- Statistik perangkat.
+
+PHASE 5 — SLA DAN ESKALASI
+
+- SLA policies.
+- Business calendar.
+- Background worker.
+- Pengingat.
+- Eskalasi.
+- SLA dashboard.
+
+PHASE 6 — PWA DAN NOTIFICATION
+
+- Manifest.
+- Service worker.
+- Web Push.
+- Notification inbox.
+- Subscription management.
+
+PHASE 7 — DASHBOARD DAN REPORTING
+
+- Dashboard.
+- Monitoring.
+- Laporan.
+- Excel.
+- PDF.
+- Analitik.
+
+PHASE 8 — SIMRS INTEGRATION READY
+
+- Integration interfaces.
+- Local provider.
+- External ID mapping.
+- Sync logs.
+- CSV import.
+- API/database provider adapter.
+- Dokumentasi integrasi.
+
+PHASE 9 — PRODUCTION READY
+
+- Security audit.
+- Performance testing.
+- Automated tests.
+- Backup.
+- Restore testing.
+- Deployment.
+- Documentation.
+
+==================================================
+25. ATURAN PENTING UNTUK CLAUDE
+==================================================
+
+Jangan mengerjakan semua phase sekaligus.
+
+Mulai dari PHASE 0.
+
+Sebelum coding:
+
+1. Periksa direktori proyek.
+2. Jangan menimpa file yang sudah ada.
+3. Buat arsitektur.
+4. Buat ERD.
+5. Buat implementation plan.
+6. Tampilkan asumsi dan risiko.
+
+Saat coding:
+
+- Buat fitur yang benar-benar berfungsi.
+- Jangan membuat tombol dummy.
+- Jangan membuat halaman statis sebagai pengganti
+  backend.
+- Jangan membuat mock data sebagai data produksi.
+- Jangan hardcode master data.
+- Jangan mengabaikan error.
+- Jangan menghapus histori.
+- Jangan membuat duplikasi data.
+- Jangan mengorbankan keamanan demi kecepatan.
+- Jangan mengklaim fitur selesai sebelum diuji.
+
+Setiap phase harus:
+1. Diimplementasikan.
+2. Dijalankan.
+3. Diuji.
+4. Diperbaiki jika ditemukan error.
+5. Didokumentasikan.
+6. Dilaporkan hasilnya.
+
+Jika ada keputusan teknis kecil yang belum ditentukan,
+gunakan pilihan paling sederhana dan aman.
+
+Jika ada keputusan bisnis penting yang ambigu,
+tanyakan sebelum mengimplementasikan.
+
+Jangan lanjut ke phase berikutnya sebelum
+phase sebelumnya tervalidasi.
+
+==================================================
+26. DOKUMENTASI
+==================================================
+
+Buat:
+
+README.md
+INSTALLATION.md
+DATABASE.md
+ERD.md
+ARCHITECTURE.md
+USER_GUIDE.md
+ADMIN_GUIDE.md
+DEPLOYMENT.md
+INTEGRATION.md
+CHANGELOG.md
+
+Dokumentasi harus sesuai implementasi aktual.
+
+==================================================
+27. TARGET AKHIR
+==================================================
+
+Sistem harus mampu:
+
+1. Menerima pengaduan melalui scan QR.
+2. Mengenali lokasi dan perangkat.
+3. Menentukan prioritas otomatis.
+4. Memasukkan tiket ke antrean.
+5. Memungkinkan petugas mengambil tiket sendiri.
+6. Mengelola workflow.
+7. Menyimpan histori penanganan.
+8. Mengetahui histori kerusakan setiap perangkat.
+9. Mendeteksi perangkat yang sering rusak.
+10. Menghitung SLA.
+11. Melakukan eskalasi otomatis.
+12. Mengelola kegiatan internal IT.
+13. Mengirim push notification.
+14. Menyediakan dashboard monitoring.
+15. Menghasilkan laporan otomatis.
+16. Siap diintegrasikan dengan SIMRS.
+17. Dapat dioperasikan di lingkungan produksi.
+
+HASIL YANG DIHARAPKAN:
+
+Satu sistem terintegrasi yang menggantikan
+proses pengaduan, monitoring, pencatatan kegiatan,
+dan pelaporan IT secara manual.
+
+MULAI DARI PHASE 0.
+
+Jangan langsung membuat seluruh aplikasi.
+Selesaikan analisis arsitektur dan ERD terlebih dahulu.
