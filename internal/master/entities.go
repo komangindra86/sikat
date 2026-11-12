@@ -206,3 +206,41 @@ func EntityBySlug(slug string) (*Entity, bool) {
 	}
 	return nil, false
 }
+
+var refSLACalendars = &Ref{Table: "sla_calendars", LabelCol: "name", OrderBy: "name", NoActive: true}
+
+func init() {
+	Entities = append(Entities, &Entity{
+		Slug: "sla-policies", Table: "sla_policies", Title: "Kebijakan SLA", Singular: "kebijakan SLA",
+		Group: "Konfigurasi",
+		Description: "Target waktu respons dan penyelesaian per prioritas. Kebijakan yang paling spesifik " +
+			"(jenis gangguan > bidang > unit) dipakai; nilainya disalin ke tiket saat dibuat sehingga perubahan " +
+			"di sini hanya berlaku untuk tiket baru atau saat prioritas tiket diubah.",
+		Links: []Link{{Label: "Kalender kerja", URL: "/app/sla/calendars"}, {Label: "Dashboard SLA", URL: "/app/sla"}},
+		Fields: []Field{
+			{Column: "name", Label: "Nama kebijakan", Kind: KindText, Required: true, MaxLen: 120, InList: true},
+			{Column: "priority", Label: "Prioritas", Kind: KindEnum, Required: true, Choices: priorityChoices, Default: "MEDIUM", InList: true},
+			{Column: "calendar_id", Label: "Kalender", Kind: KindSelect, Required: true, Ref: refSLACalendars, InList: true,
+				Help: "Waktu di luar jam kerja dan hari libur kalender tidak dihitung."},
+			{Column: "response_minutes", Label: "Target respons (menit)", Kind: KindInt, Required: true, Min: 1, Max: 100000, InList: true,
+				Help: "Dari tiket masuk sampai diambil petugas. 60 = 1 jam."},
+			{Column: "resolution_minutes", Label: "Target penyelesaian (menit)", Kind: KindInt, Required: true, Min: 1, Max: 100000, InList: true,
+				Help: "Dari tiket masuk (atau dibuka ulang) sampai selesai. 480 = 8 jam."},
+			{Column: "warn_pct", Label: "Ambang peringatan (%)", Kind: KindInt, Required: true, Min: 1, Max: 99, Default: "75",
+				Help: "Pengingat dikirim saat pemakaian waktu mencapai persentase ini."},
+			{Column: "allow_pause", Label: "Boleh dihentikan saat tertunda", Kind: KindBool,
+				Help: "SLA berhenti hanya bila opsi ini aktif DAN alasan tunda bertanda \"Menghentikan SLA\"."},
+			{Column: "ticket_category_id", Label: "Hanya jenis gangguan", Kind: KindSelect, Ref: refTicketCategory},
+			{Column: "it_category_id", Label: "Hanya bidang", Kind: KindSelect, Ref: refITCategories},
+			{Column: "department_id", Label: "Hanya unit", Kind: KindSelect, Ref: refDepartments},
+		},
+		OrderBy: "FIELD(priority,'CRITICAL','HIGH','MEDIUM','LOW'), name", Search: []string{"name"}, HasActive: true,
+		UniqueFields: map[string]UniqueRule{
+			"uq_sla_policy_match": {"priority", "Sudah ada kebijakan aktif untuk kombinasi prioritas, jenis gangguan, bidang, dan unit yang sama."},
+		},
+		CheckFields: map[string]UniqueRule{
+			"chk_sla_policy_minutes": {"resolution_minutes", "Target penyelesaian tidak boleh lebih kecil dari target respons."},
+			"chk_sla_policy_warn":    {"warn_pct", "Ambang peringatan harus 1–99%."},
+		},
+	})
+}

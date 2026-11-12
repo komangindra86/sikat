@@ -160,13 +160,20 @@ func (r repository) refExists(ctx context.Context, db database.DBTX, ref *Ref, i
 		return true, nil
 	}
 	var n int
-	err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+ref.Table+" WHERE id = ? AND is_active = TRUE", id).Scan(&n)
+	q := "SELECT COUNT(*) FROM " + ref.Table + " WHERE id = ? AND is_active = TRUE"
+	if ref.NoActive {
+		q = "SELECT COUNT(*) FROM " + ref.Table + " WHERE id = ?"
+	}
+	err := db.QueryRowContext(ctx, q, id).Scan(&n)
 	return n > 0, err
 }
 
 // options mengambil pilihan aktif untuk select; includeID tetap disertakan walau nonaktif.
 func (r repository) options(ctx context.Context, db database.DBTX, ref *Ref, includeID string) ([]Choice, error) {
 	q := fmt.Sprintf("SELECT id, %s, is_active FROM %s WHERE is_active = TRUE OR id = ? ORDER BY %s", ref.LabelCol, ref.Table, ref.OrderBy)
+	if ref.NoActive {
+		q = fmt.Sprintf("SELECT id, %s, TRUE FROM %s WHERE id > 0 OR id = ? ORDER BY %s", ref.LabelCol, ref.Table, ref.OrderBy)
+	}
 	inc, _ := strconv.ParseInt(includeID, 10, 64)
 	rows, err := db.QueryContext(ctx, q, inc)
 	if err != nil {

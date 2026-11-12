@@ -14,6 +14,7 @@ import (
 	"sikat/internal/clock"
 	"sikat/internal/database"
 	"sikat/internal/priority"
+	"sikat/internal/sla"
 )
 
 // Photo adalah foto yang sudah diproses beserta nama aslinya.
@@ -29,11 +30,12 @@ type Service struct {
 	store attachments.Store
 	repo  repository
 	hooks Hooks
+	sla   *sla.Service
 }
 
 // NewService membuat Service.
 func NewService(db *sql.DB, c clock.Clock, store attachments.Store) *Service {
-	return &Service{db: db, clock: c, store: store}
+	return &Service{db: db, clock: c, store: store, sla: sla.NewService(db, c)}
 }
 
 // NewToken membuat token akses pelapor (32 byte acak, base64url).
@@ -207,6 +209,10 @@ func (s *Service) Create(ctx context.Context, d Draft, photos []Photo) (Created,
 		}, now); err != nil {
 			return err
 		}
+		if err := s.assignSLA(ctx, tx, id, sla.Match{Priority: res.Priority, TicketCategoryID: d.TicketCategoryID,
+			ITCategoryID: cat.itCategoryID, DepartmentID: d.DepartmentID}, now); err != nil {
+			return err
+		}
 		if d.AssetID != 0 && s.hooks != nil {
 			if err := s.hooks.TicketCreated(ctx, tx, CreatedEvent{
 				TicketID: id, AssetID: d.AssetID, TicketCategoryID: d.TicketCategoryID, CreatedAt: now,
@@ -242,6 +248,15 @@ func (s *Service) Claim(ctx context.Context, ticketID, userID int64) (ClaimResul
 	now := s.clock.Now()
 	var res ClaimResult
 	err := database.WithTxRetry(ctx, s.db, 3, func(tx *sql.Tx) error {
+		// Data SLA dibaca tanpa kunci; klaim tetap ditentukan UPDATE bersyarat di bawah.
+		var responded bool
+		var due sql.NullTime
+		var cycle, rev int
+		var prio string
+		if err := tx.QueryRowContext(ctx, `SELECT first_response_at IS NOT NULL, response_due_at, sla_cycle, sla_revision, priority
+			FROM tickets WHERE id = ?`, ticketID).Scan(&responded, &due, &cycle, &rev, &prio); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
 		r, err := tx.ExecContext(ctx, `
 			UPDATE tickets SET assignee_id = ?, status = 'CLAIMED', first_response_at = COALESCE(first_response_at, ?),
 			                   version = version + 1, updated_at = ?
@@ -279,6 +294,11 @@ func (s *Service) Claim(ctx context.Context, ticketID, userID int64) (ClaimResul
 		}, now); err != nil {
 			return err
 		}
+		if !responded {
+			if err := recordLateBreach(ctx, tx, ticketID, sla.KindResponseBreach, due, cycle, rev, prio, now); err != nil {
+				return err
+			}
+		}
 		res = ClaimResult{OK: true, Status: StatusClaimed, ClaimedAt: sql.NullTime{Time: now, Valid: true}}
 		return nil
 	})
@@ -291,6 +311,11 @@ func (s *Service) Get(ctx context.Context, id int64) (Ticket, []History, []Attac
 	if err != nil {
 		return Ticket{}, nil, nil, err
 	}
+	one := []Ticket{t}
+	if err := s.attachSLA(ctx, one); err != nil {
+		return Ticket{}, nil, nil, err
+	}
+	t = one[0]
 	h, err := s.repo.histories(ctx, s.db, id)
 	if err != nil {
 		return Ticket{}, nil, nil, err
@@ -339,8 +364,15 @@ func (s *Service) Queue(ctx context.Context, f QueueFilter) ([]Ticket, int, erro
 	if f.Limit <= 0 || f.Limit > 100 {
 		f.Limit = 50
 	}
-	return s.repo.queue(ctx, s.db, f)
+	list, total, err := s.repo.queue(ctx, s.db, f)
+	if err != nil {
+		return nil, 0, err
+	}
+	return list, total, s.attachSLA(ctx, list)
 }
+
+// SLA memberi akses ke layanan SLA (dashboard, worker).
+func (s *Service) SLA() *sla.Service { return s.sla }
 
 // Workload mengembalikan beban kerja aktif per petugas.
 func (s *Service) Workload(ctx context.Context) ([]Workload, error) {

@@ -172,13 +172,18 @@ func (r *Renderer) parse() (map[string]*template.Template, error) {
 
 func (r *Renderer) page(name string) (*template.Template, error) {
 	if r.reloadFromOS {
-		pages, err := r.parse()
-		if err != nil {
-			return nil, err
+		// Mode development: template dari disk bisa memakai fungsi yang belum ada
+		// di binary yang sedang berjalan (perlu restart). Daripada error 500, pakai
+		// template terakhir yang valid dan catat peringatan.
+		if pages, err := r.parse(); err != nil {
+			if r.log != nil {
+				r.log.Warn("template dari disk gagal di-parse; memakai versi terakhir yang valid (restart server bila menambah fungsi Go)", "err", err)
+			}
+		} else {
+			r.mu.Lock()
+			r.pages = pages
+			r.mu.Unlock()
 		}
-		r.mu.Lock()
-		r.pages = pages
-		r.mu.Unlock()
 	}
 	r.mu.RLock()
 	defer r.mu.RUnlock()

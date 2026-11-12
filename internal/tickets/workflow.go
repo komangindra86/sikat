@@ -13,6 +13,7 @@ import (
 	"sikat/internal/database"
 	"sikat/internal/priority"
 	"sikat/internal/rbac"
+	"sikat/internal/sla"
 	"sikat/internal/workflows"
 )
 
@@ -59,15 +60,31 @@ type lockedTicket struct {
 	IncidentStartedAt sql.NullTime
 	WorkStartedAt     sql.NullTime
 	FirstResponseAt   sql.NullTime
+	// SLA (PHASE 5)
+	ITCategoryID         int64
+	DepartmentID         sql.NullInt64
+	SLACalendarID        sql.NullInt64
+	SLAResolutionMinutes sql.NullInt64
+	SLAAllowPause        bool
+	SLARevision          int
+	SLACycleStartedAt    sql.NullTime
+	SLAPausedSince       sql.NullTime
+	SLAPausedMinutes     int
+	ResponseDueAt        sql.NullTime
+	ResolutionDueAt      sql.NullTime
 }
 
 const lockSelect = `SELECT id, status, assignee_id, priority, sla_cycle, created_at, asset_id, ticket_category_id,
-	description, incident_started_at, work_started_at, first_response_at FROM tickets `
+	description, incident_started_at, work_started_at, first_response_at,
+	it_category_id, department_id, sla_calendar_id, sla_resolution_minutes, sla_allow_pause, sla_revision,
+	sla_cycle_started_at, sla_paused_since, sla_paused_minutes, response_due_at, resolution_due_at FROM tickets `
 
 func scanLocked(row *sql.Row) (lockedTicket, error) {
 	var t lockedTicket
 	err := row.Scan(&t.ID, &t.Status, &t.AssigneeID, &t.Priority, &t.SLACycle, &t.CreatedAt, &t.AssetID, &t.TicketCategoryID,
-		&t.Description, &t.IncidentStartedAt, &t.WorkStartedAt, &t.FirstResponseAt)
+		&t.Description, &t.IncidentStartedAt, &t.WorkStartedAt, &t.FirstResponseAt,
+		&t.ITCategoryID, &t.DepartmentID, &t.SLACalendarID, &t.SLAResolutionMinutes, &t.SLAAllowPause, &t.SLARevision,
+		&t.SLACycleStartedAt, &t.SLAPausedSince, &t.SLAPausedMinutes, &t.ResponseDueAt, &t.ResolutionDueAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return t, ErrNotFound
 	}
@@ -141,6 +158,16 @@ func (s *Service) applyTransition(ctx context.Context, tx *sql.Tx, t lockedTicke
 		q += ", " + o.sets
 		args = append(args, o.args...)
 	}
+	// Keluar dari status tertunda yang menghentikan SLA: jeda diakumulasi dan
+	// batas waktu penyelesaian digeser sebesar jeda tersebut.
+	if t.SLAPausedSince.Valid && to != workflows.Pending {
+		sets, sargs, err := s.unpauseSLA(ctx, tx, t, now)
+		if err != nil {
+			return err
+		}
+		q += ", " + sets
+		args = append(args, sargs...)
+	}
 	q += ` WHERE id = ? AND status = ?`
 	args = append(args, t.ID, t.Status)
 	res, err := tx.ExecContext(ctx, q, args...)
@@ -193,7 +220,8 @@ func (s *Service) Pend(ctx context.Context, id int64, u *rbac.User, reasonID int
 			return ErrForbidden
 		}
 		var code, label string
-		err = tx.QueryRowContext(ctx, `SELECT code, label FROM pending_reasons WHERE id = ? AND is_active = TRUE`, reasonID).Scan(&code, &label)
+		var pauses bool
+		err = tx.QueryRowContext(ctx, `SELECT code, label, pauses_sla FROM pending_reasons WHERE id = ? AND is_active = TRUE`, reasonID).Scan(&code, &label, &pauses)
 		if errors.Is(err, sql.ErrNoRows) {
 			errs["pending_reason_id"] = "Pilih alasan tiket ditunda."
 		} else if err != nil {
@@ -205,11 +233,18 @@ func (s *Service) Pend(ctx context.Context, id int64, u *rbac.User, reasonID int
 		if len(errs) > 0 {
 			return nil
 		}
-		return s.applyTransition(ctx, tx, t, transitionOpts{
+		o := transitionOpts{
 			action: workflows.Pend, event: EventPending, actorType: "USER", actorID: u.ID, note: note,
 			meta: map[string]any{"pending_reason": label},
 			sets: "pending_reason_id = ?, pending_since = ?", args: []any{reasonID, now},
-		}, now)
+		}
+		// SLA berhenti hanya bila alasan tunda dan kebijakan tiket sama-sama mengizinkan.
+		if pauses && t.SLAAllowPause {
+			o.sets += ", sla_paused_since = ?"
+			o.args = append(o.args, now)
+			o.meta["sla_paused"] = true
+		}
+		return s.applyTransition(ctx, tx, t, o, now)
 	})
 	if err != nil || len(errs) > 0 {
 		return errs, err
@@ -324,6 +359,9 @@ func (s *Service) Resolve(ctx context.Context, id int64, u *rbac.User, in Resolv
 		}, now); err != nil {
 			return err
 		}
+		if err := recordLateBreach(ctx, tx, t.ID, sla.KindResolutionBreach, t.ResolutionDueAt, t.SLACycle, t.SLARevision, t.Priority, now); err != nil {
+			return err
+		}
 		if withAsset {
 			return s.hooks.TicketResolved(ctx, tx, ev)
 		}
@@ -433,9 +471,13 @@ func (s *Service) Reopen(ctx context.Context, id int64, u *rbac.User, reason str
 		if err != nil {
 			return err
 		}
+		sets, args, err := s.reopenSLA(ctx, tx, t, now)
+		if err != nil {
+			return err
+		}
 		return s.applyTransition(ctx, tx, t, transitionOpts{
 			action: workflows.Reopen, event: EventReopened, actorType: "USER", actorID: u.ID, note: reason,
-			meta: map[string]any{"cycle": t.SLACycle + 1}, sets: reopenSets,
+			meta: map[string]any{"cycle": t.SLACycle + 1}, sets: reopenSets + ", " + sets, args: args,
 		}, now)
 	})
 }
@@ -464,10 +506,14 @@ func (s *Service) ReporterFeedback(ctx context.Context, token string, ok bool, n
 				sets: "closed_at = ?, reporter_feedback = 'OK', reporter_feedback_at = ?", args: []any{now, now},
 			}, now)
 		}
+		sets, args, err := s.reopenSLA(ctx, tx, t, now)
+		if err != nil {
+			return err
+		}
 		return s.applyTransition(ctx, tx, t, transitionOpts{
 			action: workflows.Reopen, event: EventReopened, actorType: "REPORTER", note: note,
 			meta: map[string]any{"feedback": "NOT_OK", "cycle": t.SLACycle + 1},
-			sets: reopenSets + ", reporter_feedback = 'NOT_OK', reporter_feedback_at = ?", args: []any{now},
+			sets: reopenSets + ", " + sets + ", reporter_feedback = 'NOT_OK', reporter_feedback_at = ?", args: append(args, now),
 		}, now)
 	})
 }
@@ -679,6 +725,9 @@ func (s *Service) ChangePriority(ctx context.Context, id int64, u *rbac.User, p,
 		}
 		if _, err := tx.ExecContext(ctx, `UPDATE tickets SET priority = ?, priority_source = 'MANUAL', version = version + 1, updated_at = ? WHERE id = ?`,
 			p, now, id); err != nil {
+			return err
+		}
+		if err := s.reassignSLA(ctx, tx, t, p, t.FirstResponseAt.Valid, now); err != nil {
 			return err
 		}
 		_, err = tx.ExecContext(ctx, `

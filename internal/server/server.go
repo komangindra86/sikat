@@ -30,6 +30,7 @@ import (
 	"sikat/internal/qrcodes"
 	"sikat/internal/rbac"
 	"sikat/internal/settings"
+	"sikat/internal/sla"
 	"sikat/internal/tickets"
 	"sikat/internal/users"
 	"sikat/internal/web"
@@ -156,7 +157,18 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		return v, err
 	}
 	maintH := &maintenance.Handler{Service: maintSvc, Renderer: renderer, Require: guard.Require, RenderAsset: assetH.RenderDetail}
+	slaSvc := ticketSvc.SLA()
+	slaH := &sla.Handler{Service: slaSvc, Renderer: renderer, Require: guard.Require}
 	runner := &worker.Runner{DB: d.DB, Log: d.Log, LockName: "sikat_worker", Jobs: []worker.Job{{
+		Name: "periksa-sla", Interval: time.Minute,
+		Run: func(ctx context.Context) error {
+			res, err := slaSvc.Scan(ctx)
+			if res.Escalated > 0 {
+				d.Log.Info("eskalasi SLA baru", "jumlah", res.Escalated, "tiket_aktif", res.Checked)
+			}
+			return err
+		},
+	}, {
 		Name: "tutup-otomatis-tiket", Interval: time.Hour,
 		Run: func(ctx context.Context) error {
 			n, err := ticketSvc.AutoClose(ctx, settingsSvc.Int(ctx, settings.KeyAutoCloseDays))
@@ -213,6 +225,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.With(guard.Require(rbac.PermTicketQueue)).Route("/tickets", ticketH.Routes)
 		r.With(guard.Require(rbac.PermActivityCreate)).Route("/activities", activityH.Routes)
 		r.Route("/maintenance", maintH.Routes)
+		r.Route("/sla", slaH.Routes)
 	})
 
 	// Router luar: aset statis & health check tanpa session.

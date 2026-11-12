@@ -13,6 +13,7 @@ import (
 	"sikat/internal/maintenance"
 	"sikat/internal/rbac"
 	"sikat/internal/reqctx"
+	"sikat/internal/sla"
 	"sikat/internal/tickets"
 	"sikat/internal/web"
 )
@@ -31,6 +32,8 @@ type Summary struct {
 	ShowTickets   bool
 	Alerts        []maintenance.Alert
 	ShowAlerts    bool
+	SLA           sla.Counts
+	ShowSLA       bool
 }
 
 // Handler menampilkan beranda.
@@ -83,6 +86,13 @@ func (h *Handler) summary(ctx context.Context, u *rbac.User) (Summary, error) {
 			return s, err
 		}
 		s.Tickets, s.ShowTickets = ts, true
+	}
+	if u.Has(rbac.PermSLAView) && h.Tickets != nil {
+		c, err := h.Tickets.SLA().Summary(ctx)
+		if err != nil {
+			return s, err
+		}
+		s.SLA, s.ShowSLA = c, true
 	}
 	if u.Has(rbac.PermMaintenanceReview) && h.Maintenance != nil {
 		al, err := h.Maintenance.Alerts(ctx, true, 5)

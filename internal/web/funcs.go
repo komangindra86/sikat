@@ -29,7 +29,20 @@ func (r *Renderer) funcs() template.FuncMap {
 		"nullStr":   func(s sql.NullString) string { return s.String },
 		"since":     since,
 		"minutes":   minutesText,
-		"today":     todayWITA,
+		"dur":       durText,
+		// monthName: "November 2026" (zona waktu nilai dipertahankan).
+		"monthName": func(t time.Time) string { return bulanID[t.Month()-1] + " " + strconv.Itoa(t.Year()) },
+		// dateID: tanggal kalender (DATE) seperti "Jumat, 25 Desember 2026".
+		"dateID": func(t time.Time) string {
+			return hariID[t.Weekday()] + ", " + strconv.Itoa(t.Day()) + " " + bulanID[t.Month()-1] + " " + strconv.Itoa(t.Year())
+		},
+		"cycleSuffix": func(c int) string {
+			if c > 1 {
+				return " (siklus " + strconv.Itoa(c) + ")"
+			}
+			return ""
+		},
+		"today": todayWITA,
 		"seq": func(n int) []int {
 			out := make([]int, n)
 			for i := range out {
@@ -108,6 +121,29 @@ func since(v any) string {
 		return "–"
 	}
 	return humanDuration(time.Since(t))
+}
+
+// durText menampilkan time.Duration (nilai negatif ditampilkan sebagai besarnya).
+func durText(d time.Duration) string {
+	if d < 0 {
+		d = -d
+	}
+	if d < time.Minute {
+		return "< 1 mnt"
+	}
+	mins := int(d.Minutes())
+	days, h, m := mins/(24*60), mins%(24*60)/60, mins%60
+	out := ""
+	if days > 0 {
+		out = strconv.Itoa(days) + " hari "
+	}
+	if h > 0 {
+		out += strconv.Itoa(h) + " j "
+	}
+	if m > 0 && days == 0 {
+		out += strconv.Itoa(m) + " mnt"
+	}
+	return strings.TrimSpace(out)
 }
 
 func humanDuration(d time.Duration) string {

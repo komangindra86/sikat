@@ -5,6 +5,7 @@ package tickets
 import (
 	"database/sql"
 	"encoding/json"
+	"sikat/internal/sla"
 	"strconv"
 	"time"
 )
@@ -79,6 +80,8 @@ type Ticket struct {
 	ReporterFeedback  sql.NullString
 	CancelReason      sql.NullString
 	SLACycle          int
+	// SLA diisi service untuk tampilan petugas (nil bila tiket tanpa kebijakan SLA).
+	SLA *sla.TicketRow
 }
 
 // AssigneeFirstName untuk halaman pelapor (tanpa nama lengkap petugas).

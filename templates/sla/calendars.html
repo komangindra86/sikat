@@ -1,0 +1,35 @@
+{{template "base" .}}
+{{define "content"}}
+<nav class="mb-2"><a href="/app/master">Master data</a> › Kalender kerja</nav>
+<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">Kalender kerja</h1>
+    <p class="muted mt-1">Jam operasional dan hari libur untuk menghitung SLA. Waktu di luar jam kerja tidak dihitung, kecuali kalender 24 jam.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="/app/master/sla-policies" class="btn btn-secondary">Kebijakan SLA</a>
+    <a href="/app/sla/calendars/new" class="btn btn-primary"><span class="icon h-4 w-4">{{template "icon" "plus"}}</span>Kalender baru</a>
+  </div>
+</div>
+
+{{if .Data}}
+<div class="list mt-6">
+  {{range .Data}}
+  <a href="/app/sla/calendars/{{.ID}}" class="group flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-medium text-slate-900 group-hover:text-teal-800">{{.Name}}</span>
+        {{if .IsDefault}}<span class="badge badge-blue">Bawaan</span>{{end}}
+        {{if .Is24x7}}<span class="badge badge-gray">24 jam</span>{{end}}
+      </div>
+      <div class="mt-0.5 text-sm text-slate-500">{{.Hours}}</div>
+    </div>
+    <div class="flex shrink-0 gap-4 text-xs text-slate-500">
+      <span><strong class="text-sm font-semibold tabular-nums text-slate-900">{{.HolidayCount}}</strong> hari libur mendatang</span>
+      <span><strong class="text-sm font-semibold tabular-nums text-slate-900">{{.PolicyCount}}</strong> kebijakan</span>
+    </div>
+  </a>
+  {{end}}
+</div>
+{{else}}<div class="mt-6">{{template "empty" "Belum ada kalender."}}</div>{{end}}
+{{end}}

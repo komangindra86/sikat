@@ -1,15 +1,19 @@
 # SIKAT — Implementation Plan, Asumsi & Risiko
 
-> Status (11 November 2026): **PHASE 0–3 selesai. PHASE 4 selesai, menunggu validasi.**
+> Status (12 November 2026): **PHASE 0–4 selesai. PHASE 5 selesai, menunggu validasi.**
 > Default yang dipakai karena belum dijawab: Q1 (VPS publik + HTTPS), Q3 (tutup
 > otomatis 3 hari), Q4 (pencatatan pemeliharaan saja, tanpa jadwal preventif),
-> Q6 (Admin IT tidak menangani tiket). Q5 diputuskan: petugas boleh mencatat tiket
-> atas nama pelapor.
+> Q6 (Admin IT tidak menangani tiket). Diputuskan: Q5 (petugas boleh mencatat tiket
+> atas nama pelapor), Q2 (angka SLA usulan disetujui; kalender "Jam kerja"
+> Senin–Jumat 08.00–16.00 WITA, "24 jam" untuk Kritis).
 >
-> Hasil PHASE 4: 87 automated test lulus (MySQL 8.0.30 lokal); penyelesaian tiket
-> dengan sparepart → riwayat & statistik perangkat diuji manual di browser.
-> Ditunda sesuai rencana: notifikasi peringatan kerusakan berulang ke koordinator
-> (PHASE 6; saat ini tampil di beranda & halaman Perangkat Sering Rusak), SLA (PHASE 5).
+> Hasil PHASE 5: 99 automated test lulus (MySQL 8.0.30 lokal), termasuk kalkulator
+> kalender (jam kerja, lintas akhir pekan, hari libur, mulai di luar jam kerja, 24/7,
+> jeda) dan worker eskalasi yang dijalankan berulang tanpa catatan ganda. Dashboard
+> SLA, detail tiket, kalender kerja diperiksa di browser (desktop & HP).
+> Ditunda sesuai rencana: **notifikasi** eskalasi SLA & kerusakan berulang (PHASE 6 —
+> eskalasi sudah tercatat di `sla_escalations` dengan `outbox_event_id` kosong sebagai
+> antrean notifikasi), ekspor laporan (PHASE 7).
 > Belum diuji: race detector (`go test -race` butuh compiler C di Windows) dan
 > build/deploy di Linux (PHASE 9).
 
@@ -211,7 +215,7 @@ yang memengaruhi konfigurasi deployment.
 | # | Pertanyaan | Dibutuhkan sebelum | Usulan default |
 |---|---|---|---|
 | Q1 | Aplikasi di VPS internet publik (bisa diakses dari data seluler) atau server intranet RS? | PHASE 1 (config) / PHASE 6 | VPS publik + HTTPS, sesuai master prompt |
-| Q2 | Apakah layanan IT 24 jam (on-call) atau jam kerja saja? Angka SLA awal disetujui? | PHASE 5 | Kritis: respons 15 mnt / selesai 4 jam (24 jam) · Tinggi: 30 mnt / 8 jam kerja · Sedang: 2 jam / 16 jam kerja · Rendah: 8 jam kerja / 40 jam kerja |
+| Q2 | Apakah layanan IT 24 jam (on-call) atau jam kerja saja? Angka SLA awal disetujui? | PHASE 5 | **Diputuskan: disetujui (12/11/2026)** sebagai konfigurasi awal, dapat diubah admin. Kritis: respons 15 mnt / selesai 4 jam (24 jam) · Tinggi: 30 mnt / 8 jam kerja · Sedang: 2 jam / 16 jam kerja · Rendah: 8 jam kerja / 40 jam kerja |
 | Q3 | Konfirmasi pelapor wajib, atau tiket otomatis ditutup N hari setelah Selesai? | PHASE 3 | Otomatis ditutup 3 hari bila pelapor tidak merespons |
 | Q4 | Perlu **jadwal** preventive maintenance (jadwal berkala + pengingat), atau cukup pencatatan? | PHASE 4 | Pencatatan dulu; jadwal sebagai tambahan setelah PHASE 7 |
 | Q5 | Bolehkah petugas mencatat tiket atas nama penelepon (telepon/WA/datang langsung)? | PHASE 2 | **Diputuskan: boleh** (11/11/2026). Ditandai sumber "Telepon/WA/Langsung" |

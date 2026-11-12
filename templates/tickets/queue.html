@@ -73,6 +73,7 @@
         <span class="badge badge-{{tone "priority" $t.Priority}}">{{label "priority" $t.Priority}}</span>
         <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
         {{if ne $t.Channel "QR"}}<span class="badge badge-gray">{{label "channel" $t.Channel}}</span>{{end}}
+        {{template "sla-chip" $t.SLA}}
       </div>
       <div class="mt-1.5 font-medium text-slate-900 group-hover:text-teal-800">{{$t.CategoryName}} <span class="font-normal text-slate-500">· {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</span></div>
       <p class="mt-0.5 line-clamp-2 text-sm text-slate-600">{{truncate 160 $t.Description}}</p>

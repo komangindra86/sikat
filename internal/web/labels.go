@@ -50,6 +50,7 @@ var labelGroups = map[string][]Option{
 		{"PENDING", "Ditunda"}, {"RESUMED", "Dilanjutkan"}, {"RESOLVED", "Diselesaikan"},
 		{"RELEASED", "Dikembalikan ke antrean"}, {"CANCELLED", "Dibatalkan"}, {"CLOSED", "Ditutup"},
 		{"AUTO_CLOSED", "Ditutup otomatis"}, {"REOPENED", "Dibuka kembali"}, {"REPORTER_CONFIRMED", "Dikonfirmasi pelapor"},
+		{"SLA_CRITICAL", "Eskalasi tiket kritis"}, {"SLA_WARNING", "Pengingat SLA"}, {"SLA_BREACH", "SLA terlewati"},
 		{"TAKEN_OVER", "Diambil alih"}, {"SUPPORT_ADDED", "Anggota pendukung ditambahkan"},
 		{"SUPPORT_REMOVED", "Anggota pendukung dilepas"}, {"PRIORITY_CHANGED", "Prioritas diubah"}, {"PHOTO_ADDED", "Foto ditambahkan"},
 	},
@@ -64,6 +65,19 @@ var labelGroups = map[string][]Option{
 		{"FIXED", "Berfungsi normal"}, {"WORKAROUND", "Solusi sementara"}, {"REPLACED", "Perangkat diganti"},
 		{"VENDOR", "Diteruskan ke vendor"}, {"NOT_REPRODUCIBLE", "Tidak ditemukan masalah"}, {"CANNOT_FIX", "Tidak dapat diperbaiki"},
 		{"DONE", "Selesai"},
+	},
+	"sla_state": {
+		{"SAFE", "Aman"}, {"WARNING", "Peringatan"}, {"LATE", "Terlambat"}, {"PAUSED", "Dijeda"},
+		{"MET", "Tercapai"}, {"MISSED", "Terlewati"},
+	},
+	"sla_target": {{"RESPONSE", "Respons"}, {"RESOLUTION", "Penyelesaian"}},
+	"sla_kind": {
+		{"CRITICAL_IMMEDIATE", "Tiket kritis"}, {"RESPONSE_WARNING", "Respons hampir habis"},
+		{"RESPONSE_BREACH", "Respons terlewati"}, {"RESOLUTION_WARNING", "Penyelesaian hampir habis"},
+		{"RESOLUTION_BREACH", "Penyelesaian terlewati"},
+	},
+	"weekday": {
+		{"1", "Senin"}, {"2", "Selasa"}, {"3", "Rabu"}, {"4", "Kamis"}, {"5", "Jumat"}, {"6", "Sabtu"}, {"7", "Minggu"},
 	},
 	"recommendation": {
 		{"EVALUATE", "Evaluasi perangkat"}, {"INSPECT", "Pemeriksaan lanjutan"}, {"CONSIDER_REPLACEMENT", "Pertimbangan penggantian"},
@@ -88,6 +102,13 @@ var tones = map[string]map[string]string{
 	"ticket_status": {
 		"NEW": "blue", "CLAIMED": "indigo", "IN_PROGRESS": "amber", "PENDING": "orange",
 		"RESOLVED": "green", "CLOSED": "gray", "CANCELLED": "gray",
+	},
+	"sla_state": {
+		"SAFE": "green", "WARNING": "amber", "LATE": "red", "PAUSED": "gray", "MET": "green", "MISSED": "red",
+	},
+	"sla_kind": {
+		"CRITICAL_IMMEDIATE": "red", "RESPONSE_WARNING": "amber", "RESPONSE_BREACH": "red",
+		"RESOLUTION_WARNING": "amber", "RESOLUTION_BREACH": "red",
 	},
 	"recommendation": {
 		"EVALUATE": "amber", "INSPECT": "orange", "CONSIDER_REPLACEMENT": "red",

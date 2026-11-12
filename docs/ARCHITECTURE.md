@@ -388,7 +388,22 @@ sparepart, biaya, durasi) — petugas tidak mengetik ulang.
   jam operasional per hari + hari libur, zona Asia/Makassar.
 - **Penundaan SLA hanya bila dikonfigurasi**: alasan tunda (`pending_reasons`)
   memiliki flag `pauses_sla` dan kebijakan memiliki `allow_pause`. Tanpa
-  keduanya, waktu tetap berjalan saat PENDING.
+  keduanya, waktu tetap berjalan saat PENDING. Saat keluar dari PENDING, jeda
+  (menit operasional) diakumulasi ke `sla_paused_minutes` dan `resolution_due_at`
+  digeser sebesar jeda tersebut.
+- **Siklus & revisi** (implementasi PHASE 5): `sla_cycle_started_at` adalah awal
+  target penyelesaian (dibuat / dibuka ulang). Dibuka ulang = siklus baru dengan
+  batas baru; target respons hanya berlaku di siklus pertama. Perubahan prioritas
+  memilih ulang kebijakan, menghitung ulang batas waktu, dan menaikkan
+  `sla_revision` (kolom `level` di `sla_escalations`) sehingga peringatan untuk
+  target baru tetap tercatat.
+- **Kalender diubah** → batas waktu tiket aktif yang memakai kalender itu
+  dihitung ulang (`sla.Service.RecomputeDue`). Tampilan selalu dihitung langsung
+  dari kalender saat ini (`sla.Evaluate`).
+- Konfigurasi: Master Data → **Kebijakan SLA** (entitas master generik) dan
+  **Kalender kerja** (`/app/sla/calendars`: jam per hari + hari libur). Dashboard
+  `/app/sla` dan laporan bulanan `/app/sla/report` untuk Koordinator & Admin
+  (permission `sla.view`).
 
 Tiga ukuran waktu dilaporkan terpisah:
 
@@ -419,7 +434,17 @@ INSERT IGNORE INTO sla_escalations (ticket_id, kind, cycle, ...) VALUES (...);
 
 `cycle` naik bila tiket dibuka kembali, sehingga pelanggaran baru tetap
 tercatat tanpa menduplikasi yang lama. Prioritas KRITIS membuat kejadian
-`CRITICAL_IMMEDIATE` saat tiket dibuat.
+`CRITICAL_IMMEDIATE` saat tiket dibuat (atau saat prioritas dinaikkan ke Kritis).
+
+Implementasi PHASE 5: `INSERT ... ON DUPLICATE KEY UPDATE id = id` (bukan
+`INSERT IGNORE`, agar error lain tidak tertelan). Kejadian baru juga menulis
+histori tiket (`SLA_CRITICAL`, `SLA_WARNING`, `SLA_BREACH`) dan mengisi
+`response_breached_at` / `resolution_breached_at`. Pelanggaran yang baru
+diketahui saat tiket diambil/diselesaikan (worker belum sempat berjalan) dicatat
+dengan `notify = FALSE` — masuk laporan, tanpa notifikasi. Worker memuat seluruh
+tiket aktif dan mengevaluasinya dengan kalender di memori (volume tiket aktif RS
+kecil), sehingga tiket yang dijeda dan batas waktu yang bergeser tertangani tanpa
+index khusus. Laporan bulanan berbasis tiket yang dibuat pada bulan itu.
 
 ### 6.7 Kerusakan berulang
 

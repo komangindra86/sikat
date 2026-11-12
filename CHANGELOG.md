@@ -2,7 +2,46 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
-## [Unreleased] — Tampilan clean & profesional (2026-11-12)
+## PHASE 5: SLA & Eskalasi (2026-11-12)
+
+### Ditambahkan
+- Migrasi `00007_sla`: `sla_calendars`, `sla_calendar_hours`, `sla_holidays`,
+  `sla_policies`, `sla_escalations`; kolom tiket `sla_cycle_started_at`,
+  `sla_revision`; FK kebijakan/kalender di tiket. Konfigurasi awal (dapat diubah):
+  kalender "Jam kerja" Senin–Jumat 08.00–16.00 WITA + hari libur nasional
+  bertanggal tetap 2026–2027, kalender "24 jam", kebijakan per prioritas
+  (Kritis 15 mnt/4 jam 24 jam; Tinggi 30 mnt/8 jam kerja; Sedang 2 jam/16 jam
+  kerja; Rendah 8 jam/40 jam kerja). Tiket aktif lama mendapat kebijakan standar.
+- Kalkulator SLA murni (`internal/sla`): waktu operasional dengan jam kerja per
+  hari, hari libur, 24/7, mulai di luar jam kerja; evaluasi respons & penyelesaian
+  (waktu terpakai, sisa, persentase, status Aman/Peringatan/Terlambat/Dijeda,
+  Tercapai/Terlewati).
+- Kebijakan SLA dipilih otomatis saat tiket dibuat (paling spesifik: jenis
+  gangguan > bidang > unit) dan disalin ke tiket; dipilih ulang saat prioritas
+  diubah; siklus baru saat tiket dibuka kembali.
+- Jeda SLA hanya bila alasan tunda bertanda "Menghentikan SLA" **dan** kebijakan
+  mengizinkan; batas waktu digeser sebesar jeda.
+- Worker "periksa-sla" tiap menit: pengingat saat mencapai ambang (default 75%),
+  pelanggaran respons/penyelesaian, eskalasi segera untuk tiket Kritis. Tercatat
+  sekali per kejadian (UNIQUE tiket+jenis+siklus+revisi) di `sla_escalations` dan
+  histori tiket; notifikasi menyusul di PHASE 6.
+- Halaman **SLA** (Koordinator & Admin): ringkasan Terlambat/Hampir habis/Aman/
+  Dijeda, tiket aktif paling mendesak dengan bar pemakaian, eskalasi terbaru.
+- **Laporan SLA bulanan**: kepatuhan respons & penyelesaian, rekap per prioritas,
+  daftar tiket yang melanggar (termasuk pelanggaran pada siklus dibuka ulang).
+- Panel SLA di detail tiket (respons & penyelesaian, sisa waktu, batas WITA) dan
+  penanda SLA di antrean tiket; ringkasan SLA di beranda.
+- Master Data → **Kebijakan SLA** dan **Kalender kerja** (jam kerja per hari,
+  hari libur; perubahan menghitung ulang batas tiket aktif dan tercatat di audit).
+- Permission baru `sla.view` (Admin, Koordinator).
+
+### Diubah
+- Mesin master data mendukung referensi ke tabel tanpa kolom `is_active`.
+- Mode development: bila template di disk memakai fungsi Go yang belum ada di
+  binary berjalan, server memakai template valid terakhir (peringatan di log)
+  alih-alih error 500.
+
+## Tampilan clean & profesional (2026-11-12)
 
 ### Diubah
 - Sistem desain netral dan datar: latar abu sangat muda, kartu putih bergaris tipis

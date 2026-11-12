@@ -31,6 +31,7 @@ type Ref struct {
 	Table    string
 	LabelCol string
 	OrderBy  string
+	NoActive bool // tabel tanpa kolom is_active (semua baris dapat dipilih)
 }
 
 // Choice adalah pilihan untuk select/enum.

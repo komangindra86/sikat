@@ -1,0 +1,78 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}
+<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">SLA</h1>
+    <p class="muted mt-1">Pemakaian waktu layanan tiket aktif. Diperbarui setiap kali halaman dibuka; eskalasi diperiksa otomatis setiap menit.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{if $d.CanConfig}}
+    <a href="/app/master/sla-policies" class="btn btn-secondary">Kebijakan</a>
+    <a href="/app/sla/calendars" class="btn btn-secondary">Kalender kerja</a>
+    {{end}}
+    <a href="/app/sla/report" class="btn btn-primary">Laporan bulanan</a>
+  </div>
+</div>
+
+<div class="metrics mt-6 sm:grid-cols-5">
+  <div class="metric"><span class="metric-label">Tiket aktif ber-SLA</span><span class="metric-value block">{{$d.Counts.Active}}</span></div>
+  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Terlambat</span><span class="metric-value block {{if gt $d.Counts.Late 0}}text-red-600{{end}}">{{$d.Counts.Late}}</span></div>
+  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>Hampir habis</span><span class="metric-value block">{{$d.Counts.Warning}}</span></div>
+  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Aman</span><span class="metric-value block">{{$d.Counts.Safe}}</span></div>
+  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>Dijeda</span><span class="metric-value block">{{$d.Counts.Paused}}</span></div>
+</div>
+
+<div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
+  <section aria-labelledby="sla-aktif" class="min-w-0">
+    <h2 id="sla-aktif" class="section-title mb-2.5">Tiket aktif, paling mendesak di atas</h2>
+    {{if $d.Tickets}}
+    <div class="list">
+      {{range $d.Tickets}}{{$m := .Current}}
+      <a href="/app/tickets/{{.ID}}" class="group block px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span class="font-mono text-xs text-slate-500">{{.TicketNo}}</span>
+              <span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span>
+              <span class="badge badge-{{tone "ticket_status" .Status}}">{{label "ticket_status" .Status}}</span>
+            </div>
+            <div class="mt-1 truncate font-medium text-slate-900 group-hover:text-teal-800">{{.Category}} <span class="font-normal text-slate-500">· {{.Location}}</span></div>
+            <div class="mt-0.5 text-xs text-slate-500">{{if .AssigneeName.Valid}}Ditangani {{.AssigneeName.String}}{{else}}Belum diambil{{end}}</div>
+          </div>
+          <div class="w-full shrink-0 sm:w-56">
+            <div class="flex items-center justify-between gap-2 text-xs">
+              <span class="font-medium text-slate-700">{{label "sla_target" .CurrentKind}}</span>
+              <span class="{{if $m.Late}}font-medium text-red-600{{else}}text-slate-500{{end}}">
+                {{if $m.Late}}lewat {{dur $m.Over}}{{else if eq $m.State "PAUSED"}}dijeda{{else}}sisa {{dur $m.Remaining}}{{end}}
+              </span>
+            </div>
+            <progress class="meter meter-{{tone "sla_state" $m.State}} mt-1.5" value="{{$m.BarPct}}" max="100" aria-label="{{$m.Pct}}% terpakai">{{$m.Pct}}%</progress>
+            <div class="mt-1 flex justify-between text-xs text-slate-400"><span>{{$m.Pct}}%</span>{{if not $m.DueAt.IsZero}}<span>batas {{wita $m.DueAt}}</span>{{end}}</div>
+          </div>
+        </div>
+      </a>
+      {{end}}
+    </div>
+    {{else}}{{template "empty" "Tidak ada tiket aktif yang dinilai SLA."}}{{end}}
+  </section>
+
+  <section class="card lg:sticky lg:top-8" aria-labelledby="eskalasi">
+    <div class="card-header"><h2 id="eskalasi" class="card-title">Eskalasi terbaru</h2></div>
+    {{if $d.Recent}}
+    <ol class="divide-y divide-slate-100">
+      {{range $d.Recent}}
+      <li>
+        <a href="/app/tickets/{{.TicketID}}" class="block px-4 py-2.5 transition-colors hover:bg-slate-50 sm:px-5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-{{tone "sla_kind" .Kind}}">{{label "sla_kind" .Kind}}</span>
+            <span class="shrink-0 text-xs text-slate-400">{{since .TriggeredAt}} lalu</span>
+          </div>
+          <div class="mt-1 font-mono text-xs text-slate-500">{{.TicketNo}} · {{label "priority" .Priority}}{{if gt .Cycle 1}} · siklus {{.Cycle}}{{end}}</div>
+        </a>
+      </li>
+      {{end}}
+    </ol>
+    {{else}}<p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Belum ada eskalasi.</p>{{end}}
+  </section>
+</div>
+{{end}}

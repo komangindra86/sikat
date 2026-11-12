@@ -40,17 +40,19 @@ const (
 	PermMaintenanceRecord Permission = "maintenance.record"
 	// PermMaintenanceReview: membatalkan entri riwayat & memutuskan peringatan kerusakan berulang.
 	PermMaintenanceReview Permission = "maintenance.review"
+	// PermSLAView: melihat dashboard SLA, eskalasi, dan laporan pelanggaran bulanan.
+	PermSLAView Permission = "sla.view"
 )
 
 var matrix = map[string]map[Permission]bool{
 	RoleAdmin: set(
 		PermDashboard, PermAssetView, PermMasterManage, PermUserManage, PermConfigManage,
-		PermAuditView, PermTicketQueue, PermTicketCancel, PermReportAll, PermIntegration,
+		PermAuditView, PermTicketQueue, PermTicketCancel, PermReportAll, PermIntegration, PermSLAView,
 	),
 	RoleCoordinator: set(
 		PermDashboard, PermAssetView, PermTicketQueue, PermTicketClaim, PermTicketCreate, PermTicketTakeover,
 		PermTicketPriority, PermTicketCancel, PermTicketWork, PermActivityCreate, PermActivityAll,
-		PermReportAll, PermMaintenanceRecord, PermMaintenanceReview,
+		PermReportAll, PermMaintenanceRecord, PermMaintenanceReview, PermSLAView,
 	),
 	RoleTechnician: set(
 		PermDashboard, PermAssetView, PermTicketQueue, PermTicketClaim, PermTicketCreate, PermTicketWork,

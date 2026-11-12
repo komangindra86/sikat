@@ -1,0 +1,72 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}
+<nav class="mb-2"><a href="/app/sla">SLA</a> › Laporan bulanan</nav>
+<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">Laporan SLA {{monthName $d.Month}}</h1>
+    <p class="muted mt-1">Tiket yang masuk pada bulan ini (tidak termasuk yang dibatalkan). Pelanggaran pada siklus mana pun ikut dihitung.</p>
+  </div>
+  <form method="get" class="flex items-center gap-2">
+    <a href="?bulan={{$d.Prev}}" class="btn btn-secondary px-2.5" aria-label="Bulan sebelumnya">‹</a>
+    <input class="input w-auto" type="month" name="bulan" value="{{$d.MonthValue}}" aria-label="Bulan">
+    <button type="submit" class="btn btn-secondary" data-no-busy>Tampilkan</button>
+    {{if not $d.IsCurrent}}<a href="?bulan={{$d.Next}}" class="btn btn-secondary px-2.5" aria-label="Bulan berikutnya">›</a>{{end}}
+  </form>
+</div>
+
+<div class="metrics mt-6 sm:grid-cols-4">
+  <div class="metric"><span class="metric-label">Tiket ber-SLA</span><span class="metric-value block">{{$d.Total}}</span></div>
+  <div class="metric"><span class="metric-label">Respons tepat waktu</span><span class="metric-value block">{{template "rate" $d.Response}}</span>
+    <span class="text-xs text-slate-500">{{$d.Response.Met}} tercapai · {{$d.Response.Missed}} terlewati</span></div>
+  <div class="metric"><span class="metric-label">Penyelesaian tepat waktu</span><span class="metric-value block">{{template "rate" $d.Resolution}}</span>
+    <span class="text-xs text-slate-500">{{$d.Resolution.Met}} tercapai · {{$d.Resolution.Missed}} terlewati</span></div>
+  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Tiket melanggar SLA</span><span class="metric-value block {{if $d.Breaches}}text-red-600{{end}}">{{len $d.Breaches}}</span></div>
+</div>
+
+<section class="card mt-6 overflow-x-auto" aria-labelledby="per-prioritas">
+  <div class="card-header"><h2 id="per-prioritas" class="card-title">Per prioritas</h2></div>
+  <table class="table">
+    <thead><tr><th>Prioritas</th><th class="text-right">Tiket</th><th class="text-right">Respons tercapai</th><th class="text-right">Respons terlewati</th><th class="text-right">Selesai tercapai</th><th class="text-right">Selesai terlewati</th><th class="text-right">Masih berjalan</th></tr></thead>
+    <tbody>
+      {{range $d.ByPriority}}
+      <tr>
+        <td><span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span></td>
+        <td class="text-right tabular-nums">{{.Total}}</td>
+        <td class="text-right tabular-nums">{{.Response.Met}}</td>
+        <td class="text-right tabular-nums {{if .Response.Missed}}font-medium text-red-600{{end}}">{{.Response.Missed}}</td>
+        <td class="text-right tabular-nums">{{.Resolution.Met}}</td>
+        <td class="text-right tabular-nums {{if .Resolution.Missed}}font-medium text-red-600{{end}}">{{.Resolution.Missed}}</td>
+        <td class="text-right tabular-nums text-slate-500">{{add .Response.Running .Resolution.Running}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</section>
+
+<section class="mt-6" aria-labelledby="pelanggaran">
+  <h2 id="pelanggaran" class="section-title mb-2.5">Tiket yang melanggar SLA</h2>
+  {{if $d.Breaches}}
+  <div class="list">
+    {{range $d.Breaches}}
+    <a href="/app/tickets/{{.ID}}" class="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="font-mono text-xs text-slate-500">{{.TicketNo}}</span>
+          <span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span>
+          <span class="badge badge-{{tone "ticket_status" .Status}}">{{label "ticket_status" .Status}}</span>
+        </div>
+        <div class="mt-1 truncate font-medium text-slate-900 group-hover:text-teal-800">{{.Category}} <span class="font-normal text-slate-500">· {{.Location}}</span></div>
+        <div class="text-xs text-slate-500">Masuk {{wita .Snap.CreatedAt}}{{if .AssigneeName.Valid}} · {{.AssigneeName.String}}{{end}}</div>
+      </div>
+      <div class="flex shrink-0 flex-wrap gap-1.5">
+        {{if .ResponseMissed}}<span class="badge badge-red">Respons{{if .Resp.Over}} +{{dur .Resp.Over}}{{end}}</span>{{end}}
+        {{if .ResolutionMissed}}<span class="badge badge-red">Penyelesaian{{if .Reso.Over}} +{{dur .Reso.Over}}{{end}}</span>{{end}}
+      </div>
+    </a>
+    {{end}}
+  </div>
+  {{else}}{{template "empty" "Tidak ada pelanggaran SLA pada bulan ini."}}{{end}}
+</section>
+{{end}}
+
+{{define "rate"}}{{if lt .Rate 0}}–{{else}}{{.Rate}}%{{end}}{{end}}
