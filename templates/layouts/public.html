@@ -1,18 +1,40 @@
+{{/* public: halaman pelapor & halaman error tanpa login — satu kolom, nyaman di HP. */}}
 {{define "public"}}<!doctype html>
 <html lang="id">
 <head>{{template "head" .}}</head>
-<body class="min-h-screen bg-gradient-to-b from-teal-50 to-slate-50">
-<main id="main" class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
+<body class="min-h-screen bg-canvas">
+<main id="main" class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8 sm:max-w-lg sm:py-12">
   <div class="mb-6 flex items-center gap-3">
-    <span class="grid h-11 w-11 place-items-center rounded-xl bg-teal-700 text-lg font-black text-white">S</span>
+    {{template "brand-mark"}}
     <div class="leading-tight">
-      <div class="text-lg font-bold text-slate-900">SIKAT</div>
+      <div class="font-semibold text-slate-900">SIKAT</div>
       <div class="text-sm text-slate-600">{{.HospitalName}}</div>
     </div>
   </div>
   <div id="toasts" class="mb-4 space-y-2" aria-live="polite">{{template "flash" .}}</div>
-  {{template "content" .}}
-  <p class="mt-8 text-center text-xs text-slate-500">Sistem Informasi Kelola Aduan &amp; Tindak Lanjut</p>
+  <div class="flex-1">{{template "content" .}}</div>
+  <p class="mt-10 text-center text-xs text-slate-400">Sistem Informasi Kelola Aduan &amp; Tindak Lanjut</p>
+</main>
+</body>
+</html>
+{{end}}
+
+{{/* auth: halaman masuk — satu kolom di tengah, polos. */}}
+{{define "auth"}}<!doctype html>
+<html lang="id">
+<head>{{template "head" .}}</head>
+<body class="min-h-screen bg-canvas">
+<main id="main" class="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm">
+    <div class="mb-6 flex flex-col items-center text-center">
+      {{template "brand-mark"}}
+      <div class="mt-3 text-sm font-semibold text-slate-900">SIKAT</div>
+      <div class="text-sm text-slate-500">{{.HospitalName}}</div>
+    </div>
+    <div id="toasts" class="mb-4 space-y-2" aria-live="polite">{{template "flash" .}}</div>
+    <div class="card p-6 sm:p-8">{{template "content" .}}</div>
+    <p class="mt-6 text-center text-xs text-slate-400">Sistem Informasi Kelola Aduan &amp; Tindak Lanjut</p>
+  </div>
 </main>
 </body>
 </html>

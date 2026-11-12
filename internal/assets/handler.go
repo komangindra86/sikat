@@ -26,6 +26,9 @@ type Handler struct {
 	QRFor func(ctx context.Context, assetID int64) (qrID int64, ok bool, err error)
 	// TicketsFor mengembalikan tiket terbaru perangkat (opsional).
 	TicketsFor func(ctx context.Context, assetID int64) ([]RelatedTicket, error)
+	// MaintenanceFor mengembalikan data riwayat pemeliharaan & statistik (opsional).
+	// form/errs berisi isian form entri manual bila validasi gagal.
+	MaintenanceFor func(ctx context.Context, assetID int64, u *rbac.User, form, errs map[string]string) (any, error)
 }
 
 // RelatedTicket adalah ringkasan tiket untuk halaman perangkat.
@@ -71,12 +74,13 @@ type formData struct {
 }
 
 type detailData struct {
-	Asset     Asset
-	History   []audit.Log
-	CanManage bool
-	QRID      int64
-	HasQR     bool
-	Tickets   []RelatedTicket
+	Asset       Asset
+	History     []audit.Log
+	CanManage   bool
+	QRID        int64
+	HasQR       bool
+	Tickets     []RelatedTicket
+	Maintenance any
 }
 
 func atoi64(s string) int64 {
@@ -205,29 +209,52 @@ func (h *Handler) load(w http.ResponseWriter, r *http.Request) (Asset, bool) {
 }
 
 func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
-	a, ok := h.load(w, r)
+	id, ok := web.IDParam(r, "id")
 	if !ok {
+		h.Renderer.Error(w, r, http.StatusNotFound, "")
 		return
 	}
-	hist, err := h.Service.History(r.Context(), a.ID)
+	h.RenderDetail(w, r, id, http.StatusOK, nil, nil)
+}
+
+// RenderDetail merender halaman detail perangkat; form/errs untuk form entri pemeliharaan manual.
+func (h *Handler) RenderDetail(w http.ResponseWriter, r *http.Request, id int64, status int, form, errs map[string]string) {
+	ctx := r.Context()
+	a, err := h.Service.Get(ctx, id)
+	if errors.Is(err, ErrNotFound) {
+		h.Renderer.Error(w, r, http.StatusNotFound, "")
+		return
+	}
 	if err != nil {
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
-	d := detailData{Asset: a, History: hist, CanManage: reqctx.UserFrom(r.Context()).Has(rbac.PermMasterManage)}
+	hist, err := h.Service.History(ctx, a.ID)
+	if err != nil {
+		h.Renderer.ServerError(w, r, err)
+		return
+	}
+	u := reqctx.UserFrom(ctx)
+	d := detailData{Asset: a, History: hist, CanManage: u.Has(rbac.PermMasterManage)}
 	if h.QRFor != nil {
-		if d.QRID, d.HasQR, err = h.QRFor(r.Context(), a.ID); err != nil {
+		if d.QRID, d.HasQR, err = h.QRFor(ctx, a.ID); err != nil {
 			h.Renderer.ServerError(w, r, err)
 			return
 		}
 	}
 	if h.TicketsFor != nil {
-		if d.Tickets, err = h.TicketsFor(r.Context(), a.ID); err != nil {
+		if d.Tickets, err = h.TicketsFor(ctx, a.ID); err != nil {
 			h.Renderer.ServerError(w, r, err)
 			return
 		}
 	}
-	h.Renderer.Render(w, r, http.StatusOK, "assets/detail", web.Page{Title: a.Name, Nav: "assets", Data: d})
+	if h.MaintenanceFor != nil {
+		if d.Maintenance, err = h.MaintenanceFor(ctx, a.ID, u, form, errs); err != nil {
+			h.Renderer.ServerError(w, r, err)
+			return
+		}
+	}
+	h.Renderer.Render(w, r, status, "assets/detail", web.Page{Title: a.Name, Nav: "assets", Data: d})
 }
 
 func (h *Handler) editForm(w http.ResponseWriter, r *http.Request) {

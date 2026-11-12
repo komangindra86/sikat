@@ -10,6 +10,7 @@ import (
 
 	"sikat/internal/assets"
 	"sikat/internal/audit"
+	"sikat/internal/maintenance"
 	"sikat/internal/rbac"
 	"sikat/internal/reqctx"
 	"sikat/internal/tickets"
@@ -28,14 +29,17 @@ type Summary struct {
 	RecentAudit   []audit.Log
 	Tickets       tickets.Summary
 	ShowTickets   bool
+	Alerts        []maintenance.Alert
+	ShowAlerts    bool
 }
 
 // Handler menampilkan beranda.
 type Handler struct {
-	DB       *sql.DB
-	Assets   *assets.Service
-	Tickets  *tickets.Service
-	Renderer *web.Renderer
+	DB          *sql.DB
+	Assets      *assets.Service
+	Tickets     *tickets.Service
+	Maintenance *maintenance.Service
+	Renderer    *web.Renderer
 }
 
 func count(ctx context.Context, db *sql.DB, q string) (int, error) {
@@ -79,6 +83,13 @@ func (h *Handler) summary(ctx context.Context, u *rbac.User) (Summary, error) {
 			return s, err
 		}
 		s.Tickets, s.ShowTickets = ts, true
+	}
+	if u.Has(rbac.PermMaintenanceReview) && h.Maintenance != nil {
+		al, err := h.Maintenance.Alerts(ctx, true, 5)
+		if err != nil {
+			return s, err
+		}
+		s.Alerts, s.ShowAlerts = al, true
 	}
 	if u.Has(rbac.PermAuditView) {
 		logs, _, err := audit.List(ctx, h.DB, audit.Filter{Limit: 8})

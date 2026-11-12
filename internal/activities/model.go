@@ -5,6 +5,7 @@
 package activities
 
 import (
+	"context"
 	"database/sql"
 	"time"
 )
@@ -35,6 +36,7 @@ type Activity struct {
 	AssetID         sql.NullInt64
 	AssetCode       sql.NullString
 	AssetName       sql.NullString
+	MaintenanceType sql.NullString
 	RelatedTicketID sql.NullInt64
 	RelatedTicketNo sql.NullString
 	Title           string
@@ -107,6 +109,7 @@ type Input struct {
 	DepartmentID    int64
 	RoomID          int64
 	AssetID         int64
+	MaintenanceType string
 	RelatedTicketNo string
 	Title           string
 	Description     string
@@ -140,4 +143,28 @@ type Option struct {
 type Attachment struct {
 	ID        int64
 	CreatedAt time.Time
+}
+
+// Jenis entri riwayat perangkat dari kegiatan.
+var maintenanceTypes = map[string]bool{"PREVENTIVE": true, "INSPECTION": true, "INSTALLATION": true, "CORRECTIVE": true}
+
+// SavedEvent dikirim ke Hooks setiap kali kegiatan disimpan (dalam transaksi).
+type SavedEvent struct {
+	ActivityID      int64
+	AssetID         int64
+	Status          string
+	MaintenanceType string
+	Title           string
+	Description     string
+	Result          string
+	Date            time.Time
+	StartedAt       *time.Time
+	EndedAt         *time.Time
+	LeadID          int64
+	ActorID         int64
+}
+
+// Hooks menerima kejadian penyimpanan kegiatan (dipakai riwayat perangkat).
+type Hooks interface {
+	ActivitySaved(ctx context.Context, tx *sql.Tx, ev SavedEvent) error
 }

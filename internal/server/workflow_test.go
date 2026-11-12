@@ -40,7 +40,7 @@ func TestTicketWorkflowOverHTTP(t *testing.T) {
 	// Validasi selesaikan: 422 dan panel selesaikan terbuka kembali.
 	resp, body = tech.post(base+"/resolve", url.Values{"csrf_token": {tok}})
 	if resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(body, "Tindakan yang dilakukan wajib diisi") ||
-		!regexp.MustCompile(`<details class="card"\s+open>\s*<summary[^>]*>✔ Selesaikan`).MatchString(body) {
+		!regexp.MustCompile(`<details class="card"\s+open>\s*<summary[^>]*>Selesaikan tiket`).MatchString(body) {
 		t.Fatalf("validasi selesaikan harus 422 dengan panel terbuka: %d", resp.StatusCode)
 	}
 	resp, body = tech.post(base+"/resolve", url.Values{"csrf_token": {tok}, "resolution_action": {"Bersihkan roller"}, "resolution_result": {"FIXED"}})

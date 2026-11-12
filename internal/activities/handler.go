@@ -257,6 +257,9 @@ func activityForm(a Activity) map[string]string {
 	if a.AssetID.Valid {
 		f["asset_id"] = strconv.FormatInt(a.AssetID.Int64, 10)
 	}
+	if a.MaintenanceType.Valid {
+		f["maintenance_type"] = a.MaintenanceType.String
+	}
 	if a.StartedAt.Valid {
 		f["started_at"] = wita(a.StartedAt.Time)
 	}

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"sikat/internal/clock"
 	"sikat/internal/config"
 	"sikat/internal/dashboard"
+	"sikat/internal/maintenance"
 	"sikat/internal/master"
 	"sikat/internal/middleware"
 	"sikat/internal/priority"
@@ -140,7 +142,20 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	qrLimiter := middleware.NewRateLimiter(d.QRRate, 10*time.Minute, d.QRRate)
 	go publicLimiter.Cleanup(ctx, 5*time.Minute)
 	go qrLimiter.Cleanup(ctx, 5*time.Minute)
-	activityH := &activities.Handler{Service: activities.NewService(d.DB, d.Clock, store), Settings: settingsSvc, Renderer: renderer}
+	activitySvc := activities.NewService(d.DB, d.Clock, store)
+	activityH := &activities.Handler{Service: activitySvc, Settings: settingsSvc, Renderer: renderer}
+	maintSvc := maintenance.NewService(d.DB, d.Clock, settingsSvc)
+	ticketSvc.SetHooks(maintSvc)   // riwayat perangkat & deteksi kerusakan berulang
+	activitySvc.SetHooks(maintSvc) // riwayat perangkat dari kegiatan
+	assetH.MaintenanceFor = func(ctx context.Context, id int64, u *rbac.User, form, errs map[string]string) (any, error) {
+		v, err := maintSvc.View(ctx, id, u)
+		if form != nil {
+			v.Form = form
+		}
+		v.Errors = errs
+		return v, err
+	}
+	maintH := &maintenance.Handler{Service: maintSvc, Renderer: renderer, Require: guard.Require, RenderAsset: assetH.RenderDetail}
 	runner := &worker.Runner{DB: d.DB, Log: d.Log, LockName: "sikat_worker", Jobs: []worker.Job{{
 		Name: "tutup-otomatis-tiket", Interval: time.Hour,
 		Run: func(ctx context.Context) error {
@@ -155,7 +170,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		BaseURL: d.Config.BaseURL, IPLimiter: publicLimiter, QRLimiter: qrLimiter}
 	userH := &users.Handler{Service: users.NewService(d.DB, d.Clock), Renderer: renderer}
 	settingsH := &settings.Handler{Service: settingsSvc, Renderer: renderer}
-	dashH := &dashboard.Handler{DB: d.DB, Assets: assetSvc, Tickets: ticketSvc, Renderer: renderer}
+	dashH := &dashboard.Handler{DB: d.DB, Assets: assetSvc, Tickets: ticketSvc, Maintenance: maintSvc, Renderer: renderer}
 	auditH := &dashboard.AuditHandler{DB: d.DB, Renderer: renderer}
 
 	loginLimiter := middleware.NewRateLimiter(d.LoginRate, time.Minute, d.LoginRate)
@@ -197,6 +212,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.With(guard.Require(rbac.PermConfigManage)).Get("/priority/test", priorityH.Test)
 		r.With(guard.Require(rbac.PermTicketQueue)).Route("/tickets", ticketH.Routes)
 		r.With(guard.Require(rbac.PermActivityCreate)).Route("/activities", activityH.Routes)
+		r.Route("/maintenance", maintH.Routes)
 	})
 
 	// Router luar: aset statis & health check tanpa session.
@@ -204,10 +220,21 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Mode development: aset dibaca langsung dari folder static/ tanpa cache, sehingga
+	// hasil build CSS/JS terbaru langsung terlihat tanpa restart server.
+	devStatic := false
+	if !d.Config.IsProduction() && d.DevReloadDir != "" {
+		if st, err := os.Stat(filepath.Join(d.DevReloadDir, "static")); err == nil && st.IsDir() {
+			staticSub = os.DirFS(filepath.Join(d.DevReloadDir, "static"))
+			devStatic = true
+		}
+	}
 	files := http.FileServerFS(staticSub)
 	root := http.NewServeMux()
 	root.Handle("/static/", http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("v") != "" {
+		if devStatic {
+			w.Header().Set("Cache-Control", "no-cache")
+		} else if r.URL.Query().Get("v") != "" {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		} else {
 			w.Header().Set("Cache-Control", "public, max-age=3600")

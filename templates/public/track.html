@@ -3,10 +3,10 @@
 {{$d := .Data}}{{$t := $d.Ticket}}
 {{if $d.New}}
 <section class="card card-body mb-4 border-green-300 bg-green-50 text-center" aria-labelledby="terkirim">
-  <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-green-600 text-2xl text-white" aria-hidden="true">✓</div>
-  <h1 id="terkirim" class="mt-2 text-xl font-bold text-green-900">Laporan terkirim</h1>
+  <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" aria-hidden="true"><span class="icon h-6 w-6">{{template "icon" "check"}}</span></div>
+  <h1 id="terkirim" class="mt-2 text-xl font-semibold text-green-900">Laporan terkirim</h1>
   <div class="mt-3 text-sm text-green-900">Nomor tiket</div>
-  <div class="font-mono text-2xl font-bold tracking-wide text-slate-900">{{$t.TicketNo}}</div>
+  <div class="font-mono text-2xl font-semibold tracking-wide text-slate-900">{{$t.TicketNo}}</div>
   <dl class="mt-3 space-y-1 text-left text-sm">
     <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-600">Lokasi</dt><dd class="font-medium">{{$t.Location}}</dd></div>
     <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-600">Masalah</dt><dd class="font-medium">{{$t.CategoryName}}</dd></div>
@@ -39,7 +39,7 @@
   </section>
 
   <section class="card card-body mt-4" aria-labelledby="perkembangan">
-    <h2 id="perkembangan" class="text-sm font-semibold uppercase tracking-wide text-slate-500">Perkembangan</h2>
+    <h2 id="perkembangan" class="section-title">Perkembangan</h2>
     <ol class="mt-3 space-y-3">
       {{range $d.Histories}}
       <li class="border-l-2 border-teal-300 pl-3">
@@ -53,12 +53,12 @@
 
 {{if eq $t.Status "RESOLVED"}}
 <section class="card card-body mt-4 border-green-300" aria-labelledby="konfirmasi">
-  <h2 id="konfirmasi" class="text-base font-bold text-slate-900">Apakah masalah sudah teratasi?</h2>
+  <h2 id="konfirmasi" class="text-base font-semibold text-slate-900">Apakah masalah sudah teratasi?</h2>
   {{if $t.ResolutionAction.Valid}}<p class="mt-2 text-sm text-slate-700"><span class="font-semibold">Tindakan petugas:</span> {{$t.ResolutionAction.String}}</p>{{end}}
   <div class="mt-3 grid grid-cols-2 gap-2">
     <form method="post" action="/t/{{$d.Token}}/konfirmasi">
       {{template "csrf" .CSRFToken}}<input type="hidden" name="ok" value="1">
-      <button type="submit" class="btn btn-primary btn-block min-h-12" data-busy-text="Mengirim…">✔ Sudah beres</button>
+      <button type="submit" class="btn btn-primary btn-block min-h-12" data-busy-text="Mengirim…">Sudah beres</button>
     </form>
     <a href="#belum-beres" class="btn btn-secondary btn-block min-h-12">✖ Belum beres</a>
   </div>
@@ -75,7 +75,7 @@
 
 {{if $d.Comments}}
 <section class="card card-body mt-4" aria-labelledby="catatan">
-  <h2 id="catatan" class="text-sm font-semibold uppercase tracking-wide text-slate-500">Catatan</h2>
+  <h2 id="catatan" class="section-title">Catatan</h2>
   <ul class="mt-3 space-y-2">
     {{range $d.Comments}}
     <li class="rounded-lg p-3 text-sm {{if eq .AuthorType "REPORTER"}}bg-blue-50{{else}}bg-slate-50{{end}}">
@@ -89,7 +89,7 @@
 
 {{if $d.CanComment}}
 <section class="card card-body mt-4" aria-labelledby="tambah-keterangan">
-  <h2 id="tambah-keterangan" class="text-sm font-semibold uppercase tracking-wide text-slate-500">Tambah keterangan</h2>
+  <h2 id="tambah-keterangan" class="section-title">Tambah keterangan</h2>
   <form method="post" action="/t/{{$d.Token}}/keterangan" class="mt-2 space-y-2" novalidate>
     {{template "csrf" .CSRFToken}}
     <textarea class="input {{if .Err "comment"}}input-error{{end}}" name="comment" rows="3" maxlength="1000" placeholder="Informasi tambahan untuk petugas IT" aria-label="Keterangan">{{index $d.Form "comment"}}</textarea>
@@ -102,7 +102,7 @@
 
 {{if $d.Attachments}}
 <section class="card card-body mt-4" aria-labelledby="foto">
-  <h2 id="foto" class="text-sm font-semibold uppercase tracking-wide text-slate-500">Foto</h2>
+  <h2 id="foto" class="section-title">Foto</h2>
   <div class="mt-3 grid grid-cols-3 gap-2">
     {{range $d.Attachments}}<a href="/t/{{$d.Token}}/foto/{{.ID}}" target="_blank" rel="noopener"><img src="/t/{{$d.Token}}/foto/{{.ID}}" alt="Foto lampiran" class="aspect-square w-full rounded-lg object-cover" loading="lazy"></a>{{end}}
   </div>

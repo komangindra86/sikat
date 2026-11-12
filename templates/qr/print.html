@@ -13,7 +13,7 @@
 <main class="mx-auto grid max-w-5xl grid-cols-2 gap-4 p-4 sm:grid-cols-3 print:max-w-none print:grid-cols-3 print:gap-3 print:p-0">
   {{range .Data.QRs}}
   <div class="flex break-inside-avoid flex-col items-center rounded-lg border-2 border-dashed border-slate-300 p-3 text-center">
-    <div class="text-sm font-bold text-teal-800">Lapor Gangguan IT</div>
+    <div class="text-sm font-semibold text-teal-800">Lapor Gangguan IT</div>
     <img src="/app/qr/{{.ID}}/png" alt="" class="my-1 h-40 w-40" width="160" height="160">
     <div class="text-xs font-semibold">Scan dengan kamera HP</div>
     <div class="mt-1 font-mono text-[11px] text-slate-700">{{.TargetCode}}</div>

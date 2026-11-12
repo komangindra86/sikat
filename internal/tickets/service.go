@@ -28,6 +28,7 @@ type Service struct {
 	clock clock.Clock
 	store attachments.Store
 	repo  repository
+	hooks Hooks
 }
 
 // NewService membuat Service.
@@ -205,6 +206,13 @@ func (s *Service) Create(ctx context.Context, d Draft, photos []Photo) (Created,
 			TicketID: id, Event: EventCreated, ToStatus: StatusNew, ActorType: actorType, ActorID: d.CreatedBy, Meta: string(metaJSON),
 		}, now); err != nil {
 			return err
+		}
+		if d.AssetID != 0 && s.hooks != nil {
+			if err := s.hooks.TicketCreated(ctx, tx, CreatedEvent{
+				TicketID: id, AssetID: d.AssetID, TicketCategoryID: d.TicketCategoryID, CreatedAt: now,
+			}); err != nil {
+				return err
+			}
 		}
 		for i, p := range photos {
 			if err := s.repo.addAttachment(ctx, tx, id, attachmentRow{

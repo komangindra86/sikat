@@ -3,6 +3,8 @@
 // hanya menyimpan role sistem beserta nama tampilannya.
 package rbac
 
+import "unicode"
+
 // Role sistem.
 const (
 	RoleAdmin       = "ADMIN"
@@ -34,6 +36,10 @@ const (
 	PermReportAll      Permission = "report.view_all"
 	PermReportOwn      Permission = "report.view_own"
 	PermIntegration    Permission = "integration.manage"
+	// PermMaintenanceRecord: mencatat riwayat pemeliharaan manual pada perangkat.
+	PermMaintenanceRecord Permission = "maintenance.record"
+	// PermMaintenanceReview: membatalkan entri riwayat & memutuskan peringatan kerusakan berulang.
+	PermMaintenanceReview Permission = "maintenance.review"
 )
 
 var matrix = map[string]map[Permission]bool{
@@ -44,11 +50,11 @@ var matrix = map[string]map[Permission]bool{
 	RoleCoordinator: set(
 		PermDashboard, PermAssetView, PermTicketQueue, PermTicketClaim, PermTicketCreate, PermTicketTakeover,
 		PermTicketPriority, PermTicketCancel, PermTicketWork, PermActivityCreate, PermActivityAll,
-		PermReportAll,
+		PermReportAll, PermMaintenanceRecord, PermMaintenanceReview,
 	),
 	RoleTechnician: set(
 		PermDashboard, PermAssetView, PermTicketQueue, PermTicketClaim, PermTicketCreate, PermTicketWork,
-		PermActivityCreate, PermReportOwn,
+		PermActivityCreate, PermReportOwn, PermMaintenanceRecord,
 	),
 }
 
@@ -95,6 +101,26 @@ func (u *User) Has(p Permission) bool {
 		return false
 	}
 	return RoleHas(u.RoleCode, p)
+}
+
+// Initials mengembalikan inisial maksimal dua huruf (untuk avatar).
+func (u *User) Initials() string {
+	if u == nil {
+		return ""
+	}
+	var out []rune
+	prevSpace := true
+	for _, r := range u.FullName {
+		if r == ' ' {
+			prevSpace = true
+			continue
+		}
+		if prevSpace && len(out) < 2 {
+			out = append(out, unicode.ToUpper(r))
+		}
+		prevSpace = false
+	}
+	return string(out)
 }
 
 // FirstName mengembalikan kata pertama nama lengkap (untuk sapaan).

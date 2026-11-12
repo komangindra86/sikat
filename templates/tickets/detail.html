@@ -18,7 +18,7 @@
     <h1 class="page-title">{{$t.CategoryName}}</h1>
     <div class="mt-2 flex flex-wrap gap-1.5">
       <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
-      <span class="badge badge-{{tone "priority" $t.Priority}}">{{if eq $t.Priority "CRITICAL"}}⚠ {{end}}Prioritas {{label "priority" $t.Priority}}</span>
+      <span class="badge badge-{{tone "priority" $t.Priority}}">Prioritas {{label "priority" $t.Priority}}</span>
       <span class="badge badge-gray">{{label "channel" $t.Channel}}</span>
     </div>
   </div>
@@ -33,7 +33,7 @@
 <section class="mt-4 space-y-2" aria-label="Tindakan">
   {{if $a.Resolve}}
   <details class="card" {{if eq $d.Open "resolve"}}open{{end}}>
-    <summary class="card-body cursor-pointer font-semibold text-teal-800">✔ Selesaikan tiket</summary>
+    <summary class="card-body cursor-pointer font-semibold text-teal-800">Selesaikan tiket</summary>
     <form method="post" action="/app/tickets/{{$t.ID}}/resolve" class="space-y-4 border-t border-slate-100 p-4" novalidate>
       {{template "csrf" $csrf}}
       {{if $d.Templates}}
@@ -72,6 +72,24 @@
           {{with $p.Err "resolution_note"}}<p class="error-text">{{.}}</p>{{end}}
         </div>
       </div>
+      {{if $t.AssetID.Valid}}
+      <div class="grid gap-4 rounded-lg border border-line p-3 sm:grid-cols-2">
+        <div class="sm:col-span-2 text-sm font-semibold text-slate-700">Riwayat perangkat {{$t.AssetCode.String}} <span class="font-normal text-slate-500">— dicatat otomatis dari form ini</span></div>
+        {{template "part-rows" (dict "Parts" $d.SpareParts "Err" ($p.Err "parts"))}}
+        <div>
+          <label class="label" for="service_cost">Biaya jasa/vendor (Rp)</label>
+          <input class="input {{if $p.Err "service_cost"}}input-error{{end}}" id="service_cost" name="service_cost" inputmode="decimal" value="{{index $d.Form "service_cost"}}" placeholder="0">
+          {{with $p.Err "service_cost"}}<p class="error-text">{{.}}</p>{{end}}
+        </div>
+        <div>
+          <label class="label" for="asset_status_after">Kondisi perangkat sekarang</label>
+          <select class="input {{if $p.Err "asset_status_after"}}input-error{{end}}" id="asset_status_after" name="asset_status_after">
+            {{range labels "asset_status"}}<option value="{{.Value}}" {{if eq .Value (or (index $d.Form "asset_status_after") "ACTIVE")}}selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+          {{with $p.Err "asset_status_after"}}<p class="error-text">{{.}}</p>{{end}}
+        </div>
+      </div>
+      {{end}}
       <button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Simpan &amp; selesaikan</button>
     </form>
   </details>
@@ -120,7 +138,7 @@
 <div class="mt-4 grid gap-4 lg:grid-cols-[1fr_20rem]">
   <div class="space-y-4">
     <section class="card card-body" aria-labelledby="detail-masalah">
-      <h2 id="detail-masalah" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Masalah</h2>
+      <h2 id="detail-masalah" class="mb-3 section-title">Masalah</h2>
       <p class="whitespace-pre-line text-slate-800">{{$t.Description}}</p>
       <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div><dt class="text-slate-500">Dampak pelayanan</dt><dd class="font-medium">{{label "impact" (printf "%d" $t.Impact)}}</dd></div>
@@ -169,7 +187,7 @@
     {{end}}{{end}}
 
     <section class="card card-body" aria-labelledby="catatan">
-      <h2 id="catatan" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Catatan</h2>
+      <h2 id="catatan" class="mb-3 section-title">Catatan</h2>
       {{if $d.Comments}}
       <ul class="space-y-3">
         {{range $d.Comments}}
@@ -200,7 +218,7 @@
     </section>
 
     <section class="card card-body" aria-labelledby="foto">
-      <h2 id="foto" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Foto{{if $d.Attachments}} ({{len $d.Attachments}}){{end}}</h2>
+      <h2 id="foto" class="mb-3 section-title">Foto{{if $d.Attachments}} ({{len $d.Attachments}}){{end}}</h2>
       {{if $d.Attachments}}
       <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {{range $d.Attachments}}<a href="/app/tickets/attachments/{{.ID}}" target="_blank" rel="noopener" class="relative"><img src="/app/tickets/attachments/{{.ID}}" alt="Foto lampiran" class="aspect-square w-full rounded-lg object-cover" loading="lazy">{{if eq .UploadedBy "USER"}}<span class="absolute bottom-1 left-1 rounded bg-white/90 px-1 text-[10px]">petugas</span>{{end}}</a>{{end}}
@@ -221,7 +239,7 @@
     </section>
 
     <section class="card card-body" aria-labelledby="histori">
-      <h2 id="histori" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Histori</h2>
+      <h2 id="histori" class="mb-3 section-title">Histori</h2>
       <ol class="space-y-3">
         {{range $d.Histories}}
         <li class="border-l-2 border-teal-200 pl-3">
@@ -243,7 +261,7 @@
 
   <aside class="space-y-4">
     <section class="card card-body text-sm">
-      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Tim penanganan</h2>
+      <h2 class="mb-2 section-title">Tim penanganan</h2>
       {{if $d.Members}}
       <ul class="space-y-2">
         {{range $d.Members}}
@@ -267,13 +285,13 @@
       {{end}}
     </section>
     <section class="card card-body text-sm">
-      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Lokasi</h2>
+      <h2 class="mb-2 section-title">Lokasi</h2>
       <div class="font-medium">{{$t.Location}}</div>
       {{if $t.RoomLocation.Valid}}<div class="text-slate-600">{{$t.RoomLocation.String}}</div>{{end}}
       {{if $t.AssetID.Valid}}<div class="mt-2">Perangkat: <a class="font-semibold text-teal-700 hover:underline" href="/app/assets/{{$t.AssetID.Int64}}">{{$t.AssetName.String}} ({{$t.AssetCode.String}})</a></div>{{end}}
     </section>
     <section class="card card-body text-sm">
-      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Pelapor</h2>
+      <h2 class="mb-2 section-title">Pelapor</h2>
       <div class="font-medium">{{$t.ReporterName}}</div>
       {{if $t.ReporterDeptName.Valid}}<div class="text-slate-600">{{$t.ReporterDeptName.String}}</div>{{end}}
       {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-semibold text-teal-700" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
@@ -281,7 +299,7 @@
       {{if $t.ReporterFeedback.Valid}}<div class="mt-2 text-xs">Konfirmasi pelapor: <strong>{{if eq $t.ReporterFeedback.String "OK"}}sudah beres{{else}}belum beres{{end}}</strong></div>{{end}}
     </section>
     <section class="card card-body text-sm">
-      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Waktu</h2>
+      <h2 class="mb-2 section-title">Waktu</h2>
       <dl class="space-y-1">
         <div class="flex justify-between gap-2"><dt class="text-slate-500">Masuk</dt><dd>{{wita $t.CreatedAt}}</dd></div>
         <div class="flex justify-between gap-2"><dt class="text-slate-500">Diterima</dt><dd>{{wita $t.FirstResponseAt}}</dd></div>

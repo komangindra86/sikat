@@ -26,6 +26,21 @@ type Service struct {
 	db    *sql.DB
 	clock clock.Clock
 	store attachments.Store
+	hooks Hooks
+}
+
+// SetHooks memasang Hooks (riwayat perangkat).
+func (s *Service) SetHooks(h Hooks) { s.hooks = h }
+
+func (s *Service) fireSaved(ctx context.Context, tx *sql.Tx, id int64, in Input, actor int64) error {
+	if s.hooks == nil {
+		return nil
+	}
+	return s.hooks.ActivitySaved(ctx, tx, SavedEvent{
+		ActivityID: id, AssetID: in.AssetID, Status: in.Status, MaintenanceType: in.MaintenanceType,
+		Title: in.Title, Description: in.Description, Result: in.Result, Date: in.Date,
+		StartedAt: in.StartedAt, EndedAt: in.EndedAt, LeadID: in.LeadID, ActorID: actor,
+	})
 }
 
 // NewService membuat Service.
@@ -35,7 +50,7 @@ func NewService(db *sql.DB, c clock.Clock, store attachments.Store) *Service {
 
 const selectActivity = `
 	SELECT a.id, a.activity_no, a.activity_date, a.activity_type_id, t.name, a.it_category_id, ic.name,
-	       a.department_id, d.name, a.room_id, r.name, a.asset_id, s.asset_code, s.name,
+	       a.department_id, d.name, a.room_id, r.name, a.asset_id, s.asset_code, s.name, a.maintenance_type,
 	       a.related_ticket_id, tk.ticket_no, a.title, a.description, a.result, a.status,
 	       a.started_at, a.ended_at, a.duration_minutes, a.created_by, cu.full_name, a.created_at, a.updated_at,
 	       lm.user_id, lu.full_name
@@ -53,7 +68,7 @@ const selectActivity = `
 func scan(sc interface{ Scan(...any) error }) (Activity, error) {
 	var a Activity
 	err := sc.Scan(&a.ID, &a.No, &a.Date, &a.TypeID, &a.TypeName, &a.ITCategoryID, &a.ITCategoryName,
-		&a.DepartmentID, &a.DepartmentName, &a.RoomID, &a.RoomName, &a.AssetID, &a.AssetCode, &a.AssetName,
+		&a.DepartmentID, &a.DepartmentName, &a.RoomID, &a.RoomName, &a.AssetID, &a.AssetCode, &a.AssetName, &a.MaintenanceType,
 		&a.RelatedTicketID, &a.RelatedTicketNo, &a.Title, &a.Description, &a.Result, &a.Status,
 		&a.StartedAt, &a.EndedAt, &a.DurationMinutes, &a.CreatedBy, &a.CreatedByName, &a.CreatedAt, &a.UpdatedAt,
 		&a.LeadID, &a.LeadName)
@@ -299,6 +314,14 @@ func (a *Activity) deptID() sql.NullInt64 {
 	return a.DepartmentID
 }
 
+// maintType hanya disimpan bila kegiatan terkait perangkat.
+func maintType(in Input) any {
+	if in.AssetID == 0 {
+		return nil
+	}
+	return in.MaintenanceType
+}
+
 func timeArg(t *time.Time) any {
 	if t == nil {
 		return nil
@@ -377,10 +400,11 @@ func (s *Service) Create(ctx context.Context, u *rbac.User, get func(string) str
 		}
 		res, err := tx.ExecContext(ctx, `
 			INSERT INTO internal_activities (activity_no, activity_date, activity_type_id, it_category_id, department_id, room_id,
-			       asset_id, related_ticket_id, title, description, result, status, started_at, ended_at, created_by, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			       asset_id, maintenance_type, related_ticket_id, title, description, result, status, started_at, ended_at, created_by, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			fmt.Sprintf("KEG-%04d-%06d", year, seq), in.Date.Format("2006-01-02"), in.TypeID, in.ITCategoryID,
-			database.NullInt64(in.DepartmentID), database.NullInt64(in.RoomID), database.NullInt64(in.AssetID), database.NullInt64(ticketID),
+			database.NullInt64(in.DepartmentID), database.NullInt64(in.RoomID), database.NullInt64(in.AssetID),
+			maintType(in), database.NullInt64(ticketID),
 			in.Title, database.NullString(in.Description), database.NullString(in.Result), in.Status,
 			timeArg(in.StartedAt), timeArg(in.EndedAt), u.ID, now, now)
 		if err != nil {
@@ -388,6 +412,9 @@ func (s *Service) Create(ctx context.Context, u *rbac.User, get func(string) str
 		}
 		id, _ = res.LastInsertId()
 		if err := s.saveMembers(ctx, tx, id, in, now); err != nil {
+			return err
+		}
+		if err := s.fireSaved(ctx, tx, id, in, u.ID); err != nil {
 			return err
 		}
 		return audit.Record(ctx, tx, now, audit.Entry{Action: "activity.create", EntityType: "internal_activities", EntityID: id, After: snapshot(in, ticketID)})
@@ -434,14 +461,17 @@ func (s *Service) Update(ctx context.Context, u *rbac.User, id int64, get func(s
 		}
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE internal_activities SET activity_date = ?, activity_type_id = ?, it_category_id = ?, department_id = ?, room_id = ?,
-			       asset_id = ?, related_ticket_id = ?, title = ?, description = ?, result = ?, status = ?, started_at = ?, ended_at = ?, updated_at = ?
+			       asset_id = ?, maintenance_type = ?, related_ticket_id = ?, title = ?, description = ?, result = ?, status = ?, started_at = ?, ended_at = ?, updated_at = ?
 			 WHERE id = ?`,
 			in.Date.Format("2006-01-02"), in.TypeID, in.ITCategoryID, database.NullInt64(in.DepartmentID), database.NullInt64(in.RoomID),
-			database.NullInt64(in.AssetID), database.NullInt64(ticketID), in.Title, database.NullString(in.Description),
+			database.NullInt64(in.AssetID), maintType(in), database.NullInt64(ticketID), in.Title, database.NullString(in.Description),
 			database.NullString(in.Result), in.Status, timeArg(in.StartedAt), timeArg(in.EndedAt), now, id); err != nil {
 			return err
 		}
 		if err := s.saveMembers(ctx, tx, id, in, now); err != nil {
+			return err
+		}
+		if err := s.fireSaved(ctx, tx, id, in, u.ID); err != nil {
 			return err
 		}
 		return audit.Record(ctx, tx, now, audit.Entry{Action: "activity.update", EntityType: "internal_activities", EntityID: id,

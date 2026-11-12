@@ -2,7 +2,62 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
-## [Unreleased] — PHASE 3: Work Management (2026-11-11)
+## [Unreleased] — Tampilan clean & profesional (2026-11-12)
+
+### Diubah
+- Sistem desain netral dan datar: latar abu sangat muda, kartu putih bergaris tipis
+  tanpa bayangan, satu warna aksen (teal), sudut kecil, tanpa gradien/blur/emoji.
+  Hierarki dari tipografi dan jarak, bukan warna.
+- Font Inter (variable, OFL) di-host sendiri (`static/fonts`), tanpa CDN. Favicon SVG.
+- Badge status: titik berwarna + teks netral (merah hanya untuk kondisi kritis).
+- Kerangka desktop: sidebar putih dengan ikon dan grup menu (Utama, Perangkat,
+  Administrasi, Akun), kartu pengguna + tombol keluar. Mobile-first tetap: header,
+  menu bawah, laci menu.
+- Beranda: angka ringkasan dalam panel metrik bergaris tipis (tiket, perangkat,
+  master data), banner tiket kritis, kolom samping perangkat sering rusak & aktivitas.
+- Antrean tiket: daftar baris ringkas (nomor, prioritas, status, lokasi, waktu,
+  tombol Ambil di kanan pada desktop), tab bergaris bawah, panel beban kerja.
+- Detail perangkat: dua kolom di desktop; statistik memakai panel metrik.
+- Halaman masuk: satu kartu di tengah, polos.
+- Judul bagian seragam (`.section-title`), ketebalan huruf dan warna garis diseragamkan.
+
+### Developer
+- Mode development: file `static/` dibaca dari disk (no-cache) dan versi `?v=`
+  mengikuti waktu ubah file, sehingga hasil `npm run build:css` langsung terlihat
+  tanpa restart server dan tanpa cache lama di browser.
+
+## PHASE 4: Asset Maintenance (2026-11-11)
+
+### Ditambahkan
+- Migrasi `00006_maintenance`: `asset_maintenance_histories`, `maintenance_parts`,
+  `asset_alerts`, kolom `internal_activities.maintenance_type`, trigger larangan
+  hapus riwayat & sparepart terpakai, pengaturan ambang kerusakan berulang.
+- Riwayat perangkat otomatis:
+  - tiket terkait perangkat yang diselesaikan → entri Perbaikan (keluhan, jenis
+    kerusakan, tindakan, petugas, hasil, waktu, downtime, durasi), satu entri per
+    siklus tiket (tiket dibuka ulang = entri baru, tanpa duplikat);
+  - kegiatan internal selesai pada perangkat → entri sesuai pilihan
+    (preventif/pemeriksaan/instalasi/perbaikan); kegiatan dibatalkan → entri ditandai batal.
+- Form penyelesaian tiket perangkat: sparepart (maks 3 baris, harga kosong =
+  harga acuan), biaya jasa/vendor, kondisi perangkat setelahnya (status perangkat
+  diperbarui dengan jejak audit).
+- Entri pemeliharaan manual (mis. servis vendor) oleh petugas/koordinator;
+  koreksi oleh koordinator dengan "batalkan entri" beralasan (tidak dihapus,
+  tidak dihitung di statistik).
+- Halaman detail perangkat: statistik jendela waktu & sepanjang waktu (kerusakan,
+  perbaikan, downtime, biaya jasa+sparepart, perawatan terakhir), riwayat gabungan
+  tiket/kegiatan/manual/keputusan.
+- Deteksi kerusakan berulang saat tiket perangkat dibuat (ambang & jendela dapat
+  diatur), satu peringatan terbuka per perangkat, rekomendasi berbasis aturan
+  (evaluasi → pemeriksaan lanjutan → pertimbangan penggantian berdasarkan jumlah,
+  jenis berulang, umur, total biaya). Keputusan koordinator menutup peringatan,
+  tercatat di riwayat, dan memulai ulang penghitungan.
+- Halaman "Perangkat Sering Rusak", ringkasan di beranda koordinator, penanda di
+  daftar perangkat. Permission baru `maintenance.record` (petugas, koordinator)
+  dan `maintenance.review` (koordinator).
+- 87 automated test.
+
+## PHASE 3: Work Management (2026-11-11)
 
 ### Ditambahkan
 - State machine status tiket (`internal/workflows`): hanya transisi sah yang

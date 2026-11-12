@@ -6,16 +6,16 @@
     <h1 class="page-title">Tiket</h1>
     <p class="muted mt-1">Ambil tiket dari antrean bersama. Satu tiket hanya punya satu penanggung jawab.</p>
   </div>
-  {{if $d.CanCreate}}<a href="/app/tickets/new" class="btn btn-primary">+ Catat tiket (telepon/WA)</a>{{end}}
+  {{if $d.CanCreate}}<a href="/app/tickets/new" class="btn btn-primary"><span class="icon h-4 w-4">{{template "icon" "plus"}}</span>Catat tiket</a>{{end}}
 </div>
 
-<nav class="mt-4 flex gap-1 overflow-x-auto border-b border-slate-200" aria-label="Tampilan tiket">
-  <a href="/app/tickets" class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold {{if eq $d.Mode "available"}}border-teal-700 text-teal-800{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Antrean</a>
-  {{if $d.CanClaim}}<a href="/app/tickets?mode=mine" class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold {{if eq $d.Mode "mine"}}border-teal-700 text-teal-800{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Tiket saya</a>{{end}}
-  <a href="/app/tickets?mode=active" class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold {{if eq $d.Mode "active"}}border-teal-700 text-teal-800{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Semua aktif</a>
+<nav class="mt-5 flex gap-5 overflow-x-auto border-b border-line" aria-label="Tampilan tiket">
+  {{template "queue-tab" (dict "Href" "/app/tickets" "Label" "Antrean" "On" (eq $d.Mode "available"))}}
+  {{if $d.CanClaim}}{{template "queue-tab" (dict "Href" "/app/tickets?mode=mine" "Label" "Tiket saya" "On" (eq $d.Mode "mine"))}}{{end}}
+  {{template "queue-tab" (dict "Href" "/app/tickets?mode=active" "Label" "Semua aktif" "On" (eq $d.Mode "active"))}}
 </nav>
 
-<form method="get" class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+<form method="get" class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
   {{if ne $d.Mode "available"}}<input type="hidden" name="mode" value="{{$d.Mode}}">{{end}}
   <select class="input sm:max-w-[11rem]" name="priority" aria-label="Prioritas">
     <option value="">Semua prioritas</option>
@@ -32,25 +32,29 @@
 </form>
 {{if $d.Filter.OnlyCompetency}}<p class="mt-2 text-xs text-slate-500">Menampilkan tiket sesuai bidang kompetensi Anda.</p>{{end}}
 
-<div class="mt-4 grid gap-4 lg:grid-cols-[1fr_18rem]">
-  <div id="queue-list" hx-get="{{$d.SelfURL}}" hx-trigger="every 30s" hx-select="#queue-list" hx-swap="outerHTML" hx-disinherit="*" class="space-y-3">
+<div class="mt-4 grid items-start gap-6 lg:grid-cols-[1fr_17rem]">
+  <div id="queue-list" hx-get="{{$d.SelfURL}}" hx-trigger="every 30s" hx-select="#queue-list" hx-swap="outerHTML" hx-disinherit="*" class="min-w-0">
+    {{if $d.Tickets}}
+    <div class="list">
     {{range $d.Tickets}}
       {{template "ticket-card" (dict "T" . "CanClaim" $d.CanClaim "Result" nil "UserID" $d.UserID "CSRF" $csrf)}}
+    {{end}}
+    </div>
     {{else}}
       {{if eq $d.Mode "available"}}{{template "empty" "Antrean kosong. Tidak ada tiket baru yang menunggu."}}{{else if eq $d.Mode "mine"}}{{template "empty" "Anda tidak sedang menangani tiket."}}{{else}}{{template "empty" "Tidak ada tiket aktif."}}{{end}}
     {{end}}
     {{template "pagination" $d.Pager}}
   </div>
 
-  <aside class="card h-fit" aria-labelledby="beban-kerja">
-    <h2 id="beban-kerja" class="border-b border-slate-100 px-4 py-3 text-sm font-semibold">Beban kerja petugas</h2>
+  <aside class="card lg:sticky lg:top-8" aria-labelledby="beban-kerja">
+    <div class="card-header"><h2 id="beban-kerja" class="card-title">Beban kerja petugas</h2></div>
     <ul class="divide-y divide-slate-100">
       {{range $d.Workload}}
-      <li class="flex items-center justify-between gap-2 px-4 py-2 text-sm">
+      <li class="flex items-center justify-between gap-2 px-4 py-2.5 text-sm sm:px-5">
         <span class="min-w-0 truncate">{{.Name}}</span>
-        <span class="shrink-0 text-slate-600"><strong class="text-slate-900">{{.Primary}}</strong> tiket{{if .Support}} · bantu {{.Support}}{{end}}</span>
+        <span class="shrink-0 text-xs text-slate-500"><strong class="text-sm font-semibold tabular-nums text-slate-900">{{.Primary}}</strong> tiket{{if .Support}} · bantu {{.Support}}{{end}}</span>
       </li>
-      {{else}}<li class="px-4 py-3 text-sm text-slate-500">Belum ada petugas.</li>{{end}}
+      {{else}}<li class="px-4 py-3 text-sm text-slate-500 sm:px-5">Belum ada petugas.</li>{{end}}
     </ul>
   </aside>
 </div>
@@ -61,36 +65,35 @@
 
 {{define "ticket-card"}}
 {{$t := .T}}
-<article class="card card-body {{if eq $t.Priority "CRITICAL"}}border-red-300 ring-1 ring-red-200{{end}}">
-  <div class="flex items-start justify-between gap-2">
-    <div class="flex flex-wrap items-center gap-1.5">
-      <span class="badge badge-{{tone "priority" $t.Priority}}">{{if eq $t.Priority "CRITICAL"}}⚠ {{end}}{{label "priority" $t.Priority}}</span>
-      <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
-      {{if ne $t.Channel "QR"}}<span class="badge badge-gray">{{label "channel" $t.Channel}}</span>{{end}}
-    </div>
-    <span class="shrink-0 text-xs text-slate-500" title="Masuk {{wita $t.CreatedAt}}">{{since $t.CreatedAt}} lalu</span>
+<article class="group relative px-4 py-3.5 sm:px-5 {{if eq $t.Priority "CRITICAL"}}border-l-2 border-l-red-500{{end}}">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+    <a href="/app/tickets/{{$t.ID}}" class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span class="font-mono text-xs text-slate-500">{{$t.TicketNo}}</span>
+        <span class="badge badge-{{tone "priority" $t.Priority}}">{{label "priority" $t.Priority}}</span>
+        <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
+        {{if ne $t.Channel "QR"}}<span class="badge badge-gray">{{label "channel" $t.Channel}}</span>{{end}}
+      </div>
+      <div class="mt-1.5 font-medium text-slate-900 group-hover:text-teal-800">{{$t.CategoryName}} <span class="font-normal text-slate-500">· {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</span></div>
+      <p class="mt-0.5 line-clamp-2 text-sm text-slate-600">{{truncate 160 $t.Description}}</p>
+      <div class="mt-1.5 text-xs text-slate-500"><span title="Masuk {{wita $t.CreatedAt}}">{{since $t.CreatedAt}} lalu</span> · {{$t.ITCategoryName}}{{if $t.AssigneeName.Valid}} · Ditangani {{$t.AssigneeName.String}}{{end}}</div>
+    </a>
+    {{if not .Result}}{{if and .CanClaim (eq $t.Status "NEW")}}
+    <form method="post" action="/app/tickets/{{$t.ID}}/claim" class="sm:shrink-0"
+          hx-post="/app/tickets/{{$t.ID}}/claim" hx-target="closest article" hx-swap="outerHTML" hx-disabled-elt="find button">
+      {{template "csrf" .CSRF}}
+      <button type="submit" class="btn btn-primary w-full sm:w-auto" data-busy-text="Mengambil…">Ambil tiket</button>
+    </form>
+    {{end}}{{end}}
   </div>
-  <a href="/app/tickets/{{$t.ID}}" class="mt-2 block">
-    <div class="font-mono text-xs font-semibold text-slate-500">{{$t.TicketNo}}</div>
-    <div class="font-semibold text-slate-900">{{$t.CategoryName}}</div>
-    <div class="text-sm text-slate-600">📍 {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</div>
-    <p class="mt-1 text-sm text-slate-700">"{{truncate 140 $t.Description}}"</p>
-  </a>
-  <div class="mt-2 text-xs text-slate-500">Masuk {{wita $t.CreatedAt}} · {{$t.ITCategoryName}}{{if $t.AssigneeName.Valid}} · Ditangani {{$t.AssigneeName.String}}{{end}}</div>
   {{with .Result}}
     {{if .OK}}
     <div class="flash flash-success mt-3" role="status"><span>Tiket berhasil diambil. <a class="font-semibold underline" href="/app/tickets/{{$t.ID}}">Buka tiket</a></span></div>
     {{else}}
     <div class="flash flash-error mt-3" role="alert"><span>{{if .ClaimedBy}}Tiket ini sudah diambil oleh {{.ClaimedBy}}{{with .ClaimedAt}}{{if .Valid}} pukul {{wita .}}{{end}}{{end}}.{{else}}Tiket ini sudah tidak tersedia di antrean.{{end}}</span></div>
     {{end}}
-  {{else}}
-    {{if and .CanClaim (eq $t.Status "NEW")}}
-    <form method="post" action="/app/tickets/{{$t.ID}}/claim" class="mt-3"
-          hx-post="/app/tickets/{{$t.ID}}/claim" hx-target="closest article" hx-swap="outerHTML" hx-disabled-elt="find button">
-      {{template "csrf" .CSRF}}
-      <button type="submit" class="btn btn-primary btn-block" data-busy-text="Mengambil…">Ambil tiket</button>
-    </form>
-    {{end}}
   {{end}}
 </article>
 {{end}}
+
+{{define "queue-tab"}}<a href="{{.Href}}" class="-mb-px whitespace-nowrap border-b-2 py-2.5 text-sm font-medium {{if .On}}border-teal-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-900{{end}}" {{if .On}}aria-current="page"{{end}}>{{.Label}}</a>{{end}}

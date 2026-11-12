@@ -72,6 +72,14 @@ func Parse(get func(string) string, getAll func(string) []string, now time.Time)
 	in.Title = text("title", "Kegiatan", 200, true)
 	in.Description = text("description", "Uraian", 4000, false)
 	in.Result = text("result", "Hasil", 4000, false)
+	in.MaintenanceType = val("maintenance_type")
+	if in.MaintenanceType == "" {
+		in.MaintenanceType = "PREVENTIVE"
+		form["maintenance_type"] = in.MaintenanceType
+	}
+	if !maintenanceTypes[in.MaintenanceType] {
+		errs["maintenance_type"] = "Jenis riwayat perangkat tidak valid."
+	}
 	in.RelatedTicketNo = strings.ToUpper(val("related_ticket_no"))
 	form["related_ticket_no"] = in.RelatedTicketNo
 

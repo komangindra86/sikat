@@ -2,10 +2,10 @@
 {{define "content"}}
 <div class="card card-body text-center">
   {{if .Data.Inactive}}
-  <h1 class="text-xl font-bold text-slate-900">QR ini sudah tidak berlaku</h1>
+  <h1 class="text-xl font-semibold text-slate-900">QR ini sudah tidak berlaku</h1>
   <p class="mt-2 text-slate-600">Stiker QR ini sudah diganti atau dinonaktifkan oleh tim IT.</p>
   {{else}}
-  <h1 class="text-xl font-bold text-slate-900">QR tidak dikenal</h1>
+  <h1 class="text-xl font-semibold text-slate-900">QR tidak dikenal</h1>
   <p class="mt-2 text-slate-600">Kode QR ini tidak terdaftar di SIKAT. Pastikan Anda memindai stiker resmi dari tim IT.</p>
   {{end}}
   <p class="mt-4 text-sm text-slate-600">Untuk melaporkan gangguan, hubungi tim IT{{with .ITContact}} di <strong>{{.}}</strong>{{end}} atau pindai QR lain di ruangan Anda.</p>

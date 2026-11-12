@@ -67,6 +67,7 @@ type detailView struct {
 	PendingReasons []Option
 	Templates      []Template
 	Staff          []Option
+	SpareParts     []SparePart
 	Open           string // form yang dibuka kembali setelah error validasi
 	Form           map[string]string
 	MaxFiles       int
@@ -115,6 +116,12 @@ func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, id int64,
 		if v.Templates, err = h.Service.ActionTemplates(ctx, id); err != nil {
 			h.Renderer.ServerError(w, r, err)
 			return
+		}
+		if t.AssetID.Valid {
+			if v.SpareParts, err = h.Service.SpareParts(ctx); err != nil {
+				h.Renderer.ServerError(w, r, err)
+				return
+			}
 		}
 	}
 	if acts.Support {
@@ -186,6 +193,7 @@ func (h *Handler) resolve(w http.ResponseWriter, r *http.Request) {
 		return h.Service.Resolve(r.Context(), id, u, ResolveInput{
 			Action: r.PostFormValue("resolution_action"), Result: r.PostFormValue("resolution_result"),
 			Note: r.PostFormValue("resolution_note"), RestoredAt: r.PostFormValue("service_restored_at"),
+			Parts: PartLinesFrom(r), ServiceCost: r.PostFormValue("service_cost"), AssetStatusAfter: r.PostFormValue("asset_status_after"),
 		})
 	})
 }
@@ -262,4 +270,21 @@ func (h *Handler) addPhotos(w http.ResponseWriter, r *http.Request) {
 		}
 		return noErrs(h.Service.AddPhotos(ctx, id, u, photos, r.PostFormValue("visible_to_reporter") == "1"))
 	})
+}
+
+// PartLinesFrom membaca baris sparepart dari form (part_id[], part_qty[], part_cost[]).
+func PartLinesFrom(r *http.Request) []PartLine {
+	ids, qtys, costs := r.PostForm["part_id"], r.PostForm["part_qty"], r.PostForm["part_cost"]
+	var out []PartLine
+	for i, id := range ids {
+		l := PartLine{PartID: id}
+		if i < len(qtys) {
+			l.Qty = qtys[i]
+		}
+		if i < len(costs) {
+			l.UnitCost = costs[i]
+		}
+		out = append(out, l)
+	}
+	return out
 }

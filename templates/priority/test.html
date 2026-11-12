@@ -44,9 +44,9 @@
     </div>
     <button type="submit" class="btn btn-primary" data-no-busy>Uji</button>
     {{if $d.Tested}}
-    <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <div class="rounded-lg border border-line bg-slate-50 p-4">
       <div class="text-sm text-slate-600">Hasil</div>
-      <div class="mt-1 flex items-center gap-2 text-lg font-bold"><span class="badge badge-{{tone "priority" $d.Result.Priority}} text-sm">{{label "priority" $d.Result.Priority}}</span></div>
+      <div class="mt-1 flex items-center gap-2 text-lg font-semibold"><span class="badge badge-{{tone "priority" $d.Result.Priority}} text-sm">{{label "priority" $d.Result.Priority}}</span></div>
       <p class="mt-1 text-sm text-slate-600">{{with $d.Result.Rule}}Aturan: <strong>{{.Name}}</strong> (urutan {{.SortOrder}}){{else}}Tidak ada aturan yang cocok — memakai prioritas bawaan jenis gangguan.{{end}}</p>
       <p class="mt-1 text-xs text-slate-500">Layanan klinis kritis: {{if $d.Input.CriticalService}}ya{{else}}tidak{{end}}</p>
     </div>
@@ -62,7 +62,7 @@
       {{range $d.Rules}}
       <li class="px-4 py-3 {{if .Matched}}bg-teal-50{{end}}">
         <div class="flex items-start justify-between gap-2">
-          <div class="font-medium">{{.SortOrder}}. {{.Name}}{{if .Matched}} <span class="text-xs font-semibold text-teal-700">← cocok</span>{{end}}</div>
+          <div class="font-medium">{{.SortOrder}}. {{.Name}}{{if .Matched}} <span class="badge badge-green">Cocok</span>{{end}}</div>
           <span class="badge badge-{{tone "priority" .Result}} shrink-0">{{label "priority" .Result}}</span>
         </div>
         <div class="mt-1 text-sm text-slate-600">Bila {{range $i, $c := .Conditions}}{{if $i}} dan {{end}}{{$c}}{{end}}.</div>

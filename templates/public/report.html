@@ -1,7 +1,7 @@
 {{template "public" .}}
 {{define "content"}}
 {{$d := .Data}}{{$p := .}}{{$t := $d.Target}}
-<h1 class="text-xl font-bold text-slate-900">Lapor gangguan IT</h1>
+<h1 class="text-xl font-semibold text-slate-900">Lapor gangguan IT</h1>
 <p class="mt-1 text-sm text-slate-600">Tidak perlu login. Isi singkat saja, petugas IT akan segera menindaklanjuti.</p>
 
 <form method="post" action="/q/{{$d.Token}}" enctype="multipart/form-data" class="mt-4 space-y-5" novalidate data-report-form>
@@ -105,7 +105,7 @@
     <label class="label" for="photos">Foto (opsional, maks {{$d.MaxFiles}})</label>
     <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
     <div class="mt-2 grid grid-cols-3 gap-2" data-photo-preview></div>
-    <p class="mt-2 rounded-lg bg-amber-50 p-2 text-xs font-medium text-amber-900">⚠ Jangan memotret layar atau kertas yang menampilkan data pasien.</p>
+    <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">Jangan memotret layar atau kertas yang menampilkan data pasien.</p>
     {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}
   </div>
 

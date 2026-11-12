@@ -64,6 +64,7 @@ func (p Page) Err(field string) string {
 type Renderer struct {
 	fsys         fs.FS
 	reloadFromOS bool
+	reloadDir    string
 	sessions     *scs.SessionManager
 	csrf         TokenSource
 	site         SiteInfo
@@ -97,6 +98,7 @@ func NewRenderer(o Options) (*Renderer, error) {
 		if st, err := os.Stat(path.Join(o.ReloadDir, "templates")); err == nil && st.IsDir() {
 			r.fsys = os.DirFS(o.ReloadDir)
 			r.reloadFromOS = true
+			r.reloadDir = o.ReloadDir
 		}
 	}
 	if err := r.hashStatic(o.Static); err != nil {

@@ -53,6 +53,25 @@ var labelGroups = map[string][]Option{
 		{"TAKEN_OVER", "Diambil alih"}, {"SUPPORT_ADDED", "Anggota pendukung ditambahkan"},
 		{"SUPPORT_REMOVED", "Anggota pendukung dilepas"}, {"PRIORITY_CHANGED", "Prioritas diubah"}, {"PHOTO_ADDED", "Foto ditambahkan"},
 	},
+	"maintenance_type": {
+		{"CORRECTIVE", "Perbaikan"}, {"PREVENTIVE", "Pemeliharaan preventif"}, {"INSPECTION", "Pemeriksaan"},
+		{"INSTALLATION", "Instalasi"}, {"RELOCATION", "Pemindahan"}, {"ALERT_DECISION", "Keputusan koordinator"},
+	},
+	"maintenance_source": {
+		{"TICKET", "Tiket"}, {"ACTIVITY", "Kegiatan"}, {"MANUAL", "Manual"}, {"ALERT", "Peringatan"},
+	},
+	"maintenance_result": {
+		{"FIXED", "Berfungsi normal"}, {"WORKAROUND", "Solusi sementara"}, {"REPLACED", "Perangkat diganti"},
+		{"VENDOR", "Diteruskan ke vendor"}, {"NOT_REPRODUCIBLE", "Tidak ditemukan masalah"}, {"CANNOT_FIX", "Tidak dapat diperbaiki"},
+		{"DONE", "Selesai"},
+	},
+	"recommendation": {
+		{"EVALUATE", "Evaluasi perangkat"}, {"INSPECT", "Pemeriksaan lanjutan"}, {"CONSIDER_REPLACEMENT", "Pertimbangan penggantian"},
+	},
+	"alert_decision": {
+		{"NO_ACTION", "Tidak perlu tindakan"}, {"INSPECT", "Pemeriksaan lanjutan"}, {"REPAIR", "Perbaikan menyeluruh"},
+		{"REPLACEMENT_PROPOSED", "Usulkan penggantian"}, {"OTHER", "Lainnya"},
+	},
 	"activity_status": {
 		{"PLANNED", "Direncanakan"}, {"IN_PROGRESS", "Berlangsung"}, {"DONE", "Selesai"}, {"CANCELLED", "Dibatalkan"},
 	},
@@ -69,6 +88,9 @@ var tones = map[string]map[string]string{
 	"ticket_status": {
 		"NEW": "blue", "CLAIMED": "indigo", "IN_PROGRESS": "amber", "PENDING": "orange",
 		"RESOLVED": "green", "CLOSED": "gray", "CANCELLED": "gray",
+	},
+	"recommendation": {
+		"EVALUATE": "amber", "INSPECT": "orange", "CONSIDER_REPLACEMENT": "red",
 	},
 	"activity_status": {
 		"PLANNED": "blue", "IN_PROGRESS": "amber", "DONE": "green", "CANCELLED": "gray",

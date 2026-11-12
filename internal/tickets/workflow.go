@@ -47,32 +47,39 @@ var resolutionResults = map[string]bool{
 }
 
 type lockedTicket struct {
-	ID         int64
-	Status     string
-	AssigneeID sql.NullInt64
-	Priority   string
-	SLACycle   int
-	CreatedAt  time.Time
+	ID                int64
+	Status            string
+	AssigneeID        sql.NullInt64
+	Priority          string
+	SLACycle          int
+	CreatedAt         time.Time
+	AssetID           sql.NullInt64
+	TicketCategoryID  int64
+	Description       string
+	IncidentStartedAt sql.NullTime
+	WorkStartedAt     sql.NullTime
+	FirstResponseAt   sql.NullTime
+}
+
+const lockSelect = `SELECT id, status, assignee_id, priority, sla_cycle, created_at, asset_id, ticket_category_id,
+	description, incident_started_at, work_started_at, first_response_at FROM tickets `
+
+func scanLocked(row *sql.Row) (lockedTicket, error) {
+	var t lockedTicket
+	err := row.Scan(&t.ID, &t.Status, &t.AssigneeID, &t.Priority, &t.SLACycle, &t.CreatedAt, &t.AssetID, &t.TicketCategoryID,
+		&t.Description, &t.IncidentStartedAt, &t.WorkStartedAt, &t.FirstResponseAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return t, ErrNotFound
+	}
+	return t, err
 }
 
 func lockTicket(ctx context.Context, tx *sql.Tx, id int64) (lockedTicket, error) {
-	var t lockedTicket
-	err := tx.QueryRowContext(ctx, `SELECT id, status, assignee_id, priority, sla_cycle, created_at FROM tickets WHERE id = ? FOR UPDATE`, id).
-		Scan(&t.ID, &t.Status, &t.AssigneeID, &t.Priority, &t.SLACycle, &t.CreatedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return t, ErrNotFound
-	}
-	return t, err
+	return scanLocked(tx.QueryRowContext(ctx, lockSelect+`WHERE id = ? FOR UPDATE`, id))
 }
 
 func lockTicketByToken(ctx context.Context, tx *sql.Tx, token string) (lockedTicket, error) {
-	var t lockedTicket
-	err := tx.QueryRowContext(ctx, `SELECT id, status, assignee_id, priority, sla_cycle, created_at FROM tickets WHERE public_token_hash = ? FOR UPDATE`,
-		hashToken(token)).Scan(&t.ID, &t.Status, &t.AssigneeID, &t.Priority, &t.SLACycle, &t.CreatedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return t, ErrNotFound
-	}
-	return t, err
+	return scanLocked(tx.QueryRowContext(ctx, lockSelect+`WHERE public_token_hash = ? FOR UPDATE`, hashToken(token)))
 }
 
 func (t lockedTicket) isPrimary(u *rbac.User) bool {
@@ -234,6 +241,10 @@ type ResolveInput struct {
 	Result     string
 	Note       string
 	RestoredAt string // datetime-local WITA "2006-01-02T15:04"; kosong = sekarang
+	// Khusus tiket yang terkait perangkat:
+	Parts            []PartLine
+	ServiceCost      string
+	AssetStatusAfter string
 }
 
 // Resolve menyelesaikan tiket. Tindakan dan hasil wajib diisi.
@@ -268,16 +279,55 @@ func (s *Service) Resolve(ctx context.Context, id int64, u *rbac.User, in Resolv
 		if _, ok := errs["service_restored_at"]; !ok && restored.Before(t.CreatedAt.Add(-time.Minute)) {
 			errs["service_restored_at"] = "Waktu layanan pulih tidak boleh sebelum tiket dibuat."
 		}
+		var ev ResolvedEvent
+		withAsset := t.AssetID.Valid && s.hooks != nil
+		if withAsset {
+			problem := t.CreatedAt
+			if t.IncidentStartedAt.Valid && t.IncidentStartedAt.Time.Before(problem) {
+				problem = t.IncidentStartedAt.Time
+			}
+			var started *time.Time
+			if t.WorkStartedAt.Valid {
+				started = &t.WorkStartedAt.Time
+			} else if t.FirstResponseAt.Valid {
+				started = &t.FirstResponseAt.Time
+			}
+			if started != nil && started.After(restored) {
+				started = nil
+			}
+			if problem.After(restored) {
+				problem = restored
+			}
+			ev = ResolvedEvent{
+				TicketID: t.ID, AssetID: t.AssetID.Int64, TicketCategoryID: t.TicketCategoryID, ActorID: u.ID, Cycle: t.SLACycle,
+				Complaint: t.Description, Action: action, Result: in.Result, Note: note,
+				ProblemStartedAt: problem, StartedAt: started, FinishedAt: restored,
+				ServiceCost: in.ServiceCost, AssetStatusAfter: in.AssetStatusAfter, Parts: in.Parts,
+			}
+			herrs, err := s.hooks.ValidateResolution(ctx, tx, ev)
+			if err != nil {
+				return err
+			}
+			for k, v := range herrs {
+				errs[k] = v
+			}
+		}
 		if len(errs) > 0 {
 			return nil
 		}
-		return s.applyTransition(ctx, tx, t, transitionOpts{
+		if err := s.applyTransition(ctx, tx, t, transitionOpts{
 			action: workflows.Resolve, event: EventResolved, actorType: "USER", actorID: u.ID, note: note,
 			meta: map[string]any{"result": in.Result},
 			sets: `resolution_action = ?, resolution_result = ?, resolution_note = ?, resolved_at = ?,
 			       service_restored_at = ?, pending_reason_id = NULL, pending_since = NULL`,
 			args: []any{action, in.Result, database.NullString(note), now, restored},
-		}, now)
+		}, now); err != nil {
+			return err
+		}
+		if withAsset {
+			return s.hooks.TicketResolved(ctx, tx, ev)
+		}
+		return nil
 	})
 	if err != nil || len(errs) > 0 {
 		return errs, err
@@ -849,6 +899,31 @@ func (s *Service) ActionTemplates(ctx context.Context, ticketID int64) ([]Templa
 			return nil, err
 		}
 		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// SparePart adalah pilihan sparepart di form penyelesaian.
+type SparePart struct {
+	ID    int64
+	Label string
+	Cost  sql.NullString
+}
+
+// SpareParts mengembalikan sparepart aktif.
+func (s *Service) SpareParts(ctx context.Context) ([]SparePart, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, CONCAT(name, ' (', unit, ')'), default_unit_cost FROM spare_parts WHERE is_active = TRUE ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []SparePart
+	for rows.Next() {
+		var p SparePart
+		if err := rows.Scan(&p.ID, &p.Label, &p.Cost); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
 	}
 	return out, rows.Err()
 }

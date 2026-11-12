@@ -97,6 +97,14 @@
         {{with $p.Err "asset_id"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div>
+        <label class="label" for="maintenance_type">Catat di riwayat perangkat sebagai</label>
+        <select class="input {{if $p.Err "maintenance_type"}}input-error{{end}}" id="maintenance_type" name="maintenance_type">
+          {{range labels "maintenance_type"}}{{if and (ne .Value "ALERT_DECISION") (ne .Value "RELOCATION")}}<option value="{{.Value}}" {{if eq .Value (index $d.Form "maintenance_type")}}selected{{end}}>{{.Label}}</option>{{end}}{{end}}
+        </select>
+        <p class="help">Berlaku bila perangkat dipilih dan kegiatan berstatus Selesai.</p>
+        {{with $p.Err "maintenance_type"}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      <div>
         <label class="label" for="related_ticket_no">Nomor tiket terkait</label>
         <input class="input uppercase {{if $p.Err "related_ticket_no"}}input-error{{end}}" id="related_ticket_no" name="related_ticket_no" maxlength="20" value="{{index $d.Form "related_ticket_no"}}" placeholder="TKT-2026-000001">
         {{with $p.Err "related_ticket_no"}}<p class="error-text">{{.}}</p>{{end}}
@@ -117,7 +125,7 @@
         <legend class="label">Petugas pendukung</legend>
         <div class="grid gap-2 sm:grid-cols-2">
           {{range $d.Staff}}
-          <label class="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3">
+          <label class="flex min-h-11 items-center gap-3 rounded-lg border border-line px-3">
             <input class="checkbox" type="checkbox" name="support_ids" value="{{.ID}}" {{if index $d.Supports .ID}}checked{{end}}>
             <span class="text-sm">{{.Label}}</span>
           </label>

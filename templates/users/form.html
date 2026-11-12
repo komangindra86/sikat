@@ -62,7 +62,7 @@
       <p class="help mb-2">Dipakai untuk menyaring antrean tiket sesuai kemampuan petugas.</p>
       <div class="grid gap-2 sm:grid-cols-2">
         {{range $d.Categories}}
-        <label class="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3">
+        <label class="flex min-h-11 items-center gap-3 rounded-lg border border-line px-3">
           <input class="checkbox" type="checkbox" name="competencies" value="{{.ID}}" {{if index $d.Selected .ID}}checked{{end}}>
           <span class="text-sm">{{.Label}}</span>
         </label>

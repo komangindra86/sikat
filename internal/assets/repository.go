@@ -16,7 +16,8 @@ var ErrNotFound = errors.New("perangkat tidak ditemukan")
 const selectAsset = `
 	SELECT a.id, a.asset_code, a.name, a.asset_category_id, c.name, a.brand, a.model, a.serial_number,
 	       a.department_id, d.name, a.room_id, r.name, a.procured_at, a.status, a.disposed_at, a.notes,
-	       a.source, a.created_at, a.updated_at
+	       a.source, a.created_at, a.updated_at,
+	       EXISTS (SELECT 1 FROM asset_alerts al WHERE al.asset_id = a.id AND al.status <> 'CLOSED')
 	  FROM assets a
 	  JOIN asset_categories c ON c.id = a.asset_category_id
 	  LEFT JOIN departments d ON d.id = a.department_id
@@ -26,7 +27,7 @@ func scanAsset(sc interface{ Scan(...any) error }) (Asset, error) {
 	var a Asset
 	err := sc.Scan(&a.ID, &a.AssetCode, &a.Name, &a.CategoryID, &a.CategoryName, &a.Brand, &a.Model, &a.SerialNumber,
 		&a.DepartmentID, &a.DepartmentName, &a.RoomID, &a.RoomName, &a.ProcuredAt, &a.Status, &a.DisposedAt, &a.Notes,
-		&a.Source, &a.CreatedAt, &a.UpdatedAt)
+		&a.Source, &a.CreatedAt, &a.UpdatedAt, &a.HasOpenAlert)
 	return a, err
 }
 

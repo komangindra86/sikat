@@ -27,6 +27,11 @@ const (
 	KeyUploadMaxMB         = "upload.max_mb"
 	KeyUploadMaxFiles      = "upload.max_files"
 	KeyAutoCloseDays       = "ticket.auto_close_days"
+	KeyRepeatThreshold     = "repeat_damage.threshold"
+	KeyRepeatWindowDays    = "repeat_damage.window_days"
+	KeyRepeatInspect       = "repeat_damage.inspect_threshold"
+	KeyReplaceAgeYears     = "repeat_damage.replace_age_years"
+	KeyReplaceCost         = "repeat_damage.replace_cost"
 )
 
 // Def mendefinisikan satu pengaturan.
@@ -50,6 +55,11 @@ var Defs = []Def{
 	{Key: KeyLoginLockoutMinutes, Label: "Lama kunci akun (menit)", Help: "Lama akun dikunci setelah melewati batas gagal login.", Type: "INT", Default: "15", Min: 1, Max: 1440, Group: "Keamanan"},
 	{Key: KeyUploadMaxMB, Label: "Ukuran maksimal foto (MB)", Help: "Batas ukuran satu foto yang diunggah. Foto dari HP dikompres otomatis sebelum dikirim.", Type: "INT", Default: "8", Min: 1, Max: 20, Group: "Lampiran"},
 	{Key: KeyAutoCloseDays, Label: "Tutup otomatis tiket selesai (hari)", Help: "Tiket berstatus Selesai ditutup otomatis bila pelapor tidak mengonfirmasi dalam jangka ini.", Type: "INT", Default: "3", Min: 1, Max: 30, Group: "Tiket"},
+	{Key: KeyRepeatThreshold, Label: "Ambang kerusakan berulang", Help: "Jumlah gangguan pada satu perangkat dalam jendela waktu yang memicu peringatan ke koordinator.", Type: "INT", Default: "3", Min: 2, Max: 50, Group: "Perangkat"},
+	{Key: KeyRepeatWindowDays, Label: "Jendela waktu (hari)", Help: "Periode penghitungan gangguan berulang.", Type: "INT", Default: "90", Min: 7, Max: 730, Group: "Perangkat"},
+	{Key: KeyRepeatInspect, Label: "Ambang pemeriksaan lanjutan", Help: "Jumlah gangguan dalam jendela waktu untuk rekomendasi pemeriksaan lanjutan.", Type: "INT", Default: "5", Min: 2, Max: 100, Group: "Perangkat"},
+	{Key: KeyReplaceAgeYears, Label: "Umur perangkat untuk pertimbangan penggantian (tahun)", Help: "Dipakai bersama ambang pemeriksaan lanjutan. Rekomendasi bukan keputusan.", Type: "INT", Default: "5", Min: 1, Max: 30, Group: "Perangkat"},
+	{Key: KeyReplaceCost, Label: "Total biaya perbaikan untuk pertimbangan penggantian (Rp)", Help: "Total biaya perbaikan tercatat sepanjang umur perangkat.", Type: "INT", Default: "3000000", Min: 0, Max: 1000000000, Group: "Perangkat"},
 	{Key: KeyUploadMaxFiles, Label: "Jumlah foto per pengajuan", Help: "Jumlah foto maksimal dalam satu laporan.", Type: "INT", Default: "3", Min: 1, Max: 5, Group: "Lampiran"},
 }
 

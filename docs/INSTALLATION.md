@@ -103,7 +103,29 @@ npm run build:css
 npm run vendor:js
 ```
 
-## 8. Menjalankan automated test
+## 8. Domain lokal dengan Laragon (beberapa aplikasi sekaligus)
+
+Di development, SIKAT diakses lewat `http://sikat.test` melalui Nginx Laragon
+(reverse proxy ke `127.0.0.1:8080`). Dengan pola ini beberapa aplikasi dapat
+berjalan bersamaan, masing-masing dengan domain `.test` sendiri.
+
+1. Salin `deploy/laragon/Sikat.test.conf` ke `C:\laragon\etc\nginx\sites-enabled\`
+   dan hapus `auto.Sikat.test.conf` (file tanpa awalan `auto.` tidak ditimpa Laragon).
+2. Reload Nginx: menu Laragon › Nginx › Reload, atau `nginx.exe -s reload` dari
+   folder Nginx Laragon.
+3. Di `.env`: `SIKAT_BASE_URL=http://sikat.test` dan `SIKAT_TRUST_PROXY_HEADERS=true`.
+4. Jalankan `JALANKAN-SIKAT.bat` (build, migrasi, lalu `serve`).
+
+Entri hosts `sikat.test` dibuat otomatis oleh Laragon untuk setiap folder di
+`C:\laragon\www`. Untuk aplikasi Go lain: pakai port berbeda (`8081`, `8082`, …)
+dan buat file vhost serupa dengan `proxy_pass` ke port tersebut. Aplikasi PHP
+tetap memakai vhost otomatis Laragon.
+
+Catatan: domain `.test` hanya berlaku di komputer ini. Untuk mencoba scan QR dari
+HP, HP harus dapat menjangkau server (mis. lewat IP LAN komputer atau tunnel), dan
+`SIKAT_BASE_URL` harus alamat yang dapat dibuka HP sebelum QR dicetak.
+
+## 9. Menjalankan automated test
 
 Test integrasi memakai MySQL sungguhan. Setiap test membuat database
 `sikat_test_*` sendiri dan menghapusnya setelah selesai. **Jangan arahkan ke

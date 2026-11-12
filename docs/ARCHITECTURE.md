@@ -188,6 +188,17 @@ internal/tickets/
   khusus, job dihentikan bila koneksi lock putus.
 - Nomor urut tahunan dipindah ke `database.NextSequence` (dipakai TKT dan KEG).
 
+**Penyesuaian PHASE 4:**
+
+- `internal/maintenance` mengimplementasikan antarmuka `tickets.Hooks` dan
+  `activities.Hooks`; kait dipanggil di dalam transaksi tiket/kegiatan sehingga
+  riwayat perangkat dan deteksi kerusakan berulang ikut batal bila transaksi gagal.
+  Modul tiket & kegiatan tidak mengimpor `maintenance` (tidak ada siklus impor).
+- Koreksi riwayat memakai pembatalan (void) beralasan, bukan hapus/ubah diam-diam;
+  trigger DB menolak DELETE.
+- Keputusan koordinator atas peringatan "mereset" penghitungan: gangguan dihitung
+  sejak keputusan terakhir (dalam jendela waktu), agar tidak langsung muncul peringatan baru.
+
 Aturan dependensi: `handler → service → repository`. Service boleh memanggil
 service modul lain lewat interface kecil (mis. `tickets.Service` memakai
 `priority.Engine`, `sla.Calculator`, `notifications.Publisher`). Repository tidak

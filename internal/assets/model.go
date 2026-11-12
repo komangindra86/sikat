@@ -37,6 +37,7 @@ type Asset struct {
 	Source         string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	HasOpenAlert   bool
 }
 
 // Input adalah data form perangkat yang sudah divalidasi.

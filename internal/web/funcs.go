@@ -5,6 +5,8 @@ import (
 	"errors"
 	"html/template"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +28,15 @@ func (r *Renderer) funcs() template.FuncMap {
 		"queryWith": queryWith,
 		"nullStr":   func(s sql.NullString) string { return s.String },
 		"since":     since,
+		"minutes":   minutesText,
+		"today":     todayWITA,
+		"seq": func(n int) []int {
+			out := make([]int, n)
+			for i := range out {
+				out[i] = i
+			}
+			return out
+		},
 		"truncate": func(n int, s string) string {
 			r := []rune(s)
 			if len(r) <= n {
@@ -44,6 +55,13 @@ func (r *Renderer) funcs() template.FuncMap {
 
 func (r *Renderer) staticURL(p string) string {
 	v := r.staticHashes[p]
+	// Mode development: versi diambil dari waktu ubah file di disk, sehingga
+	// CSS/JS hasil build ulang langsung dimuat browser tanpa restart server.
+	if r.reloadFromOS {
+		if st, err := os.Stat(filepath.Join(r.reloadDir, "static", filepath.FromSlash(p))); err == nil {
+			v = strconv.FormatInt(st.ModTime().UnixNano(), 36)
+		}
+	}
 	if v == "" {
 		return "/static/" + p
 	}
@@ -109,6 +127,47 @@ func humanDuration(d time.Duration) string {
 	default:
 		return strconv.Itoa(mins/(24*60)) + " hari"
 	}
+}
+
+var hariID = [...]string{"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"}
+var bulanID = [...]string{"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}
+
+// todayWITA menampilkan tanggal hari ini, mis. "Kamis, 12 November 2026".
+func todayWITA() string {
+	t := time.Now().In(clock.Location)
+	return hariID[t.Weekday()] + ", " + strconv.Itoa(t.Day()) + " " + bulanID[t.Month()-1] + " " + strconv.Itoa(t.Year())
+}
+
+// minutesText menampilkan menit (int atau sql.NullInt64) sebagai teks durasi.
+func minutesText(v any) string {
+	var m int64
+	switch x := v.(type) {
+	case int:
+		m = int64(x)
+	case int64:
+		m = x
+	case sql.NullInt64:
+		if !x.Valid {
+			return "–"
+		}
+		m = x.Int64
+	default:
+		return "–"
+	}
+	if m < 0 {
+		return "–"
+	}
+	if m == 0 {
+		return "0 mnt"
+	}
+	if m >= 24*60 {
+		d, h := m/(24*60), (m%(24*60))/60
+		if h == 0 {
+			return strconv.FormatInt(d, 10) + " hari"
+		}
+		return strconv.FormatInt(d, 10) + " hari " + strconv.FormatInt(h, 10) + " j"
+	}
+	return humanDuration(time.Duration(m) * time.Minute)
 }
 
 // FormatMoney memformat angka desimal ("175000.00") menjadi "Rp 175.000".

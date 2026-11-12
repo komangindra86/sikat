@@ -11,9 +11,11 @@
   {{if .Data.CanManage}}<a href="/app/assets/{{$a.ID}}/edit" class="btn btn-secondary">Ubah data</a>{{end}}
 </div>
 
-<section class="card card-body mt-4" aria-labelledby="identitas">
-  <h2 id="identitas" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Identitas</h2>
-  <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+<div class="mt-5 grid gap-4 lg:grid-cols-3 lg:items-start lg:gap-6">
+<aside class="space-y-4 lg:order-last">
+<section class="card card-body" aria-labelledby="identitas">
+  <h2 id="identitas" class="section-title mb-3">Identitas</h2>
+  <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-1">
     <div><dt class="text-slate-500">Kategori</dt><dd class="font-medium">{{$a.CategoryName}}</dd></div>
     <div><dt class="text-slate-500">Merk / Model</dt><dd class="font-medium">{{if $a.Brand.Valid}}{{$a.Brand.String}}{{else}}–{{end}} {{nullStr $a.Model}}</dd></div>
     <div><dt class="text-slate-500">Serial number</dt><dd class="font-medium font-mono">{{if $a.SerialNumber.Valid}}{{$a.SerialNumber.String}}{{else}}–{{end}}</dd></div>
@@ -26,12 +28,12 @@
   </dl>
 </section>
 
-<div class="mt-4 grid gap-4 md:grid-cols-2">
+<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
   <section class="card card-body" aria-labelledby="qr-perangkat">
-    <h2 id="qr-perangkat" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">QR perangkat</h2>
+    <h2 id="qr-perangkat" class="section-title mb-3">QR perangkat</h2>
     {{if .Data.HasQR}}
       <div class="flex items-center gap-3">
-        {{if .Data.CanManage}}<img src="/app/qr/{{.Data.QRID}}/png" alt="QR perangkat" class="h-24 w-24 rounded border border-slate-200" width="96" height="96">{{end}}
+        {{if .Data.CanManage}}<img src="/app/qr/{{.Data.QRID}}/png" alt="QR perangkat" class="h-24 w-24 rounded border border-line" width="96" height="96">{{end}}
         <div class="text-sm">
           <span class="badge badge-green">QR aktif</span>
           {{if .Data.CanManage}}<div class="mt-2"><a class="font-semibold text-teal-700 hover:underline" href="/app/qr/{{.Data.QRID}}">Kelola / cetak QR</a></div>{{end}}
@@ -50,7 +52,7 @@
     {{end}}
   </section>
   <section class="card card-body" aria-labelledby="tiket-terkait">
-    <h2 id="tiket-terkait" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Tiket terkait (terbaru)</h2>
+    <h2 id="tiket-terkait" class="section-title mb-3">Tiket terkait (terbaru)</h2>
     {{if .Data.Tickets}}
     <ul class="divide-y divide-slate-100 text-sm">
       {{range .Data.Tickets}}
@@ -64,8 +66,8 @@
   </section>
 </div>
 
-<section class="card card-body mt-4" aria-labelledby="riwayat-data">
-  <h2 id="riwayat-data" class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Riwayat perubahan data</h2>
+<section class="card card-body" aria-labelledby="riwayat-data">
+  <h2 id="riwayat-data" class="section-title mb-3">Riwayat perubahan data</h2>
   {{if .Data.History}}
   <ol class="space-y-3">
     {{range .Data.History}}
@@ -78,4 +80,148 @@
   </ol>
   {{else}}<p class="muted">Belum ada riwayat.</p>{{end}}
 </section>
+</aside>
+
+<div class="min-w-0 space-y-4 lg:col-span-2">
+{{with .Data.Maintenance}}{{$m := .}}
+{{with $m.Alert}}
+<section class="card card-body border-red-300 bg-red-50" aria-labelledby="peringatan">
+  <h2 id="peringatan" class="font-semibold text-red-900">Perhatian: {{$a.Name}} telah mengalami {{.TicketCount}} gangguan dalam {{.WindowDays}} hari terakhir.</h2>
+  <p class="mt-1 text-sm text-red-900">Rekomendasi sistem: <span class="badge badge-{{tone "recommendation" .Recommendation}}">{{label "recommendation" .Recommendation}}</span>{{if .Reasons.Valid}} — {{.Reasons.String}}{{end}}.</p>
+  <p class="mt-1 text-xs text-red-800">Rekomendasi bukan keputusan. Keputusan tetap pada koordinator/manajemen.</p>
+  {{if $m.CanReview}}
+  <form method="post" action="/app/maintenance/alerts/{{.ID}}/decide" class="mt-3 grid gap-2 sm:grid-cols-[14rem_1fr_auto] sm:items-end">
+    {{template "csrf" $.CSRFToken}}
+    <input type="hidden" name="return" value="/app/assets/{{$a.ID}}">
+    <div>
+      <label class="label" for="decision">Keputusan</label>
+      <select class="input" id="decision" name="decision">{{range labels "alert_decision"}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
+    </div>
+    <div>
+      <label class="label" for="decision_note">Catatan</label>
+      <input class="input" id="decision_note" name="decision_note" maxlength="2000" placeholder="Wajib bila memilih Lainnya">
+    </div>
+    <button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Catat keputusan</button>
+  </form>
+  {{end}}
+</section>
+{{end}}
+
+<section aria-labelledby="statistik">
+  <div class="mb-2.5 flex items-baseline justify-between gap-2">
+    <h2 id="statistik" class="section-title">Statistik</h2>
+    <span class="text-xs text-slate-500">{{$m.Stats.WindowDays}} hari terakhir · sepanjang waktu</span>
+  </div>
+  <dl class="metrics sm:grid-cols-3">
+    <div class="metric"><dt class="metric-label">Kerusakan (tiket)</dt><dd class="metric-value">{{$m.Stats.DamagesWindow}} <span class="text-sm font-normal text-slate-400">/ {{$m.Stats.DamagesAll}}</span></dd></div>
+    <div class="metric"><dt class="metric-label">Perbaikan</dt><dd class="metric-value">{{$m.Stats.RepairsWindow}} <span class="text-sm font-normal text-slate-400">/ {{$m.Stats.RepairsAll}}</span></dd></div>
+    <div class="metric"><dt class="metric-label">Total downtime</dt><dd class="mt-1 text-base font-semibold text-slate-900">{{minutes $m.Stats.DowntimeWindow}} <span class="block text-xs font-normal text-slate-500">total {{minutes $m.Stats.DowntimeAll}}</span></dd></div>
+    <div class="metric"><dt class="metric-label">Biaya tercatat</dt><dd class="mt-1 text-base font-semibold text-slate-900">{{money $m.Stats.CostWindow}} <span class="block text-xs font-normal text-slate-500">total {{money $m.Stats.CostAll}}</span></dd></div>
+    <div class="metric"><dt class="metric-label">Perawatan terakhir</dt><dd class="mt-1 text-base font-semibold text-slate-900">{{witaDate $m.Stats.LastMaintenance}}</dd></div>
+    <div class="metric"><dt class="metric-label">Gangguan berulang</dt><dd class="mt-1 text-base font-semibold">{{if $m.Alert}}<span class="text-red-600">Ya</span>{{else}}<span class="text-slate-900">Tidak</span>{{end}}</dd></div>
+  </dl>
+</section>
+
+<section id="riwayat" class="card card-body mt-4" aria-labelledby="riwayat-pemeliharaan">
+  <h2 id="riwayat-pemeliharaan" class="section-title mb-3">Riwayat kerusakan &amp; pemeliharaan</h2>
+  {{if $m.History}}
+  <ol class="space-y-3">
+    {{range $m.History}}
+    <li class="rounded-lg border p-3 {{if .VoidedAt.Valid}}border-dashed border-slate-300 bg-slate-50 text-slate-500{{else}}border-line{{end}}">
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        <span class="font-semibold">{{witaDate .FinishedAt}}</span>
+        <span class="badge badge-indigo">{{label "maintenance_type" .Type}}</span>
+        {{if .TicketID.Valid}}<a class="font-mono text-xs font-semibold text-teal-700 hover:underline" href="/app/tickets/{{.TicketID.Int64}}">{{.TicketNo.String}}</a>{{if gt .TicketCycle.Int64 1}}<span class="text-xs">(siklus {{.TicketCycle.Int64}})</span>{{end}}{{end}}
+        {{if .ActivityID.Valid}}<a class="font-mono text-xs font-semibold text-teal-700 hover:underline" href="/app/activities/{{.ActivityID.Int64}}">{{.ActivityNo.String}}</a>{{end}}
+        {{if eq .Source "MANUAL"}}<span class="badge badge-gray">Manual</span>{{end}}
+        {{if .VoidedAt.Valid}}<span class="badge badge-gray">Dibatalkan</span>{{end}}
+      </div>
+      {{if .CategoryName.Valid}}<div class="mt-1 text-sm"><span class="text-slate-500">Jenis kerusakan:</span> {{.CategoryName.String}}</div>{{end}}
+      {{if .Complaint.Valid}}<div class="text-sm"><span class="text-slate-500">Keluhan:</span> "{{truncate 160 .Complaint.String}}"</div>{{end}}
+      <div class="text-sm"><span class="text-slate-500">Tindakan:</span> {{.Action}}</div>
+      {{if .Parts}}<div class="text-sm"><span class="text-slate-500">Sparepart:</span> {{range $i, $p := .Parts}}{{if $i}}, {{end}}{{$p.Name}} × {{$p.Qty}}{{if $p.LineCost.Valid}} ({{money $p.LineCost.String}}){{end}}{{end}}</div>{{end}}
+      <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+        <span>Petugas: {{if .PerformerName.Valid}}{{.PerformerName.String}}{{else}}–{{end}}</span>
+        <span>Hasil: {{label "maintenance_result" .Result}}</span>
+        {{if .RepairMinutes.Valid}}<span>Durasi perbaikan: {{minutes .RepairMinutes}}</span>{{end}}
+        {{if .DowntimeMinutes.Valid}}<span>Downtime: {{minutes .DowntimeMinutes}}</span>{{end}}
+        {{with .TotalCost}}<span>Biaya: {{money .}}</span>{{end}}
+        {{if .StatusAfter.Valid}}<span>Kondisi setelahnya: {{label "asset_status" .StatusAfter.String}}</span>{{end}}
+      </div>
+      {{if .Notes.Valid}}<div class="mt-1 text-xs text-slate-600">Catatan: {{.Notes.String}}</div>{{end}}
+      {{if .VoidedAt.Valid}}<div class="mt-1 text-xs">Dibatalkan {{wita .VoidedAt}} oleh {{nullStr .VoiderName}}: {{.VoidReason.String}}</div>
+      {{else if and $m.CanReview (ne .Type "ALERT_DECISION")}}
+      <details class="mt-2">
+        <summary class="cursor-pointer text-xs font-semibold text-slate-500">Batalkan entri (koreksi)</summary>
+        <form method="post" action="/app/maintenance/entries/{{.ID}}/void" class="mt-2 flex gap-2" data-confirm="Batalkan entri ini? Entri tetap tersimpan tetapi tidak dihitung di statistik.">
+          {{template "csrf" $.CSRFToken}}
+          <input class="input" name="void_reason" maxlength="255" placeholder="Alasan pembatalan" required aria-label="Alasan pembatalan">
+          <button type="submit" class="btn btn-ghost btn-sm text-red-700">Batalkan</button>
+        </form>
+      </details>
+      {{end}}
+    </li>
+    {{end}}
+  </ol>
+  {{else}}<p class="muted">Belum ada riwayat pemeliharaan. Riwayat terisi otomatis saat tiket perangkat ini diselesaikan atau kegiatan pada perangkat ini dicatat selesai.</p>{{end}}
+
+  {{if $m.CanRecord}}
+  <details class="mt-4 rounded-lg border border-line" {{if $m.Errors}}open{{end}}>
+    <summary class="cursor-pointer p-3 text-sm font-semibold text-teal-800">+ Catat pemeliharaan manual (mis. servis vendor)</summary>
+    <form method="post" action="/app/maintenance/assets/{{$a.ID}}" class="grid gap-3 border-t border-slate-100 p-3 sm:grid-cols-2" novalidate>
+      {{template "csrf" $.CSRFToken}}
+      {{if $m.Errors}}<div class="flash flash-error sm:col-span-2" role="alert">Periksa kembali isian pemeliharaan.</div>{{end}}
+      <div>
+        <label class="label" for="m_type">Jenis <span class="text-red-600" aria-hidden="true">*</span></label>
+        <select class="input {{if $m.Err "m_type"}}input-error{{end}}" id="m_type" name="m_type">
+          {{range labels "maintenance_type"}}{{if ne .Value "ALERT_DECISION"}}<option value="{{.Value}}" {{if eq .Value (index $m.Form "m_type")}}selected{{end}}>{{.Label}}</option>{{end}}{{end}}
+        </select>
+        {{with $m.Err "m_type"}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      <div>
+        <label class="label" for="m_result">Hasil</label>
+        <select class="input" id="m_result" name="m_result">
+          {{range labels "maintenance_result"}}<option value="{{.Value}}" {{if eq .Value (index $m.Form "m_result")}}selected{{end}}>{{.Label}}</option>{{end}}
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label" for="m_action">Tindakan <span class="text-red-600" aria-hidden="true">*</span></label>
+        <textarea class="input {{if $m.Err "m_action"}}input-error{{end}}" id="m_action" name="m_action" rows="2" maxlength="4000">{{index $m.Form "m_action"}}</textarea>
+        {{with $m.Err "m_action"}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      <div>
+        <label class="label" for="m_started_at">Mulai (WITA)</label>
+        <input class="input {{if $m.Err "m_started_at"}}input-error{{end}}" id="m_started_at" name="m_started_at" type="datetime-local" value="{{index $m.Form "m_started_at"}}">
+        {{with $m.Err "m_started_at"}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      <div>
+        <label class="label" for="m_finished_at">Selesai (WITA) <span class="text-red-600" aria-hidden="true">*</span></label>
+        <input class="input {{if $m.Err "m_finished_at"}}input-error{{end}}" id="m_finished_at" name="m_finished_at" type="datetime-local" value="{{index $m.Form "m_finished_at"}}">
+        {{with $m.Err "m_finished_at"}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      {{template "part-rows" (dict "Parts" $m.Parts "Err" ($m.Err "parts") "Rows" (index $m.Form "_rows"))}}
+      <div>
+        <label class="label" for="m_service_cost">Biaya jasa/vendor (Rp)</label>
+        <input class="input {{if $m.Err "m_service_cost"}}input-error{{end}}" id="m_service_cost" name="m_service_cost" inputmode="decimal" value="{{index $m.Form "m_service_cost"}}" placeholder="0">
+        {{with $m.Err "m_service_cost"}}<p class="error-text">{{.}}</p>{{end}}
+      </div>
+      <div>
+        <label class="label" for="m_status_after">Kondisi perangkat setelahnya</label>
+        <select class="input" id="m_status_after" name="m_status_after">
+          <option value="">— Tidak berubah —</option>
+          {{range labels "asset_status"}}<option value="{{.Value}}" {{if eq .Value (index $m.Form "m_status_after")}}selected{{end}}>{{.Label}}</option>{{end}}
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label" for="m_notes">Catatan</label>
+        <input class="input" id="m_notes" name="m_notes" maxlength="2000" value="{{index $m.Form "m_notes"}}">
+      </div>
+      <div class="sm:col-span-2"><button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Simpan riwayat</button></div>
+    </form>
+  </details>
+  {{end}}
+</section>
+{{end}}
+</div>
+</div>
 {{end}}

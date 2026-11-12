@@ -10,7 +10,7 @@
     {{range .Data.Groups}}
     <fieldset class="card card-body space-y-4">
       <legend class="sr-only">{{.Name}}</legend>
-      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">{{.Name}}</h2>
+      <h2 class="section-title">{{.Name}}</h2>
       {{range .Items}}
       {{$err := $p.Err .Key}}
       <div>
