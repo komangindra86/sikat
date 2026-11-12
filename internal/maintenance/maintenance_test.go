@@ -170,6 +170,10 @@ func TestRepeatDamageDetection(t *testing.T) {
 	if n := testutil.Count(t, e.db, `SELECT COUNT(*) FROM asset_alerts`); n != 1 {
 		t.Fatalf("hanya satu peringatan terbuka per perangkat, dapat %d", n)
 	}
+	// Notifikasi koordinator: satu event per peringatan (pembaruan tidak mengirim ulang).
+	if n := testutil.Count(t, e.db, `SELECT COUNT(*) FROM outbox_events WHERE event_type = 'REPEAT_DAMAGE' AND asset_id = ?`, e.asset); n != 1 {
+		t.Fatalf("peringatan kerusakan berulang harus menulis tepat 1 event notifikasi, dapat %d", n)
+	}
 
 	// Keputusan koordinator: petugas tidak berhak; keputusan tercatat di riwayat.
 	if _, _, err := e.ms.Decide(ctx, e.tech, a.ID, "INSPECT", ""); err != maintenance.ErrForbidden {

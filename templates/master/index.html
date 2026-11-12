@@ -25,6 +25,10 @@
     <div class="font-semibold text-slate-900">Kalender Kerja</div>
     <p class="mt-1 text-sm text-slate-600">Jam operasional dan hari libur yang dipakai menghitung SLA.</p>
   </a>
+  <a href="/app/settings/notifications" class="card card-body hover:border-teal-300">
+    <div class="font-semibold text-slate-900">Preferensi Notifikasi</div>
+    <p class="mt-1 text-sm text-slate-600">Kejadian yang diterima setiap role, lewat inbox saja atau inbox + push.</p>
+  </a>
   {{end}}
   {{range .Data.Entities}}{{if .Group}}
   <a href="/app/master/{{.Slug}}" class="card card-body hover:border-teal-300">

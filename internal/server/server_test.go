@@ -45,8 +45,10 @@ func newAppDB(t *testing.T, deps server.Deps) (*httptest.Server, func() *client,
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
+	vapid := deps.Config // kunci VAPID dari pemanggil dipertahankan
 	deps.Config = config.Config{Env: "development", BaseURL: "http://localhost", SessionLifetime: time.Hour,
-		SessionIdleTimeout: time.Hour, StorageDir: t.TempDir()}
+		SessionIdleTimeout: time.Hour, StorageDir: t.TempDir(),
+		VAPIDPublicKey: vapid.VAPIDPublicKey, VAPIDPrivateKey: vapid.VAPIDPrivateKey, VAPIDSubject: vapid.VAPIDSubject}
 	deps.DB, deps.Log, deps.Clock = db, slog.New(slog.NewTextHandler(io.Discard, nil)), clock.Real{}
 	deps.Templates, deps.Static = sikat.TemplatesFS, sikat.StaticFS
 	app, err := server.New(ctx, deps)

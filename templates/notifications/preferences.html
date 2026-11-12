@@ -1,0 +1,42 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}{{$p := .}}
+<nav class="mb-2"><a href="/app/settings">Pengaturan</a> › Notifikasi</nav>
+<h1 class="page-title">Preferensi notifikasi</h1>
+<p class="muted mt-1">Tentukan kejadian yang diterima setiap role. <strong class="font-medium text-slate-700">Inbox</strong> = hanya di aplikasi; <strong class="font-medium text-slate-700">Inbox + push</strong> = juga dikirim ke perangkat yang mengaktifkan notifikasi.</p>
+
+{{if not $d.PushOn}}
+<div class="flash flash-info mt-5"><span class="flex-1">Kunci VAPID belum dikonfigurasi di server, sehingga pilihan "Inbox + push" saat ini hanya masuk inbox. Lihat docs/INSTALLATION.md bagian Web Push.</span></div>
+{{end}}
+
+<form method="post" action="/app/settings/notifications" class="card mt-6" novalidate>
+  {{template "csrf" .CSRFToken}}
+  {{template "form-errors" .}}
+  <div class="hidden border-b border-line px-4 py-2.5 text-xs font-medium text-slate-500 sm:px-5 lg:grid lg:grid-cols-[1fr_repeat(3,10.5rem)] lg:gap-4">
+    <span>Kejadian</span>{{range $d.Roles}}<span>{{.Name}}</span>{{end}}
+  </div>
+  <ul class="divide-y divide-slate-100">
+    {{range $e := $d.Events}}
+    <li class="px-4 py-3.5 sm:px-5 lg:grid lg:grid-cols-[1fr_repeat(3,10.5rem)] lg:items-center lg:gap-4">
+      <div class="min-w-0">
+        <div class="font-medium text-slate-900">{{$e.Label}}</div>
+        <p class="mt-0.5 text-xs text-slate-500">{{$e.Help}}</p>
+      </div>
+      <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 lg:contents">
+        {{range $r := $d.Roles}}{{$name := printf "pref_%s_%s" $r.Code $e.Type}}{{$cur := index $r.Channels $e.Type}}
+        <label class="block">
+          <span class="mb-1 block text-xs text-slate-500 lg:sr-only">{{$r.Name}}</span>
+          <select class="input {{if $p.Err $name}}input-error{{end}}" name="{{$name}}" aria-label="{{$e.Label}} — {{$r.Name}}">
+            {{range labels "notif_channel"}}<option value="{{.Value}}" {{if eq .Value $cur}}selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+        </label>
+        {{end}}
+      </div>
+    </li>
+    {{end}}
+  </ul>
+  <div class="flex items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
+    <p class="text-xs text-slate-500">Pelaku tidak pernah menerima notifikasi atas tindakannya sendiri.</p>
+    <button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Simpan</button>
+  </div>
+</form>
+{{end}}

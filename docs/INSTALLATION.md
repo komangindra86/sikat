@@ -83,6 +83,26 @@ mencetak, karena alamat itulah yang dikodekan di QR.
 
 Health check untuk monitoring/reverse proxy: `GET /healthz` → `ok` bila database terjangkau.
 
+### Web Push (notifikasi ke HP/komputer)
+
+Opsional; tanpa konfigurasi ini notifikasi tetap tersedia di inbox aplikasi.
+
+```bash
+./bin/sikat vapid-keys >> .env   # lalu edit SIKAT_VAPID_SUBJECT
+```
+
+- `SIKAT_VAPID_SUBJECT`: kontak pengelola (`mailto:it@rs.example` atau URL `https://`).
+- Kunci privat **rahasia** dan jangan diganti setelah dipakai: perangkat yang sudah
+  berlangganan harus mengaktifkan ulang notifikasi bila kunci berubah.
+- Server butuh akses internet keluar (HTTPS) ke push service browser
+  (fcm.googleapis.com, updates.push.services.mozilla.com, web.push.apple.com, dll.).
+- Push & service worker hanya bekerja di konteks aman: `https://` (produksi) atau
+  `http://localhost` (development). iPhone/iPad (iOS 16.4+) mewajibkan SIKAT
+  di-*Tambah ke Layar Utama* lalu dibuka dari ikon tersebut.
+- Pengguna mengaktifkan push di **Notifikasi › Pengaturan** (per perangkat, ada
+  tombol "Kirim notifikasi uji"). Admin mengatur kejadian per role di
+  **Pengaturan › Preferensi notifikasi**.
+
 ## 7. Development
 
 - Mode `development` membaca ulang template dari folder `templates/` setiap
@@ -124,6 +144,13 @@ tetap memakai vhost otomatis Laragon.
 Catatan: domain `.test` hanya berlaku di komputer ini. Untuk mencoba scan QR dari
 HP, HP harus dapat menjangkau server (mis. lewat IP LAN komputer atau tunnel), dan
 `SIKAT_BASE_URL` harus alamat yang dapat dibuka HP sebelum QR dicetak.
+
+Service worker, instal PWA, dan Web Push tidak berjalan di `http://sikat.test`
+(bukan konteks aman). Untuk mencobanya di komputer ini, buka
+`http://localhost:8080` langsung di Chrome/Edge. Bila browser menampilkan halaman
+"offline" milik aplikasi lain, hapus service worker lama untuk `localhost:8080`
+(DevTools › Application › Service Workers › Unregister) — origin `localhost:8080`
+dipakai bergantian oleh aplikasi lokal lain.
 
 ## 9. Menjalankan automated test
 

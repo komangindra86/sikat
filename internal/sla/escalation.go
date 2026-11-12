@@ -9,6 +9,7 @@ import (
 
 	"sikat/internal/clock"
 	"sikat/internal/database"
+	"sikat/internal/notifications"
 )
 
 // Jenis eskalasi (kolom sla_escalations.kind).
@@ -82,6 +83,10 @@ func Record(ctx context.Context, tx database.DBTX, e Escalation, now time.Time) 
 	if n, _ := res.RowsAffected(); n != 1 {
 		return false, nil
 	}
+	escID, err := res.LastInsertId()
+	if err != nil {
+		return false, err
+	}
 	ev, note := e.event()
 	meta, _ := json.Marshal(map[string]any{"kind": e.Kind, "cycle": e.Cycle, "used_pct": e.UsedPct})
 	if _, err := tx.ExecContext(ctx, `
@@ -95,6 +100,11 @@ func Record(ctx context.Context, tx database.DBTX, e Escalation, now time.Time) 
 		col = "response_breached_at"
 	case KindResolutionBreach:
 		col = "resolution_breached_at"
+	}
+	if e.Notify {
+		if err := publish(ctx, tx, escID, e, now); err != nil {
+			return false, err
+		}
 	}
 	if col != "" {
 		at := now
@@ -304,4 +314,28 @@ func candidates(t TicketRow) []Escalation {
 	add(t.Resp, KindResponseWarning, KindResponseBreach)
 	add(t.Reso, KindResolutionWarning, KindResolutionBreach)
 	return out
+}
+
+// publish menulis event notifikasi untuk eskalasi baru (dalam transaksi yang
+// sama) dan menautkannya ke baris sla_escalations.
+func publish(ctx context.Context, tx database.DBTX, escID int64, e Escalation, now time.Time) error {
+	evType := notifications.SLABreach
+	switch e.Kind {
+	case KindCritical:
+		evType = notifications.TicketCritical
+	case KindResponseWarning, KindResolutionWarning:
+		evType = notifications.SLAWarning
+	}
+	payload := map[string]any{"kind": e.Kind, "cycle": e.Cycle, "used_pct": e.UsedPct}
+	if !e.DueAt.IsZero() {
+		payload["due_at"] = e.DueAt.UTC().Format(time.RFC3339Nano)
+	}
+	id, err := notifications.Publish(ctx, tx, notifications.Event{
+		Type: evType, DedupeKey: fmt.Sprintf("sla:%d", escID), TicketID: e.TicketID, Payload: payload,
+	}, now)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `UPDATE sla_escalations SET outbox_event_id = ? WHERE id = ?`, id, escID)
+	return err
 }

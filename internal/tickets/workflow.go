@@ -606,7 +606,7 @@ func (s *Service) TakeOver(ctx context.Context, id int64, u *rbac.User, reason s
 			return err
 		}
 		return s.repo.addHistory(ctx, tx, historyEntry{TicketID: id, Event: EventTakenOver, ActorType: "USER", ActorID: u.ID,
-			Note: reason, Meta: jsonMeta(map[string]any{"previous_assignee_id": t.AssigneeID.Int64})}, now)
+			Note: reason, Meta: jsonMeta(map[string]any{"previous_assignee_id": t.AssigneeID.Int64}), NotifyTarget: t.AssigneeID.Int64}, now)
 	})
 	if err != nil || len(errs) > 0 {
 		return errs, err
@@ -661,7 +661,7 @@ func (s *Service) AddSupport(ctx context.Context, id int64, u *rbac.User, userID
 			return err
 		}
 		return s.repo.addHistory(ctx, tx, historyEntry{TicketID: id, Event: EventSupportAdded, ActorType: "USER", ActorID: u.ID,
-			Note: name, Meta: jsonMeta(map[string]any{"user_id": userID})}, now)
+			Note: name, Meta: jsonMeta(map[string]any{"user_id": userID}), NotifyTarget: userID}, now)
 	})
 }
 

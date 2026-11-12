@@ -15,6 +15,9 @@
 {{- else if eq . "menu"}}<path d="M4 6h16M4 12h16M4 18h16"/>
 {{- else if eq . "plus"}}<path d="M12 5v14M5 12h14"/>
 {{- else if eq . "check"}}<path d="m5 12.5 4.5 4.5L19 7.5"/>
+{{- else if eq . "bell"}}<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>
+{{- else if eq . "phone"}}<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/>
+{{- else if eq . "send"}}<path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4 18-7z"/>
 {{- else if eq . "clock"}}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
 {{- else if eq . "inbox"}}<path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 5h13L21 13v6H3v-6z"/>
 {{- else if eq . "pause"}}<circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>

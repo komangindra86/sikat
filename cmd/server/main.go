@@ -3,6 +3,7 @@
 //	sikat serve                 menjalankan server HTTP
 //	sikat migrate up|down|status mengelola migrasi database
 //	sikat create-admin          membuat akun Admin IT pertama (interaktif)
+//	sikat vapid-keys            membuat pasangan kunci Web Push (VAPID)
 //	sikat version               menampilkan versi
 package main
 
@@ -28,6 +29,7 @@ import (
 	"sikat/internal/clock"
 	"sikat/internal/config"
 	"sikat/internal/database"
+	"sikat/internal/notifications"
 	"sikat/internal/server"
 	"sikat/internal/users"
 )
@@ -49,6 +51,7 @@ perintah:
   serve                    menjalankan server HTTP
   migrate up|down|status   mengelola migrasi database
   create-admin             membuat akun Admin IT (interaktif)
+  vapid-keys               membuat pasangan kunci Web Push (VAPID) untuk .env
   version                  menampilkan versi`)
 }
 
@@ -58,6 +61,19 @@ func run(args []string) error {
 	}
 	if args[0] == "version" {
 		fmt.Println("sikat", version)
+		return nil
+	}
+	if args[0] == "vapid-keys" {
+		pub, priv, err := notifications.GenerateVAPID()
+		if err != nil {
+			return err
+		}
+		fmt.Println("# Tambahkan ke .env. Kunci privat RAHASIA; jangan diganti setelah dipakai")
+		fmt.Println("# (perangkat yang sudah berlangganan harus mengaktifkan ulang notifikasi).")
+		fmt.Println("SIKAT_VAPID_PUBLIC_KEY=" + pub)
+		fmt.Println("SIKAT_VAPID_PRIVATE_KEY=" + priv)
+		fmt.Println("# Kontak pengelola untuk push service: mailto:alamat atau URL https://")
+		fmt.Println("SIKAT_VAPID_SUBJECT=mailto:it@rumahsakit.example")
 		return nil
 	}
 

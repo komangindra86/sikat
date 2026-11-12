@@ -5,11 +5,17 @@
 {{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
 <meta name="theme-color" content="#0f766e">
 <link rel="icon" href="{{static "icons/favicon.svg"}}" type="image/svg+xml">
+{{if .User}}<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="{{static "icons/apple-touch-icon.png"}}">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SIKAT">
+<meta name="sikat-user" content="{{.User.ID}}">{{end}}
 <title>{{if .Title}}{{.Title}} · {{end}}SIKAT</title>
 <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{static "css/app.css"}}">
 <script src="{{static "js/htmx.min.js"}}" defer></script>
 <script src="{{static "js/app.js"}}" defer></script>
+{{if .User}}<script src="{{static "js/pwa.js"}}" defer></script>{{end}}
 {{end}}
 
 {{define "brand-mark"}}<span class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-teal-700 text-[13px] font-semibold text-white">S</span>{{end}}
@@ -62,7 +68,11 @@
         <span class="block truncate text-xs text-slate-500">{{.HospitalName}}</span>
       </span>
     </a>
-    <span class="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600" title="{{.User.FullName}} · {{.User.RoleName}}">{{.User.Initials}}</span>
+    <a href="/app/notifications" class="relative ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Notifikasi">
+      <span class="icon h-6 w-6">{{template "icon" "bell"}}</span>
+      <span class="bell-badge" data-unread {{if not .Unread}}hidden{{end}}>{{template "notif-count" .Unread}}</span>
+    </a>
+    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600" title="{{.User.FullName}} · {{.User.RoleName}}">{{.User.Initials}}</span>
   </div>
 </header>
 
@@ -118,6 +128,7 @@
 {{define "nav-items"}}{{$p := .P}}{{$u := .P.User}}
 <div class="{{.Group}}">Utama</div>
 {{template "nav-link" (dict "C" . "Href" "/app" "Icon" "home" "Label" "Beranda" "On" (eq $p.Nav "home"))}}
+<a href="/app/notifications" class="{{.Link}} {{if eq $p.Nav "notifications"}}{{.Active}}{{end}}" {{if eq $p.Nav "notifications"}}aria-current="page"{{end}}>{{template "icon" "bell"}}<span>Notifikasi</span><span class="count-badge" data-unread {{if not $p.Unread}}hidden{{end}}>{{template "notif-count" $p.Unread}}</span></a>
 {{if $u.Can "ticket.view_queue"}}{{template "nav-link" (dict "C" . "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "On" (eq $p.Nav "tickets"))}}{{end}}
 {{if $u.Can "activity.create"}}{{template "nav-link" (dict "C" . "Href" "/app/activities" "Icon" "activity" "Label" "Kegiatan" "On" (eq $p.Nav "activities"))}}{{end}}
 {{if $u.Can "sla.view"}}{{template "nav-link" (dict "C" . "Href" "/app/sla" "Icon" "clock" "Label" "SLA" "On" (eq $p.Nav "sla"))}}{{end}}
@@ -138,3 +149,5 @@
 {{end}}
 
 {{define "nav-link"}}<a href="{{.Href}}" class="{{.C.Link}} {{if .On}}{{.C.Active}}{{end}}" {{if .On}}aria-current="page"{{end}}>{{template "icon" .Icon}}<span>{{.Label}}</span></a>{{end}}
+
+{{define "notif-count"}}{{if gt . 99}}99+{{else}}{{.}}{{end}}{{end}}

@@ -1,0 +1,67 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}
+<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">Notifikasi</h1>
+    <p class="muted mt-1">{{if $d.Unread}}{{$d.Unread}} belum dibaca.{{else}}Semua notifikasi sudah dibaca.{{end}} Notifikasi disimpan 180 hari.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{if $d.Unread}}
+    <form method="post" action="/app/notifications/read-all">
+      {{template "csrf" .CSRFToken}}
+      <button type="submit" class="btn btn-secondary" data-busy-text="Memproses…">{{template "icon" "check"}}Tandai semua dibaca</button>
+    </form>
+    {{end}}
+    <a href="/app/notifications/settings" class="btn btn-secondary">{{template "icon" "sliders"}}Pengaturan</a>
+  </div>
+</div>
+
+{{if $d.PushOn}}
+<div class="flash flash-info mt-5" data-push-hint hidden>
+  <span class="flex-1">Notifikasi push belum aktif di perangkat ini. Aktifkan agar tiket baru dan peringatan SLA tidak terlewat.</span>
+  <a href="/app/notifications/settings" class="shrink-0 font-medium underline underline-offset-2">Aktifkan</a>
+</div>
+{{end}}
+
+<div class="mt-5 flex gap-1 border-b border-line" role="tablist" aria-label="Saring notifikasi">
+  <a href="/app/notifications" role="tab" aria-selected="{{if not $d.UnreadOnly}}true{{else}}false{{end}}"
+     class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if not $d.UnreadOnly}}border-teal-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Semua</a>
+  <a href="/app/notifications?f=unread" role="tab" aria-selected="{{if $d.UnreadOnly}}true{{else}}false{{end}}"
+     class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if $d.UnreadOnly}}border-teal-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Belum dibaca{{if $d.Unread}} <span class="ml-1 text-xs tabular-nums text-slate-400">{{$d.Unread}}</span>{{end}}</a>
+</div>
+
+{{if $d.Items}}
+<ul class="list mt-4">
+  {{range $d.Items}}{{$unread := not .ReadAt.Valid}}
+  <li>
+    <a href="/app/notifications/{{.ID}}" class="notif-item {{if $unread}}notif-unread{{end}}">
+      <span class="notif-dot {{if $unread}}bg-teal-600{{else}}bg-transparent{{end}}" aria-hidden="true"></span>
+      <span class="min-w-0 flex-1">
+        <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+          <span class="min-w-0 {{if $unread}}font-semibold text-slate-900{{else}}font-medium text-slate-700{{end}}">{{.Title}}</span>
+          <span class="shrink-0 text-xs text-slate-400" title="{{wita .CreatedAt}}">{{since .CreatedAt}} lalu</span>
+        </span>
+        <span class="mt-0.5 block text-sm {{if $unread}}text-slate-600{{else}}text-slate-500{{end}}">{{.Body}}</span>
+        <span class="mt-1.5 flex flex-wrap items-center gap-2">
+          <span class="badge badge-{{tone "notif_event" .EventType}}">{{label "notif_event" .EventType}}</span>
+          {{if eq .Channel "PUSH"}}<span class="text-xs text-slate-400">· juga dikirim sebagai push</span>{{end}}
+          {{if $unread}}<span class="sr-only">Belum dibaca</span>{{end}}
+        </span>
+      </span>
+    </a>
+  </li>
+  {{end}}
+</ul>
+{{if $d.More}}
+<div class="mt-4 text-center">
+  <a href="/app/notifications?{{if $d.UnreadOnly}}f=unread&amp;{{end}}before={{$d.NextBefore}}" class="btn btn-secondary">Tampilkan yang lebih lama</a>
+</div>
+{{end}}
+{{else}}
+<div class="card mt-4 px-4 py-12 text-center">
+  <span class="mx-auto grid h-11 w-11 place-items-center rounded-full bg-slate-100 text-slate-400"><span class="icon h-6 w-6">{{template "icon" "bell"}}</span></span>
+  <p class="mt-3 font-medium text-slate-900">{{if $d.UnreadOnly}}Tidak ada notifikasi yang belum dibaca{{else}}Belum ada notifikasi{{end}}</p>
+  <p class="muted mt-1">Tiket baru, perubahan status, dan peringatan SLA yang relevan untuk Anda akan muncul di sini.</p>
+</div>
+{{end}}
+{{end}}

@@ -28,6 +28,11 @@ type SiteInfo interface {
 	ITContact(ctx context.Context) string
 }
 
+// UnreadCounter menghitung notifikasi belum dibaca untuk badge di layout.
+type UnreadCounter interface {
+	Unread(ctx context.Context, userID int64) int
+}
+
 // TokenSource menyediakan token CSRF untuk form.
 type TokenSource interface {
 	Token(r *http.Request) string
@@ -50,6 +55,8 @@ type Page struct {
 	ITContact    string
 	Data         any
 	Errors       map[string]string
+	// Unread: jumlah notifikasi belum dibaca (badge lonceng), diisi otomatis.
+	Unread int
 }
 
 // Err mengembalikan pesan error untuk field (dipakai template).
@@ -68,6 +75,7 @@ type Renderer struct {
 	sessions     *scs.SessionManager
 	csrf         TokenSource
 	site         SiteInfo
+	inbox        UnreadCounter
 	log          *slog.Logger
 	staticHashes map[string]string
 
@@ -86,12 +94,14 @@ type Options struct {
 	CSRF      TokenSource
 	Site      SiteInfo
 	Log       *slog.Logger
+	// Inbox (opsional) mengisi Page.Unread.
+	Inbox UnreadCounter
 }
 
 // NewRenderer mem-parse seluruh template halaman.
 func NewRenderer(o Options) (*Renderer, error) {
 	r := &Renderer{
-		fsys: o.Templates, sessions: o.Sessions, csrf: o.CSRF, site: o.Site, log: o.Log,
+		fsys: o.Templates, sessions: o.Sessions, csrf: o.CSRF, site: o.Site, log: o.Log, inbox: o.Inbox,
 		staticHashes: map[string]string{},
 	}
 	if o.ReloadDir != "" {
@@ -194,6 +204,9 @@ func (r *Renderer) page(name string) (*template.Template, error) {
 	return t, nil
 }
 
+// StaticURL mengembalikan URL aset statis berversi (dipakai service worker).
+func (r *Renderer) StaticURL(p string) string { return r.staticURL(p) }
+
 // fill melengkapi Page dengan data umum dari request.
 func (r *Renderer) fill(req *http.Request, p *Page) {
 	ctx := req.Context()
@@ -204,6 +217,9 @@ func (r *Renderer) fill(req *http.Request, p *Page) {
 	if r.site != nil {
 		p.HospitalName = r.site.HospitalName(ctx)
 		p.ITContact = r.site.ITContact(ctx)
+	}
+	if p.User != nil && r.inbox != nil {
+		p.Unread = r.inbox.Unread(ctx, p.User.ID)
 	}
 	if p.Flash == nil && r.sessions != nil {
 		if msg := r.sessions.PopString(ctx, "flash_msg"); msg != "" {
@@ -216,6 +232,27 @@ func (r *Renderer) fill(req *http.Request, p *Page) {
 // template tidak menghasilkan halaman setengah jadi.
 func (r *Renderer) Render(w http.ResponseWriter, req *http.Request, status int, name string, p Page) {
 	r.fill(req, &p)
+	t, err := r.page(name)
+	if err != nil {
+		r.fail(w, req, err)
+		return
+	}
+	var buf bytes.Buffer
+	if err := t.ExecuteTemplate(&buf, path.Base(name)+".html", p); err != nil {
+		r.fail(w, req, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = buf.WriteTo(w)
+}
+
+// RenderPublic merender halaman tanpa data session (tanpa pengguna, CSRF, flash).
+// Dipakai halaman yang boleh disimpan service worker, mis. /offline.
+func (r *Renderer) RenderPublic(w http.ResponseWriter, req *http.Request, status int, name string, p Page) {
+	if r.site != nil {
+		p.HospitalName = r.site.HospitalName(req.Context())
+	}
 	t, err := r.page(name)
 	if err != nil {
 		r.fail(w, req, err)

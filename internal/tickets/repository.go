@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"sikat/internal/database"
+	"sikat/internal/notifications"
 )
 
 // ErrNotFound dikembalikan bila tiket tidak ada.
@@ -200,6 +202,21 @@ type historyEntry struct {
 	ActorID    int64
 	Note       string
 	Meta       string
+	// NotifyTarget: penerima notifikasi penugasan (anggota yang ditambahkan /
+	// penanggung jawab yang tiketnya diambil alih).
+	NotifyTarget int64
+}
+
+// notifyEvents memetakan histori tiket ke event notifikasi. Event ditulis ke
+// outbox dalam transaksi yang sama dengan histori (docs/ARCHITECTURE.md §7).
+var notifyEvents = map[string]string{
+	EventClaimed:      notifications.TicketClaimed,
+	EventStarted:      notifications.TicketStarted,
+	EventPending:      notifications.TicketPending,
+	EventResolved:     notifications.TicketResolved,
+	EventReopened:     notifications.TicketReopened,
+	EventTakenOver:    notifications.TicketAssigned,
+	EventSupportAdded: notifications.TicketAssigned,
 }
 
 func (repository) addHistory(ctx context.Context, tx *sql.Tx, h historyEntry, now time.Time) error {
@@ -207,11 +224,44 @@ func (repository) addHistory(ctx context.Context, tx *sql.Tx, h historyEntry, no
 	if h.Meta != "" {
 		meta = h.Meta
 	}
-	_, err := tx.ExecContext(ctx, `
+	res, err := tx.ExecContext(ctx, `
 		INSERT INTO ticket_histories (ticket_id, event_type, from_status, to_status, actor_type, actor_user_id, note, meta, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		h.TicketID, h.Event, database.NullString(h.FromStatus), database.NullString(h.ToStatus), h.ActorType,
 		database.NullInt64(h.ActorID), database.NullString(h.Note), meta, now)
+	if err != nil {
+		return err
+	}
+	evType, ok := notifyEvents[h.Event]
+	if !ok {
+		return nil
+	}
+	if evType == notifications.TicketAssigned && h.NotifyTarget == 0 {
+		return nil
+	}
+	histID, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	payload := map[string]any{}
+	if h.Note != "" {
+		payload["note"] = truncate(h.Note, 200)
+	}
+	if evType == notifications.TicketAssigned {
+		payload["reason"] = h.Event
+	}
+	if h.Event == EventPending && h.Meta != "" {
+		var m map[string]any
+		if json.Unmarshal([]byte(h.Meta), &m) == nil {
+			if r, _ := m["pending_reason"].(string); r != "" {
+				payload["reason"] = r
+			}
+		}
+	}
+	_, err = notifications.Publish(ctx, tx, notifications.Event{
+		Type: evType, DedupeKey: fmt.Sprintf("h:%d", histID), TicketID: h.TicketID,
+		ActorID: h.ActorID, TargetID: h.NotifyTarget, Payload: payload,
+	}, now)
 	return err
 }
 

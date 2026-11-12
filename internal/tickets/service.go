@@ -7,12 +7,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"time"
 
 	"sikat/internal/attachments"
 	"sikat/internal/clock"
 	"sikat/internal/database"
+	"sikat/internal/notifications"
 	"sikat/internal/priority"
 	"sikat/internal/sla"
 )
@@ -212,6 +214,13 @@ func (s *Service) Create(ctx context.Context, d Draft, photos []Photo) (Created,
 		if err := s.assignSLA(ctx, tx, id, sla.Match{Priority: res.Priority, TicketCategoryID: d.TicketCategoryID,
 			ITCategoryID: cat.itCategoryID, DepartmentID: d.DepartmentID}, now); err != nil {
 			return err
+		}
+		// Tiket kritis dinotifikasi lewat eskalasi SLA (event "Tiket kritis").
+		if res.Priority != "CRITICAL" {
+			if _, err := notifications.Publish(ctx, tx, notifications.Event{Type: notifications.TicketCreated,
+				DedupeKey: fmt.Sprintf("ticket:%d:created", id), TicketID: id, ActorID: d.CreatedBy}, now); err != nil {
+				return err
+			}
 		}
 		if d.AssetID != 0 && s.hooks != nil {
 			if err := s.hooks.TicketCreated(ctx, tx, CreatedEvent{

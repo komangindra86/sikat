@@ -4,6 +4,11 @@
 <div class="mx-auto max-w-2xl">
   <h1 class="page-title">Pengaturan sistem</h1>
   <p class="muted mt-1">Setiap perubahan tercatat di jejak audit.</p>
+  <a href="/app/settings/notifications" class="card card-body mt-4 flex items-center gap-3 hover:border-teal-300">
+    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-teal-50 text-teal-700"><span class="icon h-5 w-5">{{template "icon" "bell"}}</span></span>
+    <span class="min-w-0 flex-1"><span class="block font-semibold text-slate-900">Preferensi notifikasi</span><span class="block text-sm text-slate-600">Kejadian yang diterima setiap role, lewat inbox atau push.</span></span>
+    <span class="text-slate-400" aria-hidden="true">›</span>
+  </a>
   <form method="post" action="/app/settings" class="mt-4 space-y-4" novalidate>
     {{template "csrf" .CSRFToken}}
     {{template "form-errors" .}}

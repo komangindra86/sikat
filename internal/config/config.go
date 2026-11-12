@@ -25,6 +25,10 @@ type Config struct {
 	SessionLifetime    time.Duration
 	SessionIdleTimeout time.Duration
 	StorageDir         string
+	// Web Push (VAPID). Kosong = push nonaktif; inbox in-app tetap berjalan.
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
+	VAPIDSubject    string
 }
 
 // IsProduction bernilai true bila SIKAT_ENV=production.
@@ -100,6 +104,20 @@ func FromEnv(get func(string) string) (Config, error) {
 		errs = append(errs, err.Error())
 	}
 	cfg.SessionIdleTimeout = time.Duration(idle) * time.Minute
+
+	cfg.VAPIDPublicKey = strings.TrimSpace(get("SIKAT_VAPID_PUBLIC_KEY"))
+	cfg.VAPIDPrivateKey = strings.TrimSpace(get("SIKAT_VAPID_PRIVATE_KEY"))
+	cfg.VAPIDSubject = strings.TrimSpace(get("SIKAT_VAPID_SUBJECT"))
+	if (cfg.VAPIDPublicKey == "") != (cfg.VAPIDPrivateKey == "") {
+		errs = append(errs, "SIKAT_VAPID_PUBLIC_KEY dan SIKAT_VAPID_PRIVATE_KEY harus diisi keduanya (buat dengan: sikat vapid-keys) atau dikosongkan")
+	}
+	if cfg.VAPIDSubject == "" && u != nil {
+		if u.Scheme == "https" {
+			cfg.VAPIDSubject = cfg.BaseURL
+		} else {
+			cfg.VAPIDSubject = "mailto:admin@" + u.Hostname()
+		}
+	}
 
 	if len(errs) > 0 {
 		return Config{}, errors.New("konfigurasi tidak valid:\n  - " + strings.Join(errs, "\n  - "))

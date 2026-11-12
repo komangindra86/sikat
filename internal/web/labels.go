@@ -71,6 +71,15 @@ var labelGroups = map[string][]Option{
 		{"MET", "Tercapai"}, {"MISSED", "Terlewati"},
 	},
 	"sla_target": {{"RESPONSE", "Respons"}, {"RESOLUTION", "Penyelesaian"}},
+	"notif_event": {
+		{"TICKET_CREATED", "Tiket baru"}, {"TICKET_CRITICAL", "Tiket kritis"}, {"TICKET_CLAIMED", "Tiket diambil"},
+		{"TICKET_STARTED", "Mulai dikerjakan"}, {"TICKET_PENDING", "Tiket tertunda"}, {"TICKET_RESOLVED", "Tiket selesai"},
+		{"TICKET_REOPENED", "Dibuka kembali"}, {"TICKET_ASSIGNED", "Penugasan"}, {"SLA_WARNING", "SLA hampir habis"},
+		{"SLA_BREACH", "SLA terlewati"}, {"REPEAT_DAMAGE", "Perangkat sering rusak"}, {"TEST", "Notifikasi uji"},
+	},
+	"notif_channel": {
+		{"NONE", "Tidak dikirim"}, {"INBOX", "Inbox"}, {"PUSH", "Inbox + push"},
+	},
 	"sla_kind": {
 		{"CRITICAL_IMMEDIATE", "Tiket kritis"}, {"RESPONSE_WARNING", "Respons hampir habis"},
 		{"RESPONSE_BREACH", "Respons terlewati"}, {"RESOLUTION_WARNING", "Penyelesaian hampir habis"},
@@ -109,6 +118,14 @@ var tones = map[string]map[string]string{
 	"sla_kind": {
 		"CRITICAL_IMMEDIATE": "red", "RESPONSE_WARNING": "amber", "RESPONSE_BREACH": "red",
 		"RESOLUTION_WARNING": "amber", "RESOLUTION_BREACH": "red",
+	},
+	"notif_event": {
+		"TICKET_CREATED": "blue", "TICKET_CRITICAL": "red", "TICKET_CLAIMED": "indigo", "TICKET_STARTED": "amber",
+		"TICKET_PENDING": "orange", "TICKET_RESOLVED": "green", "TICKET_REOPENED": "orange", "TICKET_ASSIGNED": "indigo",
+		"SLA_WARNING": "amber", "SLA_BREACH": "red", "REPEAT_DAMAGE": "orange", "TEST": "gray",
+	},
+	"notif_channel": {
+		"NONE": "gray", "INBOX": "blue", "PUSH": "green",
 	},
 	"recommendation": {
 		"EVALUATE": "amber", "INSPECT": "orange", "CONSIDER_REPLACEMENT": "red",

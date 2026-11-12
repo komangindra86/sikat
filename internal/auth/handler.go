@@ -13,6 +13,8 @@ type Handler struct {
 	Guard    *Guard
 	Service  *Service
 	Renderer *web.Renderer
+	// BeforeLogout (opsional) dipanggil sebelum session diakhiri.
+	BeforeLogout func(r *http.Request)
 }
 
 type loginData struct {
@@ -66,6 +68,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 // Logout mengakhiri session.
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	if h.BeforeLogout != nil {
+		h.BeforeLogout(r)
+	}
 	if err := h.Guard.EndSession(r); err != nil {
 		h.Renderer.ServerError(w, r, err)
 		return

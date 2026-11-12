@@ -1,19 +1,22 @@
 # SIKAT — Implementation Plan, Asumsi & Risiko
 
-> Status (12 November 2026): **PHASE 0–4 selesai. PHASE 5 selesai, menunggu validasi.**
+> Status (12 November 2026): **PHASE 0–5 selesai. PHASE 6 selesai, menunggu validasi.**
 > Default yang dipakai karena belum dijawab: Q1 (VPS publik + HTTPS), Q3 (tutup
 > otomatis 3 hari), Q4 (pencatatan pemeliharaan saja, tanpa jadwal preventif),
 > Q6 (Admin IT tidak menangani tiket). Diputuskan: Q5 (petugas boleh mencatat tiket
 > atas nama pelapor), Q2 (angka SLA usulan disetujui; kalender "Jam kerja"
 > Senin–Jumat 08.00–16.00 WITA, "24 jam" untuk Kritis).
 >
-> Hasil PHASE 5: 99 automated test lulus (MySQL 8.0.30 lokal), termasuk kalkulator
-> kalender (jam kerja, lintas akhir pekan, hari libur, mulai di luar jam kerja, 24/7,
-> jeda) dan worker eskalasi yang dijalankan berulang tanpa catatan ganda. Dashboard
-> SLA, detail tiket, kalender kerja diperiksa di browser (desktop & HP).
-> Ditunda sesuai rencana: **notifikasi** eskalasi SLA & kerusakan berulang (PHASE 6 —
-> eskalasi sudah tercatat di `sla_escalations` dengan `outbox_event_id` kosong sebagai
-> antrean notifikasi), ekspor laporan (PHASE 7).
+> Hasil PHASE 6: 110 automated test lulus (MySQL 8.0.30 lokal), termasuk enkripsi
+> Web Push (didekripsi ulang sisi browser) & JWT VAPID, dedupe outbox & inbox,
+> worker SLA berulang tanpa notifikasi ganda, retry push (503/jaringan), langganan
+> 410 dinonaktifkan, push basi tidak dikirim, dan payload lock screen tanpa
+> lokasi/deskripsi/nama. Inbox, pengaturan perangkat, dan preferensi role diperiksa
+> di browser (desktop & HP). **Belum diuji di perangkat nyata:** penerimaan push di
+> HP (browser pane pengembangan memblokir service worker & notifikasi) dan audit
+> Lighthouse "installable" — perlu dicoba di Chrome lewat `http://localhost:8080`
+> atau https (lihat docs/INSTALLATION.md §6 "Web Push").
+> Ditunda sesuai rencana: ekspor laporan (PHASE 7).
 > Belum diuji: race detector (`go test -race` butuh compiler C di Windows) dan
 > build/deploy di Linux (PHASE 9).
 

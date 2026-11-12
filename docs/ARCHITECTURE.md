@@ -494,6 +494,33 @@ sequenceDiagram
 - **Payload lock screen generik**, contoh: judul "SIKAT", isi "Tiket baru
   prioritas Kritis · TKT-2026-000123". Tanpa nama ruangan, deskripsi, atau nama
   pelapor. Detail hanya terlihat setelah membuka aplikasi (login).
+- Implementasi PHASE 6 (`internal/notifications`):
+  - Event: `TICKET_CREATED` (non-kritis), `TICKET_CRITICAL` (dari eskalasi SLA
+    `CRITICAL_IMMEDIATE`), `TICKET_CLAIMED/STARTED/PENDING/RESOLVED/REOPENED`,
+    `TICKET_ASSIGNED` (anggota pendukung ditambahkan / tiket diambil alih — hanya
+    orang bersangkutan), `SLA_WARNING`, `SLA_BREACH`, `REPEAT_DAMAGE`, `TEST`.
+    Histori tiket menulis outbox lewat `repository.addHistory` (dedupe `h:<id histori>`);
+    eskalasi SLA lewat `sla.Record` (dedupe `sla:<id eskalasi>`, `notify = FALSE` tidak
+    menulis outbox); kerusakan berulang saat peringatan dibuat (`asset_alert:<id>`).
+  - Penerima: Koordinator/Admin = seluruh anggota role sesuai preferensi; Petugas
+    dibatasi relevansi — tiket baru/kritis/diambil & SLA respons → kompetensi sesuai
+    (atau tanpa kompetensi); mulai/tunda/selesai/dibuka ulang & SLA penyelesaian →
+    anggota tim tiket. Pelaku dikecualikan.
+  - Worker `kirim-notifikasi` (5 detik): fan-out per event dalam transaksinya sendiri;
+    gagal → jeda 1, 2, 4, 8 menit, `FAILED` setelah 5 kali. Push per perangkat di
+    `push_deliveries`: 2xx terkirim; 404/410 → langganan dinonaktifkan; 401/403 →
+    nonaktif (kunci VAPID berubah); 429/5xx/jaringan → retry (maks. 5); push yang
+    berumur > 1 jam tidak dikirim (`EXPIRED`). Tag per tiket sehingga kabar terbaru
+    menggantikan yang lama di perangkat. `bersih-notifikasi` harian menghapus data > 180 hari.
+  - Web Push ditulis dengan pustaka standar Go (RFC 8291 aes128gcm + RFC 8292 VAPID
+    ES256), tanpa dependensi luar. Kunci dari env `SIKAT_VAPID_*`; tanpa kunci, push
+    nonaktif dan inbox tetap berjalan.
+  - Perangkat bersama: logout menghapus langganan perangkat yang dipakai login itu;
+    sinkron otomatis hanya untuk pengguna yang mengaktifkan push di perangkat tersebut.
+  - PWA: `/manifest.webmanifest` & `/sw.js` (scope `/`) dibuat server dengan versi dari
+    hash aset; service worker hanya menyimpan aset statis berversi dan halaman `/offline`
+    (dirender tanpa session) — halaman berisi data tidak pernah disimpan di cache.
+    Manifest hanya dimuat di halaman setelah login.
 - Preferensi per role (`notification_preferences`): event apa yang diterima
   role tersebut, lewat inbox saja atau inbox + push.
 

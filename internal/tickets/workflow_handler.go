@@ -139,6 +139,11 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
 		h.Renderer.Error(w, r, http.StatusNotFound, "")
 		return
 	}
+	if h.OnView != nil {
+		if u := reqctx.UserFrom(r.Context()); u != nil {
+			h.OnView(r.Context(), u.ID, id)
+		}
+	}
 	h.renderDetail(w, r, id, http.StatusOK, "", nil, nil)
 }
 

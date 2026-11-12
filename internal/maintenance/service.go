@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"sikat/internal/clock"
 	"sikat/internal/database"
 	"sikat/internal/master"
+	"sikat/internal/notifications"
 	"sikat/internal/rbac"
 	"sikat/internal/settings"
 	"sikat/internal/tickets"
@@ -294,6 +296,12 @@ func (s *Service) detect(ctx context.Context, tx *sql.Tx, assetID, ticketID int6
 			return 0, err
 		}
 		id, _ = res.LastInsertId()
+		if _, err := notifications.Publish(ctx, tx, notifications.Event{
+			Type: notifications.RepeatDamage, DedupeKey: fmt.Sprintf("asset_alert:%d", id), AssetID: assetID, TicketID: ticketID,
+			Payload: map[string]any{"count": f.CountInWindow, "window_days": c.WindowDays, "recommendation": rec, "alert_id": id},
+		}, now); err != nil {
+			return 0, err
+		}
 		return id, audit.Record(ctx, tx, now, audit.Entry{Action: "asset.repeat_damage_alert", EntityType: "assets", EntityID: assetID, System: true,
 			After: map[string]any{"alert_id": id, "count": f.CountInWindow, "recommendation": rec}})
 	case err != nil:

@@ -2,6 +2,34 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
+## PHASE 6: PWA & Notifikasi (2026-11-12)
+
+### Ditambahkan
+- Migrasi `00008_notifications`: `outbox_events` (dedupe_key UNIQUE),
+  `notifications` (UNIQUE user+event), `push_subscriptions`, `push_deliveries`,
+  `notification_preferences` (preferensi awal per role; Admin tidak menerima
+  notifikasi tiket secara default), FK `sla_escalations.outbox_event_id`.
+- Notifikasi berbasis event yang ditulis dalam transaksi perubahan data: tiket baru,
+  tiket kritis, diambil, mulai dikerjakan, tertunda, selesai, dibuka kembali,
+  penugasan, SLA hampir habis, SLA terlewati, perangkat sering rusak.
+  Petugas hanya menerima yang relevan (kompetensi / anggota tim tiket); pelaku
+  tidak menerima notifikasi tindakannya sendiri.
+- Inbox in-app (`/app/notifications`): belum dibaca/semua, tandai semua dibaca,
+  badge lonceng di menu & header HP (diperbarui tiap menit dan saat push masuk);
+  membuka detail tiket menandai notifikasinya dibaca.
+- Web Push dengan VAPID (implementasi pustaka standar Go): retry dengan jeda,
+  langganan 404/410 dinonaktifkan, push basi (> 1 jam) tidak dikirim, isi lock screen
+  generik (nomor tiket & jenis kejadian, tanpa lokasi/deskripsi/nama).
+- Pengaturan notifikasi per pengguna: aktifkan/matikan push di perangkat ini,
+  daftar perangkat, kirim notifikasi uji. Logout menghapus langganan perangkat itu.
+- Preferensi notifikasi per role untuk Admin (Inbox / Inbox + push / Tidak dikirim),
+  tercatat di audit.
+- PWA: manifest, ikon (192/512/maskable/apple-touch), service worker (cache aset
+  statis berversi, halaman offline), favicon.
+- Perintah `sikat vapid-keys`; variabel `SIKAT_VAPID_PUBLIC_KEY`,
+  `SIKAT_VAPID_PRIVATE_KEY`, `SIKAT_VAPID_SUBJECT`.
+- Worker `kirim-notifikasi` (5 detik) dan `bersih-notifikasi` (harian, retensi 180 hari).
+
 ## PHASE 5: SLA & Eskalasi (2026-11-12)
 
 ### Ditambahkan

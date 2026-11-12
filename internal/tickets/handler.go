@@ -1,6 +1,7 @@
 package tickets
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -25,6 +26,8 @@ type Handler struct {
 	BaseURL  string
 	// Require membuat middleware permission (dari auth.Guard).
 	Require func(rbac.Permission) func(http.Handler) http.Handler
+	// OnView (opsional) dipanggil saat detail tiket dibuka (menandai notifikasi tiket dibaca).
+	OnView func(ctx context.Context, userID, ticketID int64)
 }
 
 // Routes mendaftarkan rute di bawah /app/tickets.

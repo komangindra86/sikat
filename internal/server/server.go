@@ -26,6 +26,7 @@ import (
 	"sikat/internal/maintenance"
 	"sikat/internal/master"
 	"sikat/internal/middleware"
+	"sikat/internal/notifications"
 	"sikat/internal/priority"
 	"sikat/internal/qrcodes"
 	"sikat/internal/rbac"
@@ -55,6 +56,8 @@ type Deps struct {
 	PublicRate int
 	// QRRate: batas kiriman laporan per QR per 10 menit (0 = default 10).
 	QRRate int
+	// PushSender menggantikan pengirim Web Push (test). Kunci VAPID tetap dari Config.
+	PushSender notifications.Sender
 }
 
 // App adalah server yang sudah dirakit.
@@ -64,6 +67,8 @@ type App struct {
 	Settings *settings.Service
 	// Worker menjalankan pekerjaan latar belakang; dijalankan pemanggil dengan go app.Worker.Run(ctx).
 	Worker *worker.Runner
+	// Notifications: outbox, inbox, dan Web Push.
+	Notifications *notifications.Service
 }
 
 // New merakit handler HTTP.
@@ -89,6 +94,21 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	sessions := auth.NewSessionManager(sessionStore, d.Config.SessionLifetime, d.Config.SessionIdleTimeout, d.Config.SecureCookies())
 
 	settingsSvc := settings.NewService(d.DB, d.Clock)
+
+	// Notifikasi: tanpa kunci VAPID, push nonaktif tetapi inbox tetap berjalan.
+	var sender notifications.Sender
+	vapidKey := ""
+	if d.Config.VAPIDPublicKey != "" {
+		v, err := notifications.ParseVAPID(d.Config.VAPIDPublicKey, d.Config.VAPIDPrivateKey, d.Config.VAPIDSubject)
+		if err != nil {
+			return nil, err
+		}
+		sender, vapidKey = &notifications.WebPush{VAPID: v, Now: d.Clock.Now}, v.PublicKey
+	}
+	if d.PushSender != nil && vapidKey != "" {
+		sender = d.PushSender
+	}
+	notifSvc := notifications.NewService(d.DB, d.Clock, d.Log, sender, vapidKey)
 	authSvc := auth.NewService(d.DB, d.Clock, settingsSvc)
 
 	var renderer *web.Renderer
@@ -103,7 +123,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	}
 	renderer, err := web.NewRenderer(web.Options{
 		Templates: d.Templates, Static: d.Static, ReloadDir: reloadDir,
-		Sessions: sessions, CSRF: csrf, Site: settingsSvc, Log: d.Log,
+		Sessions: sessions, CSRF: csrf, Site: settingsSvc, Log: d.Log, Inbox: notifSvc,
 	})
 	if err != nil {
 		return nil, err
@@ -114,7 +134,8 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		Forbidden: func(w http.ResponseWriter, r *http.Request) { renderer.Error(w, r, http.StatusForbidden, "") },
 		Fail:      func(w http.ResponseWriter, r *http.Request, err error) { renderer.ServerError(w, r, err) },
 	}
-	authH := &auth.Handler{Guard: guard, Service: authSvc, Renderer: renderer}
+	notifH := &notifications.Handler{Service: notifSvc, Renderer: renderer, Sessions: sessions}
+	authH := &auth.Handler{Guard: guard, Service: authSvc, Renderer: renderer, BeforeLogout: notifH.BeforeLogout}
 	assetSvc := assets.NewService(d.DB, d.Clock)
 	masterH := &master.Handler{Service: master.NewService(d.DB, d.Clock), Renderer: renderer}
 	qrSvc := qrcodes.NewService(d.DB, d.Clock, d.Config.BaseURL)
@@ -138,7 +159,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	qrH := &qrcodes.Handler{Service: qrSvc, Renderer: renderer}
 	priorityH := &priority.Handler{DB: d.DB, Renderer: renderer}
 	ticketH := &tickets.Handler{Service: ticketSvc, Settings: settingsSvc, Renderer: renderer, Sessions: sessions,
-		BaseURL: d.Config.BaseURL, Require: guard.Require}
+		BaseURL: d.Config.BaseURL, Require: guard.Require, OnView: notifSvc.MarkTicketRead}
 	publicLimiter := middleware.NewRateLimiter(d.PublicRate, 10*time.Minute, d.PublicRate)
 	qrLimiter := middleware.NewRateLimiter(d.QRRate, 10*time.Minute, d.QRRate)
 	go publicLimiter.Cleanup(ctx, 5*time.Minute)
@@ -165,6 +186,32 @@ func New(ctx context.Context, d Deps) (*App, error) {
 			res, err := slaSvc.Scan(ctx)
 			if res.Escalated > 0 {
 				d.Log.Info("eskalasi SLA baru", "jumlah", res.Escalated, "tiket_aktif", res.Checked)
+			}
+			return err
+		},
+	}, {
+		// Outbox → inbox → Web Push. Interval pendek agar notifikasi terasa segera.
+		Name: "kirim-notifikasi", Interval: 5 * time.Second,
+		Run: func(ctx context.Context) error {
+			pr, err := notifSvc.Process(ctx)
+			if pr.Events > 0 || pr.Failed > 0 {
+				d.Log.Info("notifikasi diproses", "event", pr.Events, "notifikasi", pr.Notifications, "push_dijadwalkan", pr.Deliveries, "gagal", pr.Failed)
+			}
+			if err != nil {
+				return err
+			}
+			sr, err := notifSvc.SendPush(ctx)
+			if sr.Sent+sr.Retry+sr.Failed+sr.Gone > 0 {
+				d.Log.Info("push dikirim", "terkirim", sr.Sent, "dicoba_lagi", sr.Retry, "gagal", sr.Failed, "langganan_kedaluwarsa", sr.Gone, "basi", sr.Expired)
+			}
+			return err
+		},
+	}, {
+		Name: "bersih-notifikasi", Interval: 24 * time.Hour,
+		Run: func(ctx context.Context) error {
+			n, err := notifSvc.Cleanup(ctx)
+			if n > 0 {
+				d.Log.Info("data notifikasi lama dihapus", "baris", n)
 			}
 			return err
 		},
@@ -204,6 +251,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	app.With(middleware.NoStore).Get("/login", authH.LoginForm)
 	app.With(middleware.NoStore, loginLimiter.Middleware(true, tooMany)).Post("/login", authH.Login)
 	app.Post("/logout", authH.Logout)
+
 	app.Group(func(r chi.Router) {
 		r.Use(middleware.NoStore)
 		publicH.Routes(r)
@@ -226,6 +274,8 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.With(guard.Require(rbac.PermActivityCreate)).Route("/activities", activityH.Routes)
 		r.Route("/maintenance", maintH.Routes)
 		r.Route("/sla", slaH.Routes)
+		r.Route("/notifications", notifH.Routes)
+		r.With(guard.Require(rbac.PermConfigManage)).Route("/settings/notifications", notifH.AdminRoutes)
 	})
 
 	// Router luar: aset statis & health check tanpa session.
@@ -258,6 +308,15 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		}
 		files.ServeHTTP(w, r)
 	})))
+	pwa := &pwaHandler{static: staticSub, renderer: renderer, dev: devStatic}
+	root.HandleFunc("/sw.js", pwa.serviceWorker)
+	root.HandleFunc("/manifest.webmanifest", pwa.manifest)
+	root.HandleFunc("/favicon.ico", pwa.favicon)
+	root.HandleFunc("/offline", func(w http.ResponseWriter, r *http.Request) {
+		// Tanpa session: halaman ini disimpan service worker untuk ditampilkan saat offline.
+		w.Header().Set("Cache-Control", "no-cache")
+		renderer.RenderPublic(w, r, http.StatusOK, "public/offline", web.Page{Title: "Tidak ada koneksi"})
+	})
 	root.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
@@ -276,5 +335,5 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	h = middleware.Logger(d.Log)(h)
 	h = middleware.RequestInfo(d.Config.TrustProxyHeaders)(h)
 
-	return &App{Handler: h, Sessions: sessions, Settings: settingsSvc, Worker: runner}, nil
+	return &App{Handler: h, Sessions: sessions, Settings: settingsSvc, Worker: runner, Notifications: notifSvc}, nil
 }
