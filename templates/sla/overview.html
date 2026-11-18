@@ -36,7 +36,7 @@
               <span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span>
               <span class="badge badge-{{tone "ticket_status" .Status}}">{{label "ticket_status" .Status}}</span>
             </div>
-            <div class="mt-1 truncate font-medium text-slate-900 group-hover:text-teal-800">{{.Category}} <span class="font-normal text-slate-500">· {{.Location}}</span></div>
+            <div class="mt-1 truncate font-medium text-slate-900 group-hover:text-brand-800">{{.Category}} <span class="font-normal text-slate-500">· {{.Location}}</span></div>
             <div class="mt-0.5 text-xs text-slate-500">{{if .AssigneeName.Valid}}Ditangani {{.AssigneeName.String}}{{else}}Belum diambil{{end}}</div>
           </div>
           <div class="w-full shrink-0 sm:w-56">

@@ -23,13 +23,26 @@
 }
 
 /*
-  Prinsip tampilan: netral, datar, satu warna aksen (teal), tanpa gradien/hiasan.
+  Prinsip tampilan: netral, datar, satu warna aksen (biru brand dari logo SIKAT), tanpa gradien/hiasan.
   Hierarki dibangun dari tipografi, jarak, dan garis tipis — bukan warna.
 */
 @theme {
   --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --color-canvas: #f8fafc;
   --color-line: #e5e7eb;
+  /* Biru brand — diturunkan dari logo (#267CDE terang, #1B57A5 tengah, #114087 gelap).
+     700 = warna utama tombol (kontras teks putih 7,1:1). */
+  --color-brand-50: #eef5fe;
+  --color-brand-100: #dcebfe;
+  --color-brand-200: #bfdaf9;
+  --color-brand-300: #93c0f4;
+  --color-brand-400: #5b9de9;
+  --color-brand-500: #2f7fdf;
+  --color-brand-600: #2168c7;
+  --color-brand-700: #1b57a5;
+  --color-brand-800: #164889;
+  --color-brand-900: #123b70;
+  --color-brand-950: #0c2648;
 }
 
 @layer base {
@@ -43,17 +56,17 @@
   input, select, textarea { font-size: 16px; }
   @media (min-width: 640px) { input, select, textarea { font-size: 14px; } }
   [hidden] { display: none !important; }
-  ::selection { @apply bg-teal-100 text-teal-900; }
+  ::selection { @apply bg-brand-100 text-brand-900; }
 }
 
 @layer components {
   /* ---------- Tombol ---------- */
   .btn {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-3.5 text-sm font-medium transition-colors
-      focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2
       disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9;
   }
-  .btn-primary { @apply bg-teal-700 text-white hover:bg-teal-800; }
+  .btn-primary { @apply bg-brand-700 text-white hover:bg-brand-800; }
   .btn-secondary { @apply border border-line bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900; }
   .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
   .btn-ghost { @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
@@ -82,12 +95,12 @@
   .label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
   .input {
     @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-slate-900 transition-colors
-      placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:py-2;
+      placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 sm:py-2;
   }
   .input-error { @apply border-red-500 focus:border-red-600 focus:ring-red-600/20; }
   .help { @apply mt-1.5 text-xs text-slate-500; }
   .error-text { @apply mt-1.5 text-sm text-red-600; }
-  .checkbox { @apply h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600; }
+  .checkbox { @apply h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600; }
   .filter-bar { @apply rounded-lg border border-line bg-white p-3; }
 
   /* ---------- Badge status: titik berwarna + teks netral ---------- */
@@ -114,23 +127,28 @@
   /* Daftar baris di dalam kartu */
   .list { @apply divide-y divide-slate-100 rounded-lg border border-line bg-white; }
 
+  /* ---------- Laporan ---------- */
+  .report-table th { @apply whitespace-nowrap bg-slate-50; }
+  .report-table td { @apply align-top; }
+  .report-table tfoot td { @apply border-t border-slate-300 bg-slate-50 font-semibold text-slate-900; }
+
   /* ---------- Notifikasi ---------- */
-  .count-badge { @apply ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-700 px-1.5 text-[11px] font-semibold leading-none text-white tabular-nums; }
+  .count-badge { @apply ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 text-[11px] font-semibold leading-none text-white tabular-nums; }
   .bell-badge { @apply absolute -right-0.5 -top-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white tabular-nums; }
   .notif-item { @apply flex gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5; }
-  .notif-unread { @apply bg-teal-50/40; }
+  .notif-unread { @apply bg-brand-50/40; }
   .notif-dot { @apply mt-1.5 h-2 w-2 shrink-0 rounded-full; }
 
   /* ---------- Navigasi ---------- */
   .side-link { @apply flex min-h-9 items-center gap-2.5 rounded-md px-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900; }
   .side-link svg { @apply h-[18px] w-[18px] shrink-0 text-slate-400; }
   .side-link-active { @apply bg-slate-100 text-slate-900; }
-  .side-link-active svg { @apply text-teal-700; }
+  .side-link-active svg { @apply text-brand-700; }
   .side-group { @apply px-2.5 pb-1.5 pt-5 text-[11px] font-medium uppercase tracking-wider text-slate-400; }
   .nav-link { @apply flex min-h-11 items-center gap-3 rounded-md px-3 text-[15px] font-medium text-slate-700 hover:bg-slate-100; }
   .nav-link svg { @apply h-5 w-5 shrink-0 text-slate-400; }
   .nav-link-active { @apply bg-slate-100 text-slate-900; }
-  .nav-link-active svg { @apply text-teal-700; }
+  .nav-link-active svg { @apply text-brand-700; }
   .nav-group { @apply px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wider text-slate-400; }
 
   /* ---------- Pesan ---------- */
@@ -143,8 +161,8 @@
   /* Kartu pilihan (radio) */
   .choice {
     @apply block min-h-11 cursor-pointer rounded-md border border-slate-300 bg-white p-3 transition-colors hover:border-slate-400
-      has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50/60 has-[:checked]:ring-1 has-[:checked]:ring-teal-600
-      has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-600;
+      has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50/60 has-[:checked]:ring-1 has-[:checked]:ring-brand-600
+      has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-600;
   }
 
   /* ---------- Judul halaman ---------- */
@@ -192,3 +210,17 @@ details[open] > summary::after { transform: rotate(-135deg); }
 @media print {
   .no-print { display: none !important; }
 }
+
+/* Grafik laporan (SVG dari server). Palet tervalidasi (dataviz): brand-600, amber-600, violet-500. */
+.chart { display: block; width: 100%; min-width: 360px; height: auto; max-height: 280px; }
+.chart-grid { stroke: var(--color-slate-200); stroke-width: 1; }
+.chart-axis { fill: var(--color-slate-500); font-size: 10px; font-variant-numeric: tabular-nums; }
+.chart-hit { fill: transparent; }
+.chart-bar:hover .chart-hit { fill: var(--color-slate-100); }
+.chart-s0 { fill: #2168c7; }
+.chart-s1 { fill: #d97706; }
+.chart-s2 { fill: #8b5cf6; }
+.chart-key { display: inline-block; width: 0.625rem; height: 0.625rem; border-radius: 2px; }
+.chart-key-0 { background: #2168c7; }
+.chart-key-1 { background: #d97706; }
+.chart-key-2 { background: #8b5cf6; }

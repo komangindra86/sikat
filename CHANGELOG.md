@@ -2,6 +2,89 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
+## PHASE 8: SIMRS Integration Ready (2026-11-18)
+
+### Ditambahkan
+- Migrasi `00011_integration`: `employees` (direktori pegawai), `integration_configs`
+  (sumber data per entitas, jadwal, kebijakan konflik, retry), `integration_sync_logs`,
+  `external_id_mappings`, `integration_imports`.
+- Paket `internal/integration`: antarmuka `OrganizationProvider`, `RoomProvider`,
+  `EmployeeProvider`, `AssetProvider`; `LocalProvider` (default, jujur: tidak ada
+  sinkron); mesin penerapan dengan pemetaan external_id, penautan ke data lokal
+  berkode sama, **perlindungan perubahan manual** (konflik, kecuali "Utamakan data
+  sumber"), data hilang dinonaktifkan (tidak dihapus).
+- Halaman **Administrasi › Integrasi** (Admin): status per entitas, **impor CSV**
+  (unggah → pratinjau per baris tanpa menyimpan → terapkan), template CSV per
+  entitas, log sinkronisasi dengan rincian konflik/galat; impor tercatat di audit.
+- Sinkron terjadwal & percobaan ulang otomatis (5, 10, 20 menit … sampai batas) untuk
+  adapter SIMRS — siap dipakai saat adapter dibuat; tanpa adapter, SIMRS tidak dapat
+  dipilih (tidak ada integrasi palsu).
+- Master Data › **Pegawai**; form "Catat tiket" menyarankan nama pelapor dari direktori.
+- Dashboard Admin: status integrasi & impor terakhir.
+- `docs/INTEGRATION.md`: prinsip, format CSV, aturan sinkron, cara menambah adapter
+  SIMRS, dan daftar informasi yang dibutuhkan dari tim SIMRS.
+
+### Diubah
+- Mengaktifkan/menonaktifkan data master yang berasal dari sumber luar kini menandai
+  perubahan lokal (tidak ditimpa sinkron berikutnya).
+- Menu **Integrasi** disembunyikan dari navigasi (keputusan: integrasi lewat API SIMRS);
+  halaman `/app/integrations` tetap tersedia untuk Admin lewat URL.
+
+### Diperbaiki
+- Badge notifikasi dapat meminta data ke server berulang kali bila halaman sering
+  berganti terlihat/tersembunyi; kini dibatasi paling sering sekali per 30 detik.
+
+## PHASE 7: Dashboard & Reporting (2026-11-13)
+
+### Ditambahkan
+- Halaman **Laporan** (`/app/reports`) dengan 15 laporan dari data transaksi:
+  Laporan Koordinator IT (pengganti spreadsheet: No, Tanggal, Unit/Bagian, Bidang,
+  Kegiatan, Pelaksana, Pendukung, Status, Hasil/Keterangan — dari tiket dan
+  kegiatan internal), rekap bulanan (dengan grafik), per bidang, per unit, per
+  petugas, per prioritas, tiket tertunda, SLA, waktu respons, waktu penyelesaian,
+  beban kerja petugas, kegiatan internal, perangkat sering rusak, riwayat
+  pemeliharaan, dan downtime perangkat.
+- Filter periode (bulan, tahun, rentang tanggal; batas dihitung dalam WITA), unit,
+  bidang, petugas, prioritas, dan status.
+- Ekspor **Excel** (angka tetap berupa angka, filter otomatis, header beku) dan
+  **PDF** (A4 landscape, header tabel berulang tiap halaman, nomor halaman);
+  setiap ekspor tercatat di jejak audit.
+- Petugas melihat laporan berisi pekerjaannya sendiri; Admin & Koordinator melihat semua.
+- Dashboard per role: petugas (tersedia untuk saya, tiket saya, dikerjakan,
+  tertunda, selesai bulan ini, kritis, SLA mendekati batas, beban kerja tim);
+  koordinator (ringkasan bulan berjalan, belum diambil, SLA terlewati, kinerja
+  petugas, distribusi gangguan, kegiatan internal, perangkat sering rusak); admin
+  (status database, worker, antrean notifikasi, Web Push, integrasi & backup).
+- Dependensi: `github.com/xuri/excelize/v2`, `github.com/go-pdf/fpdf`.
+
+### Diubah
+- **Koordinator per bidang** (migrasi `00009_bidang_coordinator`): Master Data › Bidang
+  memiliki kolom Koordinator (tepat satu per bidang; satu koordinator boleh memegang
+  beberapa bidang; terisi awal dari kompetensi koordinator yang ada). Notifikasi,
+  dashboard, dan antrean bawaan koordinator kini hanya bidangnya; ambil alih, ubah
+  prioritas, batalkan, tutup, buka kembali, dan atur anggota tim hanya untuk tiket
+  bidangnya (tetap dapat melihat semua tiket & laporan). Bidang tanpa koordinator
+  aktif dialihkan ke semua koordinator; dashboard Admin memperingatkannya. Detail
+  tiket menampilkan koordinator bidang.
+- **Triase & koreksi jenis gangguan** (migrasi `00010_triage`): bidang baru
+  "Triase / Belum terklasifikasi"; jenis "Lainnya" kini menuju Triase (bukan
+  Hardware). Tiket triase terlihat & dinotifikasi ke semua petugas, ditandai
+  "Perlu dipilah", dan muncul sebagai banner di dashboard koordinator triase.
+  Koordinator bidang tiket (atau penanggung jawab) dapat mengoreksi jenis
+  gangguan: bidang ikut berubah, kebijakan SLA dipilih ulang, koordinator &
+  petugas bidang baru menerima notifikasi "Dialihkan ke bidang", tercatat di
+  histori; jenis pilihan pelapor disimpan. Laporan baru **Pemilahan jenis
+  gangguan** sebagai bahan menambah jenis gangguan baru. Formulir pelapor
+  memberi petunjuk memilih "Lainnya" bila tidak ada yang cocok.
+- Logo baru SIKAT (label + kunci pas + sirkuit) di sidebar, header HP, halaman login,
+  favicon, dan ikon PWA (192/512, maskable latar penuh, apple-touch, badge notifikasi).
+- Warna aksen teal diganti palet biru brand yang diturunkan dari logo (`brand-50…950`,
+  tombol utama `brand-700` #1B57A5, kontras teks putih 7,1:1); theme-color, grafik,
+  serta header tabel Excel/PDF ikut disesuaikan.
+
+### Diperbaiki
+- Ikon pada tombol (inbox & pengaturan notifikasi) tidak tampil karena tidak diberi ukuran.
+
 ## PHASE 6: PWA & Notifikasi (2026-11-12)
 
 ### Ditambahkan

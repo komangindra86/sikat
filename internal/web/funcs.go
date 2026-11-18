@@ -25,6 +25,7 @@ func (r *Renderer) funcs() template.FuncMap {
 		"money":     FormatMoney,
 		"dict":      dict,
 		"add":       func(a, b int) int { return a + b },
+		"join":      strings.Join,
 		"queryWith": queryWith,
 		"nullStr":   func(s sql.NullString) string { return s.String },
 		"since":     since,

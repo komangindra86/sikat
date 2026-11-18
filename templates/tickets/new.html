@@ -52,7 +52,9 @@
     <div class="card card-body grid gap-4 sm:grid-cols-2">
       <div>
         <label class="label" for="reporter_name">Nama pelapor <span class="text-red-600" aria-hidden="true">*</span></label>
-        <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" maxlength="120" value="{{index $d.Form "reporter_name"}}" required>
+        <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" maxlength="120" value="{{index $d.Form "reporter_name"}}" required {{if $d.Employees}}list="pegawai" autocomplete="off"{{end}}>
+        {{if $d.Employees}}<datalist id="pegawai">{{range $d.Employees}}<option value="{{.Name}}">{{.Department}}</option>{{end}}</datalist>
+        <p class="help">Ketik untuk memilih dari direktori pegawai, atau isi bebas.</p>{{end}}
         {{with $p.Err "reporter_name"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div>
@@ -118,7 +120,7 @@
 
     <div class="card card-body">
       <label class="label" for="photos">Foto (opsional, maks {{$d.MaxFiles}})</label>
-      <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
+      <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
       <div class="mt-2 grid grid-cols-4 gap-2" data-photo-preview></div>
       {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}
     </div>

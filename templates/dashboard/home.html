@@ -11,7 +11,7 @@
   </div>
 </div>
 
-{{if .Data.ShowTickets}}{{$ts := .Data.Tickets}}
+{{if .Data.Tech}}{{template "dash-tech" .}}{{else if .Data.Coord}}{{template "dash-coord" .}}{{else if .Data.ShowTickets}}{{$ts := .Data.Tickets}}
 {{if gt $ts.CriticalNew 0}}
 <a href="/app/tickets?priority=CRITICAL&semua=1" class="mt-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-colors hover:bg-red-100/70" role="alert">
   <span class="icon h-[18px] w-[18px] text-red-600">{{template "icon" "alert"}}</span>
@@ -37,7 +37,7 @@
   </div>
   {{if .Data.ShowSLA}}{{$sla := .Data.SLA}}
   <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-    <a href="/app/sla" class="font-medium text-slate-900 hover:text-teal-800">SLA tiket aktif</a>
+    <a href="/app/sla" class="font-medium text-slate-900 hover:text-brand-800">SLA tiket aktif</a>
     <span class="flex items-center gap-1.5 text-slate-600"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span><strong class="tabular-nums {{if gt $sla.Late 0}}text-red-600{{else}}text-slate-900{{end}}">{{$sla.Late}}</strong> terlambat</span>
     <span class="flex items-center gap-1.5 text-slate-600"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span><strong class="tabular-nums text-slate-900">{{$sla.Warning}}</strong> hampir habis</span>
     <span class="flex items-center gap-1.5 text-slate-600"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span><strong class="tabular-nums text-slate-900">{{$sla.Safe}}</strong> aman</span>
@@ -50,12 +50,14 @@
 </section>
 {{end}}
 
+{{with .Data.Admin}}{{template "dash-admin" .}}{{end}}
+
 <div class="mt-8 grid gap-6 lg:grid-cols-3">
   <div class="space-y-8 lg:col-span-2">
     <section aria-labelledby="ringkasan-perangkat">
       <div class="mb-2.5 flex items-center justify-between">
         <h2 id="ringkasan-perangkat" class="section-title">Perangkat</h2>
-        <a href="/app/assets" class="text-sm font-medium text-teal-700 hover:text-teal-800">Lihat semua</a>
+        <a href="/app/assets" class="text-sm font-medium text-brand-700 hover:text-brand-800">Lihat semua</a>
       </div>
       <div class="metrics sm:grid-cols-3">
         {{template "metric" (dict "Href" "/app/assets" "Label" "Terdaftar" "Value" .Data.AssetsTotal "Dot" "")}}
@@ -64,7 +66,7 @@
         {{end}}
       </div>
       {{if eq .Data.AssetsTotal 0}}
-      <p class="muted mt-3">Belum ada perangkat terdaftar.{{if .User.Can "master.manage"}} <a class="font-medium text-teal-700 hover:underline" href="/app/assets/new">Tambah perangkat</a>{{end}}</p>
+      <p class="muted mt-3">Belum ada perangkat terdaftar.{{if .User.Can "master.manage"}} <a class="font-medium text-brand-700 hover:underline" href="/app/assets/new">Tambah perangkat</a>{{end}}</p>
       {{end}}
     </section>
 
@@ -90,7 +92,7 @@
     <section class="card" aria-labelledby="sering-rusak">
       <div class="card-header">
         <h2 id="sering-rusak" class="card-title">Perangkat sering rusak</h2>
-        <a href="/app/maintenance/alerts" class="text-sm font-medium text-teal-700 hover:text-teal-800">Semua</a>
+        <a href="/app/maintenance/alerts" class="text-sm font-medium text-brand-700 hover:text-brand-800">Semua</a>
       </div>
       {{if .Data.Alerts}}
       <div class="divide-y divide-slate-100">
@@ -109,7 +111,7 @@
     <section class="card" aria-labelledby="aktivitas">
       <div class="card-header">
         <h2 id="aktivitas" class="card-title">Aktivitas terbaru</h2>
-        <a href="/app/audit" class="text-sm font-medium text-teal-700 hover:text-teal-800">Semua</a>
+        <a href="/app/audit" class="text-sm font-medium text-brand-700 hover:text-brand-800">Semua</a>
       </div>
       <ol class="divide-y divide-slate-100">
         {{range .Data.RecentAudit}}
@@ -130,4 +132,160 @@
   <span class="metric-label">{{if .Dot}}<span class="h-1.5 w-1.5 rounded-full {{if eq .Dot "blue"}}bg-sky-500{{else if eq .Dot "indigo"}}bg-indigo-500{{else if eq .Dot "amber"}}bg-amber-500{{else if eq .Dot "orange"}}bg-orange-500{{else if eq .Dot "red"}}bg-red-500{{else if eq .Dot "green"}}bg-emerald-500{{else}}bg-slate-400{{end}}"></span>{{end}}{{.Label}}</span>
   <span class="metric-value block {{if and (eq .Dot "red") (gt .Value 0)}}text-red-600{{end}}">{{.Value}}</span>
 {{if .Href}}</a>{{else}}</div>{{end}}
+{{end}}
+
+{{/* ===== Dashboard petugas ===== */}}
+{{define "dash-tech"}}{{$v := .Data.Tech}}
+{{if gt $v.CriticalActive 0}}
+<a href="/app/tickets?priority=CRITICAL&semua=1" class="mt-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-colors hover:bg-red-100/70" role="alert">
+  <span class="icon h-[18px] w-[18px] text-red-600">{{template "icon" "alert"}}</span>
+  <span class="flex-1"><strong class="font-semibold">{{$v.CriticalActive}} tiket kritis</strong> masih aktif.</span>
+  <span class="font-medium">Lihat</span>
+</a>
+{{end}}
+<section class="mt-6" aria-labelledby="tiket-saya">
+  <h2 id="tiket-saya" class="section-title mb-2.5">Tiket</h2>
+  <div class="metrics grid-cols-2 sm:grid-cols-4">
+    {{template "metric" (dict "Href" "/app/tickets" "Label" "Tersedia untuk saya" "Value" $v.Available "Dot" "blue")}}
+    {{template "metric" (dict "Href" "/app/tickets?mode=mine" "Label" "Tiket saya" "Value" $v.Mine "Dot" "indigo")}}
+    {{template "metric" (dict "Href" "/app/tickets?mode=mine" "Label" "Sedang dikerjakan" "Value" $v.InProgress "Dot" "amber")}}
+    {{template "metric" (dict "Href" "/app/tickets?mode=mine" "Label" "Tertunda" "Value" $v.Pending "Dot" "orange")}}
+    {{template "metric" (dict "Href" "/app/reports/koordinator" "Label" "Saya selesaikan bulan ini" "Value" $v.DoneMonth "Dot" "green")}}
+    {{template "metric" (dict "Href" "/app/tickets?priority=CRITICAL&semua=1" "Label" "Tiket kritis aktif" "Value" $v.CriticalActive "Dot" "red")}}
+    {{template "metric" (dict "Href" "/app/tickets?semua=1" "Label" "Baru masuk (semua)" "Value" $v.NewCount "Dot" "")}}
+    {{template "metric" (dict "Href" "" "Label" "SLA mendekati batas" "Value" (len $v.SLAAlerts) "Dot" "red")}}
+  </div>
+</section>
+<div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
+  <section class="card min-w-0" aria-labelledby="sla-dekat">
+    <div class="card-header"><h2 id="sla-dekat" class="card-title">SLA mendekati batas</h2><span class="text-xs text-slate-500">Tiket saya &amp; tiket tersedia</span></div>
+    {{if $v.SLAAlerts}}
+    <ul class="divide-y divide-slate-100">
+      {{range $v.SLAAlerts}}
+      <li><a href="/app/tickets/{{.ID}}" class="flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <span class="min-w-0"><span class="font-mono text-xs text-slate-500">{{.TicketNo}}</span> <span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span>
+          <span class="mt-0.5 block truncate text-sm font-medium text-slate-900">{{.Category}} <span class="font-normal text-slate-500">· {{.Location}}</span></span></span>
+        <span class="shrink-0">{{template "sla-chip" .}}</span>
+      </a></li>
+      {{end}}
+    </ul>
+    {{else}}<p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Tidak ada tiket yang mendekati batas SLA.</p>{{end}}
+  </section>
+  {{template "dash-workload" $v.Workload}}
+</div>
+{{end}}
+
+{{define "dash-workload"}}
+<section class="card" aria-labelledby="beban-kerja">
+  <div class="card-header"><h2 id="beban-kerja" class="card-title">Beban kerja tim</h2><span class="text-xs text-slate-500">Tiket aktif</span></div>
+  {{if .}}
+  <ul class="divide-y divide-slate-100">
+    {{range .}}
+    <li class="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
+      <span class="min-w-0"><span class="block truncate text-sm font-medium text-slate-900">{{.Name}}</span><span class="text-xs text-slate-500">{{.Role}}</span></span>
+      <span class="shrink-0 text-right text-sm tabular-nums"><strong class="text-slate-900">{{.Primary}}</strong> <span class="text-slate-500">PJ</span>{{if .Support}} · <strong class="text-slate-900">{{.Support}}</strong> <span class="text-slate-500">pendukung</span>{{end}}</span>
+    </li>
+    {{end}}
+  </ul>
+  {{else}}<p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Belum ada petugas aktif.</p>{{end}}
+</section>
+{{end}}
+
+{{/* ===== Dashboard koordinator ===== */}}
+{{define "dash-coord"}}{{$v := .Data.Coord}}
+{{if gt $v.TriageCount 0}}
+<a href="/app/tickets?mode=active&amp;bidang={{$v.TriageFieldID}}" class="mt-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 transition-colors hover:bg-amber-100/70">
+  <span class="icon h-[18px] w-[18px] text-amber-600">{{template "icon" "inbox"}}</span>
+  <span class="flex-1"><strong class="font-semibold">{{$v.TriageCount}} tiket perlu dipilah</strong> — di luar daftar jenis gangguan. Tentukan jenisnya agar masuk ke bidang yang tepat.</span>
+  <span class="font-medium">Pilah</span>
+</a>
+{{end}}
+{{if gt $v.CriticalActive 0}}
+<a href="/app/tickets?priority=CRITICAL&semua=1" class="mt-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-colors hover:bg-red-100/70" role="alert">
+  <span class="icon h-[18px] w-[18px] text-red-600">{{template "icon" "alert"}}</span>
+  <span class="flex-1"><strong class="font-semibold">{{$v.CriticalActive}} tiket kritis</strong> masih aktif.</span>
+  <span class="font-medium">Lihat</span>
+</a>
+{{end}}
+<section class="mt-6" aria-labelledby="ringkasan-koor">
+  <div class="mb-2.5 flex items-center justify-between gap-3">
+    <h2 id="ringkasan-koor" class="section-title">Tiket · {{$v.MonthLabel}}</h2>
+    <a href="/app/reports/koordinator?{{$v.MonthQuery}}{{$v.FieldQuery}}" class="text-sm font-medium text-brand-700 hover:text-brand-800">Laporan koordinator</a>
+  </div>
+  {{if $v.Fields}}<p class="-mt-1 mb-2.5 text-sm text-slate-600">Bidang yang Anda koordinasi: <strong class="font-medium text-slate-900">{{range $i, $n := $v.Fields}}{{if $i}}, {{end}}{{$n}}{{end}}</strong></p>
+  {{else}}<p class="-mt-1 mb-2.5 text-sm text-amber-700">Anda belum ditetapkan sebagai koordinator bidang mana pun (Master Data › Bidang), sehingga angka di bawah mencakup semua bidang.</p>{{end}}
+  <div class="metrics grid-cols-2 sm:grid-cols-4">
+    {{template "metric" (dict "Href" (printf "/app/reports/bulanan?%s%s" $v.MonthQuery $v.FieldQuery) "Label" "Total tiket bulan ini" "Value" $v.MonthTotal "Dot" "")}}
+    {{template "metric" (dict "Href" "/app/tickets?semua=1" "Label" "Baru, belum diambil" "Value" $v.New "Dot" "blue")}}
+    {{template "metric" (dict "Href" "/app/tickets?mode=active" "Label" "Sedang dikerjakan" "Value" $v.Working "Dot" "amber")}}
+    {{template "metric" (dict "Href" (printf "/app/reports/tertunda?%s%s" $v.MonthQuery $v.FieldQuery) "Label" "Tertunda" "Value" $v.Pending "Dot" "orange")}}
+    {{template "metric" (dict "Href" "" "Label" "Diselesaikan bulan ini" "Value" $v.DoneMonth "Dot" "green")}}
+    {{template "metric" (dict "Href" "/app/tickets?priority=CRITICAL&semua=1" "Label" "Kritis aktif" "Value" $v.CriticalActive "Dot" "red")}}
+    {{template "metric" (dict "Href" (printf "/app/reports/sla?%s%s" $v.MonthQuery $v.FieldQuery) "Label" "Tiket melanggar SLA" "Value" $v.Breached "Dot" "red")}}
+    {{template "metric" (dict "Href" (printf "/app/reports/kegiatan?%s%s" $v.MonthQuery $v.FieldQuery) "Label" "Kegiatan internal" "Value" $v.Activities "Dot" "")}}
+  </div>
+</section>
+<div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
+  <div class="min-w-0 space-y-6">
+    <section class="card" aria-labelledby="kinerja">
+      <div class="card-header"><h2 id="kinerja" class="card-title">Kinerja petugas · {{$v.MonthLabel}}</h2><a href="/app/reports/petugas?{{$v.MonthQuery}}{{$v.FieldQuery}}" class="text-sm font-medium text-brand-700 hover:text-brand-800">Rinci</a></div>
+      {{if $v.Performance.Rows}}
+      <div class="overflow-x-auto">
+        <table class="table report-table">
+          <thead><tr><th>Petugas</th><th class="text-right">PJ</th><th class="text-right">Selesai</th><th class="text-right">Aktif</th><th class="text-right">Rata-rata respons</th><th class="text-right">Rata-rata selesai</th></tr></thead>
+          <tbody>
+            {{range $v.Performance.Rows}}
+            <tr><td class="font-medium text-slate-900">{{(index . 0).Text}}</td><td class="text-right tabular-nums">{{(index . 1).Text}}</td><td class="text-right tabular-nums">{{(index . 3).Text}}</td><td class="text-right tabular-nums">{{(index . 4).Text}}</td><td class="whitespace-nowrap text-right tabular-nums">{{(index . 5).Text}}</td><td class="whitespace-nowrap text-right tabular-nums">{{(index . 6).Text}}</td></tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}<p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Belum ada tiket bulan ini.</p>{{end}}
+    </section>
+    <section class="card" aria-labelledby="distribusi">
+      <div class="card-header"><h2 id="distribusi" class="card-title">Distribusi gangguan per bidang</h2><a href="/app/reports/bidang?{{$v.MonthQuery}}{{$v.FieldQuery}}" class="text-sm font-medium text-brand-700 hover:text-brand-800">Rinci</a></div>
+      {{if $v.Distribution}}
+      <ul class="space-y-3 px-4 py-4 sm:px-5">
+        {{range $v.Distribution}}
+        <li>
+          <div class="flex items-baseline justify-between gap-3 text-sm"><span class="truncate text-slate-800">{{.Name}}</span><span class="shrink-0 tabular-nums text-slate-600"><strong class="text-slate-900">{{.Count}}</strong> · {{.Pct}}%</span></div>
+          <progress class="meter mt-1.5" max="100" value="{{.Pct}}" aria-label="{{.Name}} {{.Pct}} persen">{{.Pct}}%</progress>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}<p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Belum ada tiket bulan ini.</p>{{end}}
+    </section>
+  </div>
+  {{template "dash-workload" $v.Workload}}
+</div>
+{{end}}
+
+{{/* ===== Dashboard admin: status sistem ===== */}}
+{{define "dash-admin"}}
+<section class="mt-6" aria-labelledby="status-sistem">
+  <h2 id="status-sistem" class="section-title mb-2.5">Status sistem</h2>
+  <div class="card divide-y divide-slate-100">
+    {{template "status-row" (dict "Label" "Database" "OK" .DBOK "Warn" false "Text" (printf "MySQL %s · migrasi versi %d" .DBVersion .Migration))}}
+    {{if .WorkerLeader}}{{template "status-row" (dict "Label" "Worker latar belakang" "OK" true "Warn" false "Text" "Aktif di instance ini (SLA, notifikasi, tutup otomatis)")}}
+    {{else}}{{template "status-row" (dict "Label" "Worker latar belakang" "OK" false "Warn" true "Text" "Tidak aktif di instance ini. Bila hanya ada satu server, periksa log aplikasi.")}}{{end}}
+    {{template "status-row" (dict "Label" "Antrean notifikasi" "OK" (eq .OutboxFailed 0) "Warn" false "Text" (printf "%d menunggu · %d gagal permanen" .OutboxPending .OutboxFailed))}}
+    {{if .PushOn}}{{template "status-row" (dict "Label" "Web Push" "OK" true "Warn" false "Text" (printf "Aktif · %d perangkat berlangganan" .PushDevices))}}
+    {{else}}{{template "status-row" (dict "Label" "Web Push" "OK" false "Warn" true "Text" "Kunci VAPID belum dikonfigurasi — notifikasi hanya di inbox aplikasi")}}{{end}}
+    {{if .FieldsWithoutCoordinator}}{{template "status-row" (dict "Label" "Koordinator bidang" "OK" false "Warn" true "Text" (printf "Belum ada koordinator aktif untuk: %s. Notifikasi bidang tersebut dikirim ke semua koordinator — tetapkan di Master Data › Bidang." (join .FieldsWithoutCoordinator ", ")))}}
+    {{else}}{{template "status-row" (dict "Label" "Koordinator bidang" "OK" true "Warn" false "Text" "Setiap bidang aktif memiliki koordinator")}}{{end}}
+    {{template "status-row" (dict "Label" "Integrasi SIMRS" "OK" .IntegrationOK "Warn" (not .IntegrationOK) "Text" .Integration)}}
+    {{template "status-row" (dict "Label" "Riwayat backup" "OK" false "Warn" true "Text" .Backup)}}
+  </div>
+</section>
+{{end}}
+
+{{define "status-row"}}
+<div class="flex items-start gap-3 px-4 py-3 sm:px-5">
+  <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{if .OK}}bg-emerald-500{{else if .Warn}}bg-amber-500{{else}}bg-red-500{{end}}" aria-hidden="true"></span>
+  <div class="min-w-0 flex-1 sm:flex sm:items-baseline sm:gap-4">
+    <span class="block text-sm font-medium text-slate-900 sm:w-48 sm:shrink-0">{{.Label}}</span>
+    <span class="block text-sm text-slate-600">{{.Text}}</span>
+  </div>
+  <span class="sr-only">{{if .OK}}Normal{{else if .Warn}}Perlu perhatian{{else}}Bermasalah{{end}}</span>
+</div>
 {{end}}

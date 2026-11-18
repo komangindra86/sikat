@@ -15,6 +15,9 @@
 {{- else if eq . "menu"}}<path d="M4 6h16M4 12h16M4 18h16"/>
 {{- else if eq . "plus"}}<path d="M12 5v14M5 12h14"/>
 {{- else if eq . "check"}}<path d="m5 12.5 4.5 4.5L19 7.5"/>
+{{- else if eq . "sync"}}<path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 15.5"/><path d="M4 20v-4.5h4.5"/>
+{{- else if eq . "upload"}}<path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+{{- else if eq . "chart"}}<path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V7"/><path d="M17 16v-8"/>
 {{- else if eq . "bell"}}<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>
 {{- else if eq . "phone"}}<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/>
 {{- else if eq . "send"}}<path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4 18-7z"/>

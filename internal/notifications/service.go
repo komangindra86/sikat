@@ -131,6 +131,8 @@ type outboxRow struct {
 type ticketInfo struct {
 	No, Priority, Status, Category string
 	ITCategoryID                   int64
+	FieldName                      string
+	IsTriage                       bool
 	Department, Room, Asset        sql.NullString
 }
 
@@ -175,14 +177,15 @@ func (s *Service) fanOut(ctx context.Context, tx *sql.Tx, id int64, now time.Tim
 	if ev.TicketID.Valid {
 		ti = &ticketInfo{}
 		err := tx.QueryRowContext(ctx, `
-			SELECT t.ticket_no, t.priority, t.status, tc.name, t.it_category_id, d.name, r.name, a.name
+			SELECT t.ticket_no, t.priority, t.status, tc.name, t.it_category_id, ic.name, ic.is_triage, d.name, r.name, a.name
 			  FROM tickets t
 			  JOIN ticket_categories tc ON tc.id = t.ticket_category_id
+			  JOIN it_categories ic ON ic.id = t.it_category_id
 			  LEFT JOIN departments d ON d.id = t.department_id
 			  LEFT JOIN rooms r ON r.id = t.room_id
 			  LEFT JOIN assets a ON a.id = t.asset_id
 			 WHERE t.id = ?`, ev.TicketID.Int64).
-			Scan(&ti.No, &ti.Priority, &ti.Status, &ti.Category, &ti.ITCategoryID, &ti.Department, &ti.Room, &ti.Asset)
+			Scan(&ti.No, &ti.Priority, &ti.Status, &ti.Category, &ti.ITCategoryID, &ti.FieldName, &ti.IsTriage, &ti.Department, &ti.Room, &ti.Asset)
 		if err != nil {
 			return 0, 0, fmt.Errorf("tiket event: %w", err)
 		}
@@ -278,7 +281,7 @@ func (s *Service) recipients(ctx context.Context, tx *sql.Tx, ev outboxRow, ti *
 		return nil, nil
 	}
 
-	audience := audienceFor(ev)
+	audience := audienceFor(ev, ti)
 	var techScope string
 	var techArgs []any
 	switch {
@@ -286,6 +289,8 @@ func (s *Service) recipients(ctx context.Context, tx *sql.Tx, ev outboxRow, ti *
 		if !ev.TargetID.Valid {
 			return nil, nil
 		}
+	case audience == audPool && ti != nil && ti.IsTriage:
+		// Tiket triase (di luar daftar) dikirim ke semua petugas agar cepat direspons.
 	case audience == audPool && ti != nil:
 		techScope = ` AND (NOT EXISTS (SELECT 1 FROM user_competencies c WHERE c.user_id = u.id)
 		                  OR EXISTS (SELECT 1 FROM user_competencies c WHERE c.user_id = u.id AND c.it_category_id = ?))`
@@ -308,14 +313,32 @@ func (s *Service) recipients(ctx context.Context, tx *sql.Tx, ev outboxRow, ti *
 		q += ` AND u.id <> ?`
 		args = append(args, ev.ActorID.Int64)
 	}
-	// Petugas: dibatasi cakupan; role lain: semua anggota role.
-	q += ` AND (r.code <> 'TECHNICIAN'` + func() string {
-		if techScope == "" {
-			return ` OR TRUE)`
+	// Koordinator per bidang: hanya koordinator bidang tiket (ditambah koordinator
+	// yang menjadi anggota tim tiket). Bidang tanpa koordinator aktif → semua koordinator.
+	coordScope := ""
+	var coordArgs []any
+	if ti != nil && audience != audTarget {
+		var cid sql.NullInt64
+		err := tx.QueryRowContext(ctx, `
+			SELECT ic.coordinator_user_id FROM it_categories ic
+			  JOIN users cu ON cu.id = ic.coordinator_user_id AND cu.is_active = TRUE
+			  JOIN roles cr ON cr.id = cu.role_id AND cr.code = 'COORDINATOR'
+			 WHERE ic.id = ?`, ti.ITCategoryID).Scan(&cid)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
 		}
-		return ` OR (TRUE` + techScope + `))`
-	}()
+		if cid.Valid {
+			coordScope = ` AND (u.id = ? OR EXISTS (SELECT 1 FROM ticket_assignments ta2
+				WHERE ta2.ticket_id = ? AND ta2.user_id = u.id AND ta2.released_at IS NULL))`
+			coordArgs = []any{cid.Int64, ev.TicketID.Int64}
+		}
+	}
+	// Petugas & koordinator dibatasi cakupan; role lain (Admin): semua anggota role.
+	q += ` AND CASE r.code WHEN 'TECHNICIAN' THEN (TRUE` + techScope + `)
+	                       WHEN 'COORDINATOR' THEN (TRUE` + coordScope + `)
+	                       ELSE TRUE END`
 	args = append(args, techArgs...)
+	args = append(args, coordArgs...)
 	q += ` ORDER BY u.id`
 
 	rows, err = tx.QueryContext(ctx, q, args...)
@@ -347,8 +370,13 @@ const (
 	audTarget          // satu orang
 )
 
-func audienceFor(ev outboxRow) audience {
+func audienceFor(ev outboxRow, ti *ticketInfo) audience {
 	switch ev.Type {
+	case TicketTransferred:
+		if ti != nil && ti.Status == "NEW" {
+			return audPool
+		}
+		return audTeam
 	case TicketCreated, TicketCritical, TicketClaimed:
 		return audPool
 	case TicketStarted, TicketPending, TicketResolved, TicketReopened:

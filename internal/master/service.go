@@ -213,7 +213,7 @@ func (s *Service) SetActive(ctx context.Context, e *Entity, id int64, active boo
 		if before.IsActive == active {
 			return nil
 		}
-		if err := s.repo.setActive(ctx, tx, e, id, active, now); err != nil {
+		if err := s.repo.setActive(ctx, tx, e, id, active, now, e.TracksSync && before.Source != "LOCAL"); err != nil {
 			return err
 		}
 		action := "deactivate"

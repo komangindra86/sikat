@@ -459,7 +459,8 @@ func (s *Service) Summary(ctx context.Context, userID int64) (Summary, error) {
 		       (SELECT COUNT(*) FROM tickets WHERE assignee_id = ? AND status IN ('CLAIMED','IN_PROGRESS','PENDING')),
 		       (SELECT COUNT(*) FROM tickets WHERE status = 'NEW'
 		          AND (NOT EXISTS (SELECT 1 FROM user_competencies WHERE user_id = ?)
-		               OR it_category_id IN (SELECT it_category_id FROM user_competencies WHERE user_id = ?))),
+		               OR it_category_id IN (SELECT it_category_id FROM user_competencies WHERE user_id = ?)
+		               OR it_category_id IN (SELECT id FROM it_categories WHERE is_triage))),
 		       (SELECT COUNT(*) FROM tickets WHERE created_at >= ?)`, userID, userID, userID, startOfDay).
 		Scan(&sum.CriticalNew, &sum.MineActive, &sum.AvailableForMe, &sum.CreatedToday)
 	return sum, err
@@ -479,6 +480,31 @@ func (s *Service) RelatedToAsset(ctx context.Context, assetID int64, limit int) 
 			return nil, err
 		}
 		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// EmployeeOption adalah saran nama pelapor dari direktori pegawai.
+type EmployeeOption struct {
+	Name, Department string
+}
+
+// EmployeeOptions mengembalikan pegawai aktif (maks. 3000) untuk saran nama pelapor.
+func (s *Service) EmployeeOptions(ctx context.Context) ([]EmployeeOption, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT e.full_name, COALESCE(d.name, '') FROM employees e LEFT JOIN departments d ON d.id = e.department_id
+		 WHERE e.is_active = TRUE ORDER BY e.full_name LIMIT 3000`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []EmployeeOption
+	for rows.Next() {
+		var o EmployeeOption
+		if err := rows.Scan(&o.Name, &o.Department); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
 	}
 	return out, rows.Err()
 }

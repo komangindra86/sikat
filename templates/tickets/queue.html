@@ -25,12 +25,13 @@
     <option value="">Semua unit</option>
     {{range $d.Departments}}<option value="{{.ID}}" {{if eq .ID $d.Filter.DepartmentID}}selected{{end}}>{{.Label}}</option>{{end}}
   </select>
-  {{if and (eq $d.Mode "available") $d.HasCompetencies}}
+  {{if or (and $d.CoordinatedFields (ne $d.Mode "mine")) (and (eq $d.Mode "available") $d.HasCompetencies)}}
   <label class="flex min-h-11 items-center gap-2 text-sm"><input class="checkbox" type="checkbox" name="semua" value="1" {{if $d.ShowAll}}checked{{end}}> Tampilkan semua bidang</label>
   {{end}}
   <button class="btn btn-secondary" type="submit" data-no-busy>Terapkan</button>
 </form>
-{{if $d.Filter.OnlyCompetency}}<p class="mt-2 text-xs text-slate-500">Menampilkan tiket sesuai bidang kompetensi Anda.</p>{{end}}
+{{if $d.Filter.OnlyCoordinated}}<p class="mt-2 text-xs text-slate-500">Menampilkan tiket bidang yang Anda koordinasi: {{range $i, $n := $d.CoordinatedFields}}{{if $i}}, {{end}}{{$n}}{{end}}.</p>
+{{else if $d.Filter.OnlyCompetency}}<p class="mt-2 text-xs text-slate-500">Menampilkan tiket sesuai bidang kompetensi Anda.</p>{{end}}
 
 <div class="mt-4 grid items-start gap-6 lg:grid-cols-[1fr_17rem]">
   <div id="queue-list" hx-get="{{$d.SelfURL}}" hx-trigger="every 30s" hx-select="#queue-list" hx-swap="outerHTML" hx-disinherit="*" class="min-w-0">
@@ -73,9 +74,10 @@
         <span class="badge badge-{{tone "priority" $t.Priority}}">{{label "priority" $t.Priority}}</span>
         <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
         {{if ne $t.Channel "QR"}}<span class="badge badge-gray">{{label "channel" $t.Channel}}</span>{{end}}
+        {{if $t.IsTriage}}<span class="badge badge-amber">Perlu dipilah</span>{{end}}
         {{template "sla-chip" $t.SLA}}
       </div>
-      <div class="mt-1.5 font-medium text-slate-900 group-hover:text-teal-800">{{$t.CategoryName}} <span class="font-normal text-slate-500">· {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</span></div>
+      <div class="mt-1.5 font-medium text-slate-900 group-hover:text-brand-800">{{$t.CategoryName}} <span class="font-normal text-slate-500">· {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</span></div>
       <p class="mt-0.5 line-clamp-2 text-sm text-slate-600">{{truncate 160 $t.Description}}</p>
       <div class="mt-1.5 text-xs text-slate-500"><span title="Masuk {{wita $t.CreatedAt}}">{{since $t.CreatedAt}} lalu</span> · {{$t.ITCategoryName}}{{if $t.AssigneeName.Valid}} · Ditangani {{$t.AssigneeName.String}}{{end}}</div>
     </a>
@@ -97,4 +99,4 @@
 </article>
 {{end}}
 
-{{define "queue-tab"}}<a href="{{.Href}}" class="-mb-px whitespace-nowrap border-b-2 py-2.5 text-sm font-medium {{if .On}}border-teal-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-900{{end}}" {{if .On}}aria-current="page"{{end}}>{{.Label}}</a>{{end}}
+{{define "queue-tab"}}<a href="{{.Href}}" class="-mb-px whitespace-nowrap border-b-2 py-2.5 text-sm font-medium {{if .On}}border-brand-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-900{{end}}" {{if .On}}aria-current="page"{{end}}>{{.Label}}</a>{{end}}

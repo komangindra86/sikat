@@ -21,7 +21,7 @@
             </div>
           </div>
           <div class="mt-4 flex flex-wrap gap-2">
-            <button type="button" class="btn btn-primary" data-push-enable hidden>{{template "icon" "bell"}}Aktifkan notifikasi</button>
+            <button type="button" class="btn btn-primary" data-push-enable hidden><span class="icon h-4 w-4">{{template "icon" "bell"}}</span>Aktifkan notifikasi</button>
             <button type="button" class="btn btn-secondary" data-push-disable hidden>Matikan di perangkat ini</button>
           </div>
           <p class="error-text" data-push-error hidden></p>
@@ -45,7 +45,7 @@
         {{if and $d.PushOn $d.Devices}}
         <form method="post" action="/app/notifications/push/test">
           {{template "csrf" .CSRFToken}}
-          <button type="submit" class="btn btn-secondary btn-sm" data-busy-text="Mengirim…">{{template "icon" "send"}}Kirim notifikasi uji</button>
+          <button type="submit" class="btn btn-secondary btn-sm" data-busy-text="Mengirim…"><span class="icon h-4 w-4">{{template "icon" "send"}}</span>Kirim notifikasi uji</button>
         </form>
         {{end}}
       </div>
@@ -90,7 +90,7 @@
       {{end}}
     </ul>
     <p class="border-t border-line px-4 py-3 text-xs text-slate-500 sm:px-5">
-      Diatur per role oleh Admin IT.{{if $d.CanConfig}} <a href="/app/settings/notifications" class="font-medium text-teal-700 hover:underline">Ubah preferensi</a>{{end}}
+      Diatur per role oleh Admin IT.{{if $d.CanConfig}} <a href="/app/settings/notifications" class="font-medium text-brand-700 hover:underline">Ubah preferensi</a>{{end}}
     </p>
   </section>
 </div>

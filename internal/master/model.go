@@ -32,6 +32,8 @@ type Ref struct {
 	LabelCol string
 	OrderBy  string
 	NoActive bool // tabel tanpa kolom is_active (semua baris dapat dipilih)
+	// Where: syarat tambahan untuk baris yang boleh dipilih (SQL statis, tanpa input pengguna).
+	Where string
 }
 
 // Choice adalah pilihan untuk select/enum.

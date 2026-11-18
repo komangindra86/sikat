@@ -23,6 +23,7 @@ import (
 	"sikat/internal/clock"
 	"sikat/internal/config"
 	"sikat/internal/dashboard"
+	"sikat/internal/integration"
 	"sikat/internal/maintenance"
 	"sikat/internal/master"
 	"sikat/internal/middleware"
@@ -30,6 +31,7 @@ import (
 	"sikat/internal/priority"
 	"sikat/internal/qrcodes"
 	"sikat/internal/rbac"
+	"sikat/internal/reports"
 	"sikat/internal/settings"
 	"sikat/internal/sla"
 	"sikat/internal/tickets"
@@ -109,6 +111,9 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		sender = d.PushSender
 	}
 	notifSvc := notifications.NewService(d.DB, d.Clock, d.Log, sender, vapidKey)
+	// Integrasi master data: lokal secara default; adapter SIMRS didaftarkan di sini
+	// setelah spesifikasinya tersedia (integSvc.RegisterProvider).
+	integSvc := integration.NewService(d.DB, d.Clock, d.Log)
 	authSvc := auth.NewService(d.DB, d.Clock, settingsSvc)
 
 	var renderer *web.Renderer
@@ -216,6 +221,19 @@ func New(ctx context.Context, d Deps) (*App, error) {
 			return err
 		},
 	}, {
+		// Sinkron master data terjadwal & percobaan ulang (hanya bila sumber SIMRS aktif).
+		Name: "sinkron-master", Interval: time.Minute,
+		Run: func(ctx context.Context) error {
+			n, err := integSvc.RunDue(ctx)
+			if n > 0 {
+				d.Log.Info("sinkron master data", "entitas", n)
+			}
+			if err != nil {
+				return err
+			}
+			return integSvc.Cleanup(ctx)
+		},
+	}, {
 		Name: "tutup-otomatis-tiket", Interval: time.Hour,
 		Run: func(ctx context.Context) error {
 			n, err := ticketSvc.AutoClose(ctx, settingsSvc.Int(ctx, settings.KeyAutoCloseDays))
@@ -229,7 +247,12 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		BaseURL: d.Config.BaseURL, IPLimiter: publicLimiter, QRLimiter: qrLimiter}
 	userH := &users.Handler{Service: users.NewService(d.DB, d.Clock), Renderer: renderer}
 	settingsH := &settings.Handler{Service: settingsSvc, Renderer: renderer}
-	dashH := &dashboard.Handler{DB: d.DB, Assets: assetSvc, Tickets: ticketSvc, Maintenance: maintSvc, Renderer: renderer}
+	integH := &integration.Handler{Service: integSvc, Renderer: renderer}
+	reportSvc := reports.NewService(d.DB, d.Clock)
+	reportSvc.RepeatThreshold = func(ctx context.Context) int { return settingsSvc.Int(ctx, settings.KeyRepeatThreshold) }
+	reportH := &reports.Handler{Service: reportSvc, DB: d.DB, Renderer: renderer, Hospital: settingsSvc.HospitalName}
+	dashH := &dashboard.Handler{DB: d.DB, Assets: assetSvc, Tickets: ticketSvc, Maintenance: maintSvc, Reports: reportSvc,
+		Renderer: renderer, PushEnabled: notifSvc.PushEnabled, WorkerLeader: runner.IsLeader}
 	auditH := &dashboard.AuditHandler{DB: d.DB, Renderer: renderer}
 
 	loginLimiter := middleware.NewRateLimiter(d.LoginRate, time.Minute, d.LoginRate)
@@ -275,6 +298,8 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.Route("/maintenance", maintH.Routes)
 		r.Route("/sla", slaH.Routes)
 		r.Route("/notifications", notifH.Routes)
+		r.Route("/reports", reportH.Routes)
+		r.With(guard.Require(rbac.PermIntegration)).Route("/integrations", integH.Routes)
 		r.With(guard.Require(rbac.PermConfigManage)).Route("/settings/notifications", notifH.AdminRoutes)
 	})
 

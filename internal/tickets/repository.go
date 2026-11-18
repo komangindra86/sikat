@@ -22,7 +22,8 @@ type repository struct{}
 const selectTicket = `
 	SELECT t.id, t.ticket_no, t.channel, t.status, t.priority, t.priority_source, pr.name,
 	       t.department_id, d.name, r.name, r.location_note, t.asset_id, a.asset_code, a.name,
-	       t.reporter_name, t.reporter_phone, rd.name, tc.name, ic.name, t.description,
+	       t.reporter_name, t.reporter_phone, rd.name, tc.name, ic.name,
+	       t.ticket_category_id, t.it_category_id, ic.is_triage, rtc.name, t.description,
 	       t.impact_level, t.affected_scope, t.replacement_available, t.critical_service, t.incident_started_at,
 	       t.assignee_id, au.full_name, cu.full_name, t.first_response_at, t.created_at,
 	       (SELECT COUNT(*) FROM attachments x WHERE x.ticket_id = t.id),
@@ -38,13 +39,15 @@ const selectTicket = `
 	  LEFT JOIN departments rd ON rd.id = t.reporter_department_id
 	  LEFT JOIN users au ON au.id = t.assignee_id
 	  LEFT JOIN users cu ON cu.id = t.created_by_user_id
-	  LEFT JOIN pending_reasons prs ON prs.id = t.pending_reason_id`
+	  LEFT JOIN pending_reasons prs ON prs.id = t.pending_reason_id
+	  LEFT JOIN ticket_categories rtc ON rtc.id = t.reported_ticket_category_id`
 
 func scanTicket(sc interface{ Scan(...any) error }) (Ticket, error) {
 	var t Ticket
 	err := sc.Scan(&t.ID, &t.TicketNo, &t.Channel, &t.Status, &t.Priority, &t.PrioritySource, &t.PriorityRuleName,
 		&t.DepartmentID, &t.DepartmentName, &t.RoomName, &t.RoomLocation, &t.AssetID, &t.AssetCode, &t.AssetName,
-		&t.ReporterName, &t.ReporterPhone, &t.ReporterDeptName, &t.CategoryName, &t.ITCategoryName, &t.Description,
+		&t.ReporterName, &t.ReporterPhone, &t.ReporterDeptName, &t.CategoryName, &t.ITCategoryName,
+		&t.TicketCategoryID, &t.ITCategoryID, &t.IsTriage, &t.ReportedCategoryName, &t.Description,
 		&t.Impact, &t.Scope, &t.Replacement, &t.CriticalService, &t.IncidentStartedAt,
 		&t.AssigneeID, &t.AssigneeName, &t.CreatedByName, &t.FirstResponseAt, &t.CreatedAt, &t.AttachmentCount,
 		&t.WorkStartedAt, &t.PendingSince, &t.PendingReason, &t.ResolvedAt, &t.ClosedAt, &t.ServiceRestoredAt,
@@ -205,18 +208,21 @@ type historyEntry struct {
 	// NotifyTarget: penerima notifikasi penugasan (anggota yang ditambahkan /
 	// penanggung jawab yang tiketnya diambil alih).
 	NotifyTarget int64
+	// NoNotify: histori tanpa event notifikasi.
+	NoNotify bool
 }
 
 // notifyEvents memetakan histori tiket ke event notifikasi. Event ditulis ke
 // outbox dalam transaksi yang sama dengan histori (docs/ARCHITECTURE.md §7).
 var notifyEvents = map[string]string{
-	EventClaimed:      notifications.TicketClaimed,
-	EventStarted:      notifications.TicketStarted,
-	EventPending:      notifications.TicketPending,
-	EventResolved:     notifications.TicketResolved,
-	EventReopened:     notifications.TicketReopened,
-	EventTakenOver:    notifications.TicketAssigned,
-	EventSupportAdded: notifications.TicketAssigned,
+	EventClaimed:         notifications.TicketClaimed,
+	EventStarted:         notifications.TicketStarted,
+	EventPending:         notifications.TicketPending,
+	EventResolved:        notifications.TicketResolved,
+	EventReopened:        notifications.TicketReopened,
+	EventTakenOver:       notifications.TicketAssigned,
+	EventSupportAdded:    notifications.TicketAssigned,
+	EventCategoryChanged: notifications.TicketTransferred,
 }
 
 func (repository) addHistory(ctx context.Context, tx *sql.Tx, h historyEntry, now time.Time) error {
@@ -233,7 +239,7 @@ func (repository) addHistory(ctx context.Context, tx *sql.Tx, h historyEntry, no
 		return err
 	}
 	evType, ok := notifyEvents[h.Event]
-	if !ok {
+	if !ok || h.NoNotify {
 		return nil
 	}
 	if evType == notifications.TicketAssigned && h.NotifyTarget == 0 {
@@ -308,7 +314,16 @@ func (repository) queue(ctx context.Context, db database.DBTX, f QueueFilter) ([
 		where = append(where, "t.status = 'NEW'")
 	}
 	if f.OnlyCompetency {
-		where = append(where, "t.it_category_id IN (SELECT it_category_id FROM user_competencies WHERE user_id = ?)")
+		// Tiket triase terlihat oleh semua petugas agar cepat direspons walau belum terpilah.
+		where = append(where, "(t.it_category_id IN (SELECT it_category_id FROM user_competencies WHERE user_id = ?) OR t.it_category_id IN (SELECT id FROM it_categories WHERE is_triage))")
+		args = append(args, f.UserID)
+	}
+	if f.ITCategoryID != 0 {
+		where = append(where, "t.it_category_id = ?")
+		args = append(args, f.ITCategoryID)
+	}
+	if f.OnlyCoordinated {
+		where = append(where, "t.it_category_id IN (SELECT id FROM it_categories WHERE coordinator_user_id = ?)")
 		args = append(args, f.UserID)
 	}
 	if f.Priority != "" {
@@ -386,7 +401,9 @@ func (repository) options(ctx context.Context, db database.DBTX, q string, args 
 }
 
 func (repository) categories(ctx context.Context, db database.DBTX) ([]Category, error) {
-	rows, err := db.QueryContext(ctx, `SELECT id, name, help_text, it_category_id FROM ticket_categories WHERE is_active = TRUE ORDER BY sort_order, name`)
+	rows, err := db.QueryContext(ctx, `SELECT tc.id, tc.name, tc.help_text, tc.it_category_id, ic.name, ic.is_triage
+		FROM ticket_categories tc JOIN it_categories ic ON ic.id = tc.it_category_id
+		WHERE tc.is_active = TRUE ORDER BY tc.sort_order, tc.name`)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +411,7 @@ func (repository) categories(ctx context.Context, db database.DBTX) ([]Category,
 	var out []Category
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.Name, &c.HelpText, &c.ITCategoryID); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.HelpText, &c.ITCategoryID, &c.ITCategoryName, &c.IsTriage); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

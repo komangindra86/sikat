@@ -8,6 +8,9 @@ var (
 	refDepartments    = &Ref{Table: "departments", LabelCol: "name", OrderBy: "name"}
 	refITCategories   = &Ref{Table: "it_categories", LabelCol: "name", OrderBy: "sort_order, name"}
 	refTicketCategory = &Ref{Table: "ticket_categories", LabelCol: "name", OrderBy: "sort_order, name"}
+	// refCoordinators: hanya akun ber-role Koordinator IT.
+	refCoordinators = &Ref{Table: "users", LabelCol: "full_name", OrderBy: "full_name",
+		Where: "role_id IN (SELECT id FROM roles WHERE code = 'COORDINATOR')"}
 )
 
 func codeField(maxLen int) Field {
@@ -56,11 +59,28 @@ var Entities = []*Entity{
 		},
 	},
 	{
+		Slug: "employees", Table: "employees", Title: "Pegawai", Singular: "pegawai",
+		Description: "Direktori pegawai rumah sakit (bukan akun login). Dipakai sebagai saran nama pelapor saat petugas mencatat tiket.",
+		Fields: []Field{
+			{Column: "nip", Label: "NIP / NIK", Kind: KindText, Required: true, MaxLen: 30, InList: true},
+			{Column: "full_name", Label: "Nama lengkap", Kind: KindText, Required: true, MaxLen: 150, InList: true},
+			{Column: "department_id", Label: "Unit", Kind: KindSelect, Ref: refDepartments, InList: true},
+			{Column: "position", Label: "Jabatan", Kind: KindText, MaxLen: 100, InList: true},
+			{Column: "phone", Label: "Telepon / ekstensi", Kind: KindText, MaxLen: 30},
+		},
+		OrderBy: "full_name", Search: []string{"nip", "full_name", "position"}, HasActive: true, TracksSync: true,
+		UniqueFields: map[string]UniqueRule{
+			"uq_employees_nip": {"nip", "NIP sudah terdaftar."},
+		},
+	},
+	{
 		Slug: "it-categories", Table: "it_categories", Title: "Bidang", Singular: "bidang",
-		Description: "Bidang pekerjaan IT. Dipakai untuk kompetensi petugas dan laporan per bidang.",
+		Description: "Bidang pekerjaan IT dan koordinatornya. Dipakai untuk kompetensi petugas, notifikasi koordinator, dan laporan per bidang.",
 		Fields: []Field{
 			codeField(30),
 			{Column: "name", Label: "Nama bidang", Kind: KindText, Required: true, MaxLen: 100, InList: true},
+			{Column: "coordinator_user_id", Label: "Koordinator", Kind: KindSelect, Ref: refCoordinators, InList: true,
+				Help: "Satu koordinator per bidang (satu koordinator boleh memegang beberapa bidang). Notifikasi & eskalasi bidang ini dikirim kepadanya; bila kosong, ke semua koordinator."},
 			{Column: "description", Label: "Keterangan", Kind: KindText, MaxLen: 255, InList: true},
 			sortField(),
 		},

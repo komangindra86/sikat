@@ -83,9 +83,9 @@ Pilihan paling sederhana & stabil sesuai master prompt. Versi pasti dikunci di
 | Password | Argon2id (`golang.org/x/crypto/argon2`) | Sesuai master prompt. |
 | Rate limit | `golang.org/x/time/rate`, in-memory per IP/route | Cukup untuk 1 instance; dicatat sebagai batasan bila nanti multi-instance. |
 | QR | `github.com/skip2/go-qrcode` | PNG langsung dari Go, tanpa layanan luar. |
-| Web Push | `github.com/SherClockHolmes/webpush-go` | VAPID, payload terenkripsi. |
+| Web Push | Pustaka standar Go (`crypto/ecdh`, `crypto/hkdf`, `crypto/ecdsa`) | **Diputuskan PHASE 6:** RFC 8291 + RFC 8292 tanpa dependensi luar (diuji dekripsi sisi browser). |
 | Excel | `github.com/xuri/excelize/v2` | Library XLSX Go paling matang. |
-| PDF | Kandidat: `github.com/johnfercher/maroto/v2` (tabel/laporan) | **Diverifikasi di PHASE 7**; bila tidak cocok, fallback `signintech/gopdf`. |
+| PDF | `github.com/go-pdf/fpdf` | **Diputuskan PHASE 7:** pure Go, tabel dengan teks terbungkus & header berulang per halaman. Font standar Helvetica → teks PDF dinormalkan ke ASCII (aksen dilepas, tanda baca diganti padanannya). |
 | Gambar | `image/jpeg`, `image/png`, `golang.org/x/image/webp` | Validasi isi file + re-encode untuk membuang metadata EXIF/GPS. |
 | Test | `testing` stdlib + MySQL test database nyata | Uji konkurensi & transaksi harus ke MySQL sungguhan, bukan mock. |
 
@@ -266,6 +266,39 @@ role.
 | `config.manage` (SLA, prioritas, notifikasi, sistem) | ✓ | – | – |
 | `user.manage` | ✓ | – | – |
 | `integration.manage` | ✓ | – | – |
+
+**Koordinator per bidang** (diputuskan 13/11/2026, migrasi `00009`): setiap bidang
+(`it_categories.coordinator_user_id`) memiliki tepat satu koordinator; satu
+koordinator boleh memegang beberapa bidang (diatur Admin di Master Data › Bidang).
+
+- Koordinator tetap **melihat** semua tiket dan laporan, tetapi notifikasi,
+  dashboard, dan antrean bawaan hanya untuk bidangnya (antrean punya opsi
+  "Tampilkan semua bidang").
+- Tindakan koordinator — ambil alih, ubah prioritas, batalkan, tutup, buka
+  kembali, atur anggota tim — hanya untuk tiket bidangnya (`tickets.requireField`);
+  catatan internal dan foto tetap boleh. Admin tidak terkena batasan ini.
+- Notifikasi ke koordinator: hanya koordinator bidang tiket, ditambah koordinator
+  yang menjadi anggota tim tiket tersebut.
+- **Cadangan:** bidang tanpa koordinator aktif (kosong, akun nonaktif, atau role
+  bukan Koordinator) → notifikasi ke semua koordinator dan semua koordinator boleh
+  menindak. Dashboard Admin menampilkan peringatan bidang tanpa koordinator.
+
+**Triase & koreksi jenis gangguan** (16/11/2026, migrasi `00010`):
+
+- Bidang tiket diturunkan dari jenis gangguan pilihan pelapor (`ticket_categories.it_category_id`,
+  disalin ke tiket). Satu bidang ditandai `is_triage` (unik): "Triase / Belum
+  terklasifikasi"; jenis "Lainnya" dipetakan ke sana.
+- Tiket triase: terlihat di antrean "tersedia" semua petugas dan dinotifikasi ke
+  semua petugas (tanpa syarat kompetensi), ditandai "Perlu dipilah".
+- `tickets.Service.ChangeCategory`: penanggung jawab tiket, atau koordinator bidang
+  tiket saat ini, mengganti jenis gangguan tiket aktif (bukan Selesai/Ditutup/
+  Dibatalkan). Bidang mengikuti jenis baru, kebijakan SLA dipilih ulang
+  (`sla_revision` naik), histori `CATEGORY_CHANGED`, jenis pilihan pelapor
+  disimpan di `reported_ticket_category_id`. Alasan wajib kecuali memilah dari Triase.
+- Bila bidang berubah → event `TICKET_TRANSFERRED`: koordinator bidang baru, serta
+  petugas berkompetensi bidang baru (tiket belum diambil) atau anggota tim (sudah diambil).
+- Laporan "Pemilahan jenis gangguan" menampilkan tiket triase/dikoreksi beserta
+  keterangan pelapor, sebagai bahan Admin menambah jenis gangguan baru.
 
 > Asumsi: satu user = satu role. Bila Admin IT juga ikut menangani tiket, ia
 > membutuhkan akun kedua atau role digabung — lihat pertanyaan terbuka di
@@ -526,6 +559,39 @@ sequenceDiagram
 
 ---
 
+### 7.1 Dashboard & laporan (implementasi PHASE 7)
+
+- Paket `internal/reports`: setiap laporan menghasilkan `Table` generik (kolom
+  bertipe teks/angka/durasi/persen/uang/tanggal, baris, total, ringkasan, catatan,
+  grafik opsional). Satu template HTML dan satu penulis Excel/PDF melayani semua
+  laporan, sehingga angka di layar dan di file selalu sama.
+- 15 laporan (master prompt §18): laporan koordinator, rekap bulanan, per bidang,
+  per unit, per petugas, per prioritas, tertunda, SLA, waktu respons, waktu
+  penyelesaian, beban kerja, kegiatan internal, perangkat sering rusak, riwayat
+  pemeliharaan, downtime.
+- Filter: bulan / tahun / rentang tanggal (maks. 2 tahun), unit, bidang, petugas,
+  prioritas, status. Batas periode dihitung dalam WITA lalu dikonversi ke UTC;
+  pengelompokan per hari/bulan memakai offset tetap +8 jam (WITA tanpa DST).
+- Definisi angka: tiket dihitung menurut tanggal masuk; waktu respons/penyelesaian
+  adalah waktu kalender (median & persentil 90 dihitung di Go); kepatuhan SLA dari
+  buku besar `sla_escalations` (jam kerja & hari libur, termasuk siklus dibuka ulang).
+- Laporan koordinator (pengganti spreadsheet): gabungan tiket yang masuk dan
+  kegiatan internal pada periode, kolom No, Tanggal, Unit/Bagian, Bidang, Kegiatan,
+  Pelaksana, Pendukung, Status, Hasil/Keterangan.
+- Hak akses: `report.view_all` (Admin, Koordinator) melihat semua; `report.view_own`
+  (Petugas) dipaksa ke data pribadi — tiket & kegiatan tempat ia PJ/pendukung.
+- Ekspor Excel (`excelize`, angka tetap angka, filter & panel beku) dan PDF A4
+  landscape; setiap ekspor dicatat di audit (`report.export`). Ekspor sinkron
+  dengan batas 20.000 baris; tampilan HTML menampilkan 500 baris pertama.
+- Grafik rekap bulanan: SVG dirender server (tanpa JavaScript, sesuai CSP), palet
+  brand-600 (biru logo)/amber-600/violet-500 yang lolos validasi buta warna; tabel di bawahnya
+  adalah tampilan data lengkap.
+- Dashboard per role (`internal/dashboard`): petugas (tiket tersedia/saya, SLA
+  mendekati batas, beban kerja tim), koordinator (ringkasan bulan berjalan, kinerja
+  petugas, distribusi gangguan, kegiatan internal, perangkat sering rusak), admin
+  (status database, worker, antrean notifikasi, Web Push; integrasi SIMRS dan
+  backup ditampilkan apa adanya sebagai belum tersedia sampai PHASE 8/9).
+
 ## 8. Background Worker
 
 Berjalan sebagai goroutine dalam `sikat serve` (bisa dimatikan dengan
@@ -560,6 +626,14 @@ type AssetProvider        interface { ListAssets(ctx context.Context) ([]ExtAsse
 - `CsvImportProvider`: unggah CSV → pratinjau → terapkan.
 - `SimrsApiProvider` / `SimrsDatabaseProvider`: dibuat **hanya ketika** spesifikasi
   SIMRS tersedia. Tidak ada integrasi palsu.
+
+Implementasi PHASE 8 (`internal/integration`, migrasi `00011`): `LocalProvider`
+(default), impor CSV dengan pratinjau (transaksi yang dibatalkan), tabel
+`integration_configs`, `integration_sync_logs`, `external_id_mappings`,
+`integration_imports`, direktori `employees` (bukan akun login; saran nama pelapor
+di form catat tiket). Worker `sinkron-master` menjalankan sinkron terjadwal &
+percobaan ulang untuk provider SIMRS yang terdaftar (`RegisterProvider`) — kosong
+sampai spesifikasi SIMRS tersedia. Rincian & format CSV: `docs/INTEGRATION.md`.
 
 Aturan sinkronisasi:
 1. Pemetaan via `external_id_mappings (source, entity_type, external_id) → local_id`; tidak ada FK ke DB SIMRS.

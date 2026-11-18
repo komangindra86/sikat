@@ -98,6 +98,21 @@
   });
   document.addEventListener("DOMContentLoaded", syncRoleSections);
 
+  // Filter laporan: tampilkan isian sesuai jenis periode.
+  function syncPeriod() {
+    var sel = document.querySelector("[data-period-select]");
+    if (!sel) return;
+    document.querySelectorAll("[data-period]").forEach(function (el) {
+      var on = el.getAttribute("data-period") === sel.value;
+      if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
+      el.querySelectorAll("input,select").forEach(function (i) { i.disabled = !on; });
+    });
+  }
+  document.addEventListener("change", function (e) {
+    if (e.target.matches("[data-period-select]")) syncPeriod();
+  });
+  document.addEventListener("DOMContentLoaded", syncPeriod);
+
   // Pilihan yang mengisi select lain: <select data-sets-target="#id"><option data-set="5">
   document.addEventListener("change", function (e) {
     var sel = e.target;

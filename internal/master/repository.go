@@ -143,8 +143,16 @@ func (r repository) update(ctx context.Context, db database.DBTX, e *Entity, id 
 	return err
 }
 
-func (r repository) setActive(ctx context.Context, db database.DBTX, e *Entity, id int64, active bool, now time.Time) error {
-	_, err := db.ExecContext(ctx, "UPDATE "+e.Table+" SET is_active = ?, updated_at = ? WHERE id = ?", active, now, id)
+// setActive mengubah status aktif; markLocal menandai perubahan manual pada data
+// yang berasal dari sumber luar (agar sinkronisasi tidak menimpanya).
+func (r repository) setActive(ctx context.Context, db database.DBTX, e *Entity, id int64, active bool, now time.Time, markLocal bool) error {
+	q := "UPDATE " + e.Table + " SET is_active = ?, updated_at = ?"
+	if markLocal {
+		q += ", local_modified_at = ?"
+		_, err := db.ExecContext(ctx, q+" WHERE id = ?", active, now, now, id)
+		return err
+	}
+	_, err := db.ExecContext(ctx, q+" WHERE id = ?", active, now, id)
 	return err
 }
 
@@ -164,15 +172,22 @@ func (r repository) refExists(ctx context.Context, db database.DBTX, ref *Ref, i
 	if ref.NoActive {
 		q = "SELECT COUNT(*) FROM " + ref.Table + " WHERE id = ?"
 	}
+	if ref.Where != "" {
+		q += " AND (" + ref.Where + ")"
+	}
 	err := db.QueryRowContext(ctx, q, id).Scan(&n)
 	return n > 0, err
 }
 
 // options mengambil pilihan aktif untuk select; includeID tetap disertakan walau nonaktif.
 func (r repository) options(ctx context.Context, db database.DBTX, ref *Ref, includeID string) ([]Choice, error) {
-	q := fmt.Sprintf("SELECT id, %s, is_active FROM %s WHERE is_active = TRUE OR id = ? ORDER BY %s", ref.LabelCol, ref.Table, ref.OrderBy)
+	where := "TRUE"
+	if ref.Where != "" {
+		where = ref.Where
+	}
+	q := fmt.Sprintf("SELECT id, %s, is_active AND (%s) FROM %s WHERE (is_active = TRUE AND (%s)) OR id = ? ORDER BY %s", ref.LabelCol, where, ref.Table, where, ref.OrderBy)
 	if ref.NoActive {
-		q = fmt.Sprintf("SELECT id, %s, TRUE FROM %s WHERE id > 0 OR id = ? ORDER BY %s", ref.LabelCol, ref.Table, ref.OrderBy)
+		q = fmt.Sprintf("SELECT id, %s, TRUE FROM %s WHERE (%s) OR id = ? ORDER BY %s", ref.LabelCol, ref.Table, where, ref.OrderBy)
 	}
 	inc, _ := strconv.ParseInt(includeID, 10, 64)
 	rows, err := db.QueryContext(ctx, q, inc)

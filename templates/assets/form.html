@@ -20,7 +20,7 @@
           <option value="">— Pilih —</option>
           {{range $d.Categories}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "asset_category_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
-        {{if not $d.Categories}}<p class="help">Belum ada kategori. <a class="font-semibold text-teal-700 underline" href="/app/master/asset-categories/new">Tambah kategori</a>.</p>{{end}}
+        {{if not $d.Categories}}<p class="help">Belum ada kategori. <a class="font-semibold text-brand-700 underline" href="/app/master/asset-categories/new">Tambah kategori</a>.</p>{{end}}
         {{with $p.Err "asset_category_id"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div>

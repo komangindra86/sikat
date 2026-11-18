@@ -7,11 +7,13 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"time"
 
 	"sikat/internal/assets"
 	"sikat/internal/audit"
 	"sikat/internal/maintenance"
 	"sikat/internal/rbac"
+	"sikat/internal/reports"
 	"sikat/internal/reqctx"
 	"sikat/internal/sla"
 	"sikat/internal/tickets"
@@ -34,6 +36,10 @@ type Summary struct {
 	ShowAlerts    bool
 	SLA           sla.Counts
 	ShowSLA       bool
+	// Dashboard per role (PHASE 7); hanya satu yang terisi.
+	Tech  *TechView
+	Coord *CoordView
+	Admin *AdminView
 }
 
 // Handler menampilkan beranda.
@@ -42,7 +48,11 @@ type Handler struct {
 	Assets      *assets.Service
 	Tickets     *tickets.Service
 	Maintenance *maintenance.Service
+	Reports     *reports.Service
 	Renderer    *web.Renderer
+	// WorkerLeader & PushEnabled untuk status sistem di dashboard admin.
+	WorkerLeader func() bool
+	PushEnabled  func() bool
 }
 
 func count(ctx context.Context, db *sql.DB, q string) (int, error) {
@@ -100,6 +110,34 @@ func (h *Handler) summary(ctx context.Context, u *rbac.User) (Summary, error) {
 			return s, err
 		}
 		s.Alerts, s.ShowAlerts = al, true
+	}
+	now := time.Now()
+	if h.Reports != nil {
+		now = h.Reports.Now()
+	}
+	switch u.RoleCode {
+	case rbac.RoleTechnician:
+		if h.Tickets != nil {
+			v, err := h.techView(ctx, u, now)
+			if err != nil {
+				return s, err
+			}
+			s.Tech = &v
+		}
+	case rbac.RoleCoordinator:
+		if h.Tickets != nil && h.Reports != nil {
+			v, err := h.coordView(ctx, u, now)
+			if err != nil {
+				return s, err
+			}
+			s.Coord = &v
+		}
+	case rbac.RoleAdmin:
+		v, err := h.adminView(ctx)
+		if err != nil {
+			return s, err
+		}
+		s.Admin = &v
 	}
 	if u.Has(rbac.PermAuditView) {
 		logs, _, err := audit.List(ctx, h.DB, audit.Filter{Limit: 8})

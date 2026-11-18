@@ -1,22 +1,36 @@
 # SIKAT — Implementation Plan, Asumsi & Risiko
 
-> Status (12 November 2026): **PHASE 0–5 selesai. PHASE 6 selesai, menunggu validasi.**
+> Status (18 November 2026): **PHASE 0–7 selesai. PHASE 8 selesai, menunggu validasi.**
 > Default yang dipakai karena belum dijawab: Q1 (VPS publik + HTTPS), Q3 (tutup
 > otomatis 3 hari), Q4 (pencatatan pemeliharaan saja, tanpa jadwal preventif),
-> Q6 (Admin IT tidak menangani tiket). Diputuskan: Q5 (petugas boleh mencatat tiket
-> atas nama pelapor), Q2 (angka SLA usulan disetujui; kalender "Jam kerja"
-> Senin–Jumat 08.00–16.00 WITA, "24 jam" untuk Kritis).
+> Q6 (Admin IT tidak menangani tiket), **Q7 (kolom laporan koordinator sesuai master
+> prompt §18 — mohon contoh spreadsheet lama bila ada kolom lain yang dibutuhkan)**.
+> Diputuskan: Q5 (petugas boleh mencatat tiket atas nama pelapor), Q2 (angka SLA
+> usulan disetujui; kalender "Jam kerja" Senin–Jumat 08.00–16.00 WITA, "24 jam" untuk Kritis),
+> koordinator per bidang (13/11/2026: tepat satu koordinator per bidang; fokus pada
+> bidangnya tetapi tetap dapat melihat semua; bidang tanpa koordinator → semua koordinator),
+> triase (16/11/2026: masalah di luar daftar → bidang Triase, dipilah dengan koreksi
+> jenis gangguan; laporan pemilahan untuk menambah jenis gangguan baru).
 >
-> Hasil PHASE 6: 110 automated test lulus (MySQL 8.0.30 lokal), termasuk enkripsi
-> Web Push (didekripsi ulang sisi browser) & JWT VAPID, dedupe outbox & inbox,
-> worker SLA berulang tanpa notifikasi ganda, retry push (503/jaringan), langganan
-> 410 dinonaktifkan, push basi tidak dikirim, dan payload lock screen tanpa
-> lokasi/deskripsi/nama. Inbox, pengaturan perangkat, dan preferensi role diperiksa
-> di browser (desktop & HP). **Belum diuji di perangkat nyata:** penerimaan push di
-> HP (browser pane pengembangan memblokir service worker & notifikasi) dan audit
-> Lighthouse "installable" — perlu dicoba di Chrome lewat `http://localhost:8080`
-> atau https (lihat docs/INSTALLATION.md §6 "Web Push").
-> Ditunda sesuai rencana: ekspor laporan (PHASE 7).
+> Hasil PHASE 8: 127 automated test lulus (MySQL 8.0.30 lokal), termasuk kriteria
+> rencana: **sinkron tidak menimpa perubahan lokal** (konflik dicatat; hanya ditimpa
+> dengan kebijakan "Utamakan data sumber") dan **gagal → retry → tercatat** (provider
+> SIMRS tiruan gagal 2×, berhasil pada percobaan ke-3; batas percobaan ulang dihormati).
+> Impor CSV unggah → pratinjau → terapkan diuji lewat HTTP. Adapter SIMRS API/DB
+> **belum dibuat** (spesifikasi belum tersedia; tidak ada integrasi palsu) — antarmuka,
+> jadwal, dan retry siap; panduan di INTEGRATION.md. Keputusan 18/11/2026: integrasi
+> memakai API SIMRS; menu Integrasi (impor CSV) disembunyikan dari navigasi.
+>
+> Hasil PHASE 7: 115 automated test lulus (MySQL 8.0.30 lokal), termasuk batas bulan
+> WITA (tiket 00.30 WITA tanggal 1 masuk bulan baru walau UTC masih bulan lalu),
+> kalkulasi waktu respons/penyelesaian, rekap per bidang/petugas/tertunda/beban kerja,
+> laporan koordinator (tiket + kegiatan, kolom sesuai format), cakupan data pribadi
+> petugas, file Excel yang dapat dibuka ulang (angka tetap angka) dan PDF multi-halaman.
+> 15 laporan × 3 jenis periode × HTML/Excel/PDF diuji terhadap data dev (135 kombinasi);
+> dashboard per role dan contoh PDF diperiksa visual.
+> Penyesuaian dari rencana: ekspor dibuat langsung (sinkron) dengan batas 20.000 baris
+> — volume data RS kecil, sehingga antrean worker belum diperlukan; PDF memakai
+> `go-pdf/fpdf` (lihat docs/ARCHITECTURE.md).
 > Belum diuji: race detector (`go test -race` butuh compiler C di Windows) dan
 > build/deploy di Linux (PHASE 9).
 
@@ -223,7 +237,7 @@ yang memengaruhi konfigurasi deployment.
 | Q4 | Perlu **jadwal** preventive maintenance (jadwal berkala + pengingat), atau cukup pencatatan? | PHASE 4 | Pencatatan dulu; jadwal sebagai tambahan setelah PHASE 7 |
 | Q5 | Bolehkah petugas mencatat tiket atas nama penelepon (telepon/WA/datang langsung)? | PHASE 2 | **Diputuskan: boleh** (11/11/2026). Ditandai sumber "Telepon/WA/Langsung" |
 | Q6 | Apakah Admin IT juga menangani tiket? (memengaruhi model 1 user = 1 role) | PHASE 1 | Tidak; bila ya, gunakan akun terpisah |
-| Q7 | Mohon contoh spreadsheet laporan koordinator yang dipakai sekarang | PHASE 7 | Kolom sesuai master prompt §18 |
+| Q7 | Mohon contoh spreadsheet laporan koordinator yang dipakai sekarang | PHASE 7 | **Dipakai default (13/11/2026):** kolom sesuai master prompt §18; kolom tambahan dapat ditambahkan setelah contoh diterima |
 | Q8 | Daftar awal bidang & jenis gangguan yang biasa dipakai tim IT | PHASE 1 (seed) | Hardware, Software & SIMRS, Jaringan, Server & Infrastruktur, Printer, Akun & Akses |
 | Q9 | Berapa lama foto lampiran disimpan? | PHASE 9 | 2 tahun setelah tiket ditutup, metadata tetap |
 

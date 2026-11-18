@@ -85,6 +85,15 @@ func compose(ev outboxRow, t *ticketInfo, actor, asset string) content {
 		c.Title = "Tiket baru " + t.No
 		c.Body = join("Prioritas "+prio, where)
 		c.PushBody = "Tiket baru prioritas " + prio + " · " + t.No
+		if t.IsTriage {
+			c.Title += " — perlu dipilah"
+			c.Body = join("Di luar daftar jenis gangguan; pilih jenis yang tepat", "Prioritas "+prio, t.location())
+			c.PushBody = "Tiket baru perlu dipilah · " + t.No
+		}
+	case TicketTransferred:
+		c.Title = "Tiket " + t.No + " dialihkan ke bidang " + t.FieldName
+		c.Body = join("Jenis: "+t.Category, "Oleh "+by, str(p, "note"), t.location())
+		c.PushBody = "Tiket " + t.No + " dialihkan ke bidang Anda"
 	case TicketCritical:
 		c.Title = "Tiket KRITIS " + t.No
 		c.Body = join(where, "Segera ditangani.")

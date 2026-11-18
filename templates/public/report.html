@@ -10,7 +10,7 @@
   <div class="hp" aria-hidden="true"><label>Jangan diisi <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
   <section class="card card-body" aria-label="Lokasi terdeteksi">
-    <div class="text-xs font-semibold uppercase tracking-wide text-teal-700">Lokasi terdeteksi</div>
+    <div class="text-xs font-semibold uppercase tracking-wide text-brand-700">Lokasi terdeteksi</div>
     <div class="mt-1 font-semibold text-slate-900">{{if $t.DepartmentName.Valid}}{{$t.DepartmentName.String}}{{end}}{{if $t.RoomName.Valid}} · {{$t.RoomName.String}}{{end}}</div>
     {{if $t.RoomLocation.Valid}}<div class="text-sm text-slate-600">{{$t.RoomLocation.String}}</div>{{end}}
     {{if $t.AssetID.Valid}}<div class="mt-1 text-sm text-slate-700">{{$t.AssetName.String}} <span class="font-mono text-xs text-slate-500">({{$t.AssetCode.String}})</span>{{if $t.AssetBrandModel.Valid}} · {{$t.AssetBrandModel.String}}{{end}}</div>{{end}}
@@ -44,6 +44,7 @@
 
   <fieldset class="card card-body">
     <legend class="label text-base">Apa masalahnya? <span class="text-red-600" aria-hidden="true">*</span></legend>
+    <p class="-mt-0.5 mb-1 text-xs text-slate-500">Tidak ada yang cocok? Pilih <strong class="font-medium text-slate-700">Lainnya</strong> lalu ceritakan kendalanya — tim IT akan memilahnya.</p>
     <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
       {{range $d.Categories}}
       <label class="choice">
@@ -103,7 +104,7 @@
 
   <div class="card card-body">
     <label class="label" for="photos">Foto (opsional, maks {{$d.MaxFiles}})</label>
-    <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
+    <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
     <div class="mt-2 grid grid-cols-3 gap-2" data-photo-preview></div>
     <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">Jangan memotret layar atau kertas yang menampilkan data pasien.</p>
     {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}

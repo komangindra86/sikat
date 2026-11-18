@@ -21,9 +21,11 @@ const (
 	TicketResolved = "TICKET_RESOLVED"
 	TicketReopened = "TICKET_REOPENED"
 	TicketAssigned = "TICKET_ASSIGNED"
-	SLAWarning     = "SLA_WARNING"
-	SLABreach      = "SLA_BREACH"
-	RepeatDamage   = "REPEAT_DAMAGE"
+	// TicketTransferred: jenis gangguan dikoreksi sehingga tiket pindah bidang.
+	TicketTransferred = "TICKET_TRANSFERRED"
+	SLAWarning        = "SLA_WARNING"
+	SLABreach         = "SLA_BREACH"
+	RepeatDamage      = "REPEAT_DAMAGE"
 	// Test: notifikasi uji dari halaman pengaturan (hanya ke pengirimnya, selalu push).
 	Test = "TEST"
 )
@@ -43,6 +45,7 @@ var Events = []EventInfo{
 	{TicketResolved, "Tiket selesai", "Petugas: hanya anggota tim tiket."},
 	{TicketReopened, "Tiket dibuka kembali", "Pelapor menyatakan belum beres atau koordinator membuka ulang. Petugas: anggota tim tiket."},
 	{TicketAssigned, "Penugasan", "Ditambahkan ke tim tiket atau tiketnya diambil alih. Hanya untuk orang yang bersangkutan."},
+	{TicketTransferred, "Dialihkan ke bidang", "Jenis gangguan dikoreksi (mis. dari Triase) sehingga tiket pindah bidang. Petugas: tiket belum diambil → sesuai kompetensi bidang baru; sudah diambil → anggota tim."},
 	{SLAWarning, "SLA hampir habis", "Petugas: target respons → petugas sesuai kompetensi; target penyelesaian → anggota tim tiket."},
 	{SLABreach, "SLA terlewati", "Petugas: target respons → petugas sesuai kompetensi; target penyelesaian → anggota tim tiket."},
 	{RepeatDamage, "Perangkat sering rusak", "Perangkat mencapai ambang kerusakan berulang."},

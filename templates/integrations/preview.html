@@ -1,0 +1,58 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}{{$r := $d.Result}}
+<nav class="mb-2"><a href="/app/integrations">Integrasi</a> › Pratinjau impor</nav>
+<h1 class="page-title">Pratinjau impor {{label "integration_entity" $d.Import.Entity}}</h1>
+<p class="muted mt-1">{{$d.Import.FileName}} · {{label "conflict_policy" $d.Import.Policy}}{{if $d.Import.MarkMissing}} · data lengkap (yang tidak ada dinonaktifkan){{end}}. <strong class="font-medium text-slate-700">Belum ada data yang diubah.</strong></p>
+
+<div class="metrics mt-5 grid-cols-2 sm:grid-cols-6">
+  {{template "sync-metric" (dict "Label" "Ditambah" "Value" $r.Inserted "Dot" "bg-emerald-500")}}
+  {{template "sync-metric" (dict "Label" "Diperbarui" "Value" $r.Updated "Dot" "bg-sky-500")}}
+  {{template "sync-metric" (dict "Label" "Sama / ditautkan" "Value" $r.Unchanged "Dot" "bg-slate-400")}}
+  {{template "sync-metric" (dict "Label" "Konflik" "Value" $r.Conflicts "Dot" "bg-amber-500")}}
+  {{template "sync-metric" (dict "Label" "Galat" "Value" $r.Failed "Dot" "bg-red-500")}}
+  {{template "sync-metric" (dict "Label" "Dinonaktifkan" "Value" $r.Deactivated "Dot" "bg-orange-500")}}
+</div>
+
+{{if or $r.Conflicts $r.Failed}}
+<div class="flash flash-info mt-4"><span class="flex-1">Baris berstatus <strong>Konflik</strong> atau <strong>Galat</strong> akan dilewati; baris lain tetap diterapkan. Perbaiki file lalu impor ulang, atau untuk konflik pilih "Utamakan data file" bila data file yang benar.</span></div>
+{{end}}
+
+<div class="mt-5 flex flex-wrap gap-2">
+  <form method="post" action="/app/integrations/imports/{{$d.Import.ID}}/apply" data-confirm="Terapkan impor ini? {{$r.Inserted}} ditambah, {{$r.Updated}} diperbarui, {{$r.Deactivated}} dinonaktifkan.">
+    {{template "csrf" .CSRFToken}}
+    <button type="submit" class="btn btn-primary" data-busy-text="Menerapkan…" {{if eq (add (add $r.Inserted $r.Updated) (add $r.Deactivated $r.Unchanged)) 0}}disabled{{end}}>Terapkan impor</button>
+  </form>
+  <form method="post" action="/app/integrations/imports/{{$d.Import.ID}}/cancel">
+    {{template "csrf" .CSRFToken}}
+    <button type="submit" class="btn btn-secondary" data-no-busy>Batal</button>
+  </form>
+</div>
+
+{{template "sync-rows" (dict "Rows" $d.Rows "More" $d.More)}}
+{{end}}
+
+{{define "sync-metric"}}
+<div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full {{.Dot}}"></span>{{.Label}}</span><span class="metric-value block">{{.Value}}</span></div>
+{{end}}
+
+{{define "sync-rows"}}
+<section class="card mt-5 overflow-hidden" aria-label="Rincian per baris">
+  <div class="overflow-x-auto">
+    <table class="table report-table">
+      <thead><tr><th class="text-right">Baris</th><th>ID sumber</th><th>Nama</th><th>Hasil</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        {{range .Rows}}
+        <tr>
+          <td class="text-right tabular-nums text-slate-500">{{if .Row}}{{.Row}}{{else}}–{{end}}</td>
+          <td class="whitespace-nowrap font-mono text-xs">{{.ExternalID}}</td>
+          <td>{{.Label}}</td>
+          <td><span class="badge badge-{{tone "sync_action" .Action}} whitespace-nowrap">{{label "sync_action" .Action}}</span></td>
+          <td class="text-sm text-slate-600">{{.Message}}</td>
+        </tr>
+        {{else}}<tr><td colspan="5" class="py-8 text-center text-slate-500">Tidak ada baris.</td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{if .More}}<p class="help mt-2">{{.More}} baris lainnya tidak ditampilkan.</p>{{end}}
+{{end}}

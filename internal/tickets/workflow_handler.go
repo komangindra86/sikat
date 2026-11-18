@@ -3,6 +3,7 @@ package tickets
 import (
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -18,6 +19,8 @@ import (
 type Actions struct {
 	Claim, Start, Pend, Resume, Resolve, Release, Cancel, Close, Reopen bool
 	TakeOver, Priority, Support, Comment, Photo                         bool
+	// Recategorize: koreksi jenis gangguan (PJ tiket, atau koordinator bidangnya).
+	Recategorize bool
 }
 
 // Any bernilai true bila ada aksi alur kerja yang tersedia.
@@ -25,9 +28,10 @@ func (a Actions) Any() bool {
 	return a.Start || a.Pend || a.Resume || a.Resolve || a.Release || a.Cancel || a.Close || a.Reopen || a.TakeOver
 }
 
-func computeActions(t Ticket, u *rbac.User, members []Member) Actions {
+// coordOK: koordinator memegang bidang tiket ini (atau bidang tanpa koordinator aktif).
+func computeActions(t Ticket, u *rbac.User, members []Member, coordOK bool) Actions {
 	primary := t.AssigneeID.Valid && t.AssigneeID.Int64 == u.ID
-	coord := u.Has(rbac.PermTicketTakeover)
+	coord := u.Has(rbac.PermTicketTakeover) && coordOK
 	support := false
 	for _, m := range members {
 		if m.UserID == u.ID && m.Role == "SUPPORT" {
@@ -38,25 +42,28 @@ func computeActions(t Ticket, u *rbac.User, members []Member) Actions {
 	work := primary && u.Has(rbac.PermTicketWork)
 	teamStatus := t.Status == workflows.Claimed || t.Status == workflows.InProgress || t.Status == workflows.Pending
 	return Actions{
-		Claim:    u.Has(rbac.PermTicketClaim) && t.Status == workflows.New,
-		Start:    work && can(workflows.Start),
-		Pend:     work && can(workflows.Pend),
-		Resume:   work && can(workflows.Resume),
-		Resolve:  work && can(workflows.Resolve),
-		Release:  work && can(workflows.Release),
-		Cancel:   u.Has(rbac.PermTicketCancel) && can(workflows.Cancel),
-		Close:    coord && can(workflows.Close),
-		Reopen:   coord && can(workflows.Reopen),
-		TakeOver: coord && teamStatus && !primary,
-		Priority: u.Has(rbac.PermTicketPriority) && !workflows.IsTerminal(t.Status),
-		Support:  (primary || coord) && teamStatus,
-		Comment:  !workflows.IsTerminal(t.Status) || coord,
-		Photo:    (primary || support || coord) && t.Status != workflows.Cancelled,
+		Claim:        u.Has(rbac.PermTicketClaim) && t.Status == workflows.New,
+		Start:        work && can(workflows.Start),
+		Pend:         work && can(workflows.Pend),
+		Resume:       work && can(workflows.Resume),
+		Resolve:      work && can(workflows.Resolve),
+		Release:      work && can(workflows.Release),
+		Cancel:       u.Has(rbac.PermTicketCancel) && coordOK && can(workflows.Cancel),
+		Close:        coord && can(workflows.Close),
+		Reopen:       coord && can(workflows.Reopen),
+		TakeOver:     coord && teamStatus && !primary,
+		Priority:     u.Has(rbac.PermTicketPriority) && coordOK && !workflows.IsTerminal(t.Status),
+		Recategorize: (coord || work) && !workflows.IsTerminal(t.Status) && t.Status != workflows.Resolved,
+		Support:      (primary || coord) && teamStatus,
+		Comment:      !workflows.IsTerminal(t.Status) || u.Has(rbac.PermTicketTakeover),
+		Photo:        (primary || support || u.Has(rbac.PermTicketTakeover)) && t.Status != workflows.Cancelled,
 	}
 }
 
 type detailView struct {
 	Ticket         Ticket
+	Coordinator    FieldCoordinator
+	Categories     []CategoryGroup
 	Histories      []History
 	Attachments    []Attachment
 	Comments       []Comment
@@ -96,8 +103,13 @@ func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, id int64,
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
-	acts := computeActions(t, u, members)
-	v := detailView{Ticket: t, Histories: hist, Attachments: atts, Comments: comments, Members: members, Actions: acts,
+	fc, err := h.Service.TicketFieldCoordinator(ctx, id)
+	if err != nil {
+		h.Renderer.ServerError(w, r, err)
+		return
+	}
+	acts := computeActions(t, u, members, fc.CanCoordinate(u))
+	v := detailView{Ticket: t, Histories: hist, Attachments: atts, Comments: comments, Members: members, Actions: acts, Coordinator: fc,
 		CanClaim: acts.Claim, Open: open, Form: form,
 		MaxFiles: h.Settings.Int(ctx, settings.KeyUploadMaxFiles), MaxMB: h.Settings.Int(ctx, settings.KeyUploadMaxMB)}
 	if v.Form == nil {
@@ -123,6 +135,14 @@ func (h *Handler) renderDetail(w http.ResponseWriter, r *http.Request, id int64,
 				return
 			}
 		}
+	}
+	if acts.Recategorize {
+		cats, err := h.Service.Categories(ctx, 0)
+		if err != nil {
+			h.Renderer.ServerError(w, r, err)
+			return
+		}
+		v.Categories = groupCategories(cats)
 	}
 	if acts.Support {
 		if v.Staff, err = h.Service.StaffOptions(ctx); err != nil {
@@ -239,6 +259,13 @@ func (h *Handler) changePriority(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) changeCategory(w http.ResponseWriter, r *http.Request) {
+	h.act(w, r, "category", "Jenis gangguan dikoreksi.", func(id int64, u *rbac.User) (map[string]string, error) {
+		cat, _ := strconv.ParseInt(r.PostFormValue("ticket_category_id"), 10, 64)
+		return h.Service.ChangeCategory(r.Context(), id, u, cat, r.PostFormValue("category_reason"))
+	})
+}
+
 func (h *Handler) addSupport(w http.ResponseWriter, r *http.Request) {
 	h.act(w, r, "", "Anggota pendukung ditambahkan.", func(id int64, u *rbac.User) (map[string]string, error) {
 		uid, _ := strconv.ParseInt(r.PostFormValue("user_id"), 10, 64)
@@ -291,5 +318,28 @@ func PartLinesFrom(r *http.Request) []PartLine {
 		}
 		out = append(out, l)
 	}
+	return out
+}
+
+// CategoryGroup adalah jenis gangguan per bidang (pilihan koreksi), Triase terakhir.
+type CategoryGroup struct {
+	Field    string
+	IsTriage bool
+	Items    []Category
+}
+
+func groupCategories(cats []Category) []CategoryGroup {
+	var out []CategoryGroup
+	idx := map[int64]int{}
+	for _, c := range cats {
+		i, ok := idx[c.ITCategoryID]
+		if !ok {
+			i = len(out)
+			idx[c.ITCategoryID] = i
+			out = append(out, CategoryGroup{Field: c.ITCategoryName, IsTriage: c.IsTriage})
+		}
+		out[i].Items = append(out[i].Items, c)
+	}
+	sort.SliceStable(out, func(i, j int) bool { return !out[i].IsTriage && out[j].IsTriage })
 	return out
 }

@@ -4,6 +4,7 @@
 <h1 class="page-title">Preferensi notifikasi</h1>
 <p class="muted mt-1">Tentukan kejadian yang diterima setiap role. <strong class="font-medium text-slate-700">Inbox</strong> = hanya di aplikasi; <strong class="font-medium text-slate-700">Inbox + push</strong> = juga dikirim ke perangkat yang mengaktifkan notifikasi.</p>
 
+<div class="flash flash-info mt-5"><span class="flex-1">Koordinator hanya menerima kejadian tiket <strong class="font-medium">bidang yang dikoordinasinya</strong> (Master Data › Bidang) dan tiket tempat ia ikut menangani. Bidang tanpa koordinator aktif dikirim ke semua koordinator.</span></div>
 {{if not $d.PushOn}}
 <div class="flash flash-info mt-5"><span class="flex-1">Kunci VAPID belum dikonfigurasi di server, sehingga pilihan "Inbox + push" saat ini hanya masuk inbox. Lihat docs/INSTALLATION.md bagian Web Push.</span></div>
 {{end}}

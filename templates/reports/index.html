@@ -1,0 +1,22 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}
+<h1 class="page-title">Laporan</h1>
+<p class="muted mt-1">Semua laporan dihitung otomatis dari tiket, kegiatan internal, dan riwayat perangkat. Dapat difilter dan diunduh sebagai Excel atau PDF.</p>
+{{if $d.OwnOnly}}
+<div class="flash flash-info mt-5"><span class="flex-1">Anda melihat laporan berisi pekerjaan Anda sendiri (tiket dan kegiatan tempat Anda menjadi penanggung jawab atau pendukung).</span></div>
+{{end}}
+
+{{range $d.Groups}}
+<section class="mt-8">
+  <h2 class="section-title mb-2.5">{{.Name}}</h2>
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {{range .Defs}}
+    <a href="/app/reports/{{.Slug}}" class="card card-body transition-colors hover:border-brand-300 {{if eq .Slug "koordinator"}}border-brand-200 bg-brand-50/40{{end}}">
+      <div class="font-semibold text-slate-900">{{.Title}}</div>
+      <p class="mt-1 text-sm text-slate-600">{{.Description}}</p>
+    </a>
+    {{end}}
+  </div>
+</section>
+{{end}}
+{{end}}

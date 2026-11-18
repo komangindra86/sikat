@@ -53,6 +53,7 @@ var labelGroups = map[string][]Option{
 		{"SLA_CRITICAL", "Eskalasi tiket kritis"}, {"SLA_WARNING", "Pengingat SLA"}, {"SLA_BREACH", "SLA terlewati"},
 		{"TAKEN_OVER", "Diambil alih"}, {"SUPPORT_ADDED", "Anggota pendukung ditambahkan"},
 		{"SUPPORT_REMOVED", "Anggota pendukung dilepas"}, {"PRIORITY_CHANGED", "Prioritas diubah"}, {"PHOTO_ADDED", "Foto ditambahkan"},
+		{"CATEGORY_CHANGED", "Jenis gangguan dikoreksi"},
 	},
 	"maintenance_type": {
 		{"CORRECTIVE", "Perbaikan"}, {"PREVENTIVE", "Pemeliharaan preventif"}, {"INSPECTION", "Pemeriksaan"},
@@ -74,8 +75,27 @@ var labelGroups = map[string][]Option{
 	"notif_event": {
 		{"TICKET_CREATED", "Tiket baru"}, {"TICKET_CRITICAL", "Tiket kritis"}, {"TICKET_CLAIMED", "Tiket diambil"},
 		{"TICKET_STARTED", "Mulai dikerjakan"}, {"TICKET_PENDING", "Tiket tertunda"}, {"TICKET_RESOLVED", "Tiket selesai"},
-		{"TICKET_REOPENED", "Dibuka kembali"}, {"TICKET_ASSIGNED", "Penugasan"}, {"SLA_WARNING", "SLA hampir habis"},
+		{"TICKET_REOPENED", "Dibuka kembali"}, {"TICKET_ASSIGNED", "Penugasan"}, {"TICKET_TRANSFERRED", "Dialihkan ke bidang"}, {"SLA_WARNING", "SLA hampir habis"},
 		{"SLA_BREACH", "SLA terlewati"}, {"REPEAT_DAMAGE", "Perangkat sering rusak"}, {"TEST", "Notifikasi uji"},
+	},
+	"integration_entity": {
+		{"DEPARTMENT", "Unit"}, {"ROOM", "Ruangan"}, {"EMPLOYEE", "Pegawai"}, {"ASSET", "Perangkat"},
+	},
+	"integration_provider": {
+		{"LOCAL", "Lokal (dikelola di SIKAT)"}, {"CSV", "Impor CSV"}, {"SIMRS_API", "SIMRS (API)"}, {"SIMRS_DB", "SIMRS (database read-only)"},
+	},
+	"sync_action": {
+		{"INSERT", "Ditambah"}, {"UPDATE", "Diperbarui"}, {"UNCHANGED", "Tidak berubah"}, {"LINK", "Ditautkan"},
+		{"CONFLICT", "Konflik"}, {"ERROR", "Galat"}, {"DEACTIVATE", "Dinonaktifkan"}, {"MISSING", "Tidak ada di sumber"},
+	},
+	"sync_status": {
+		{"SUCCESS", "Berhasil"}, {"PARTIAL", "Sebagian"}, {"FAILED", "Gagal"}, {"RUNNING", "Berjalan"},
+	},
+	"sync_trigger": {
+		{"MANUAL", "Manual"}, {"SCHEDULE", "Terjadwal"}, {"RETRY", "Percobaan ulang"},
+	},
+	"conflict_policy": {
+		{"KEEP_LOCAL", "Pertahankan perubahan lokal"}, {"PREFER_SOURCE", "Utamakan data sumber"},
 	},
 	"notif_channel": {
 		{"NONE", "Tidak dikirim"}, {"INBOX", "Inbox"}, {"PUSH", "Inbox + push"},
@@ -121,8 +141,15 @@ var tones = map[string]map[string]string{
 	},
 	"notif_event": {
 		"TICKET_CREATED": "blue", "TICKET_CRITICAL": "red", "TICKET_CLAIMED": "indigo", "TICKET_STARTED": "amber",
-		"TICKET_PENDING": "orange", "TICKET_RESOLVED": "green", "TICKET_REOPENED": "orange", "TICKET_ASSIGNED": "indigo",
+		"TICKET_PENDING": "orange", "TICKET_RESOLVED": "green", "TICKET_REOPENED": "orange", "TICKET_ASSIGNED": "indigo", "TICKET_TRANSFERRED": "indigo",
 		"SLA_WARNING": "amber", "SLA_BREACH": "red", "REPEAT_DAMAGE": "orange", "TEST": "gray",
+	},
+	"sync_action": {
+		"INSERT": "green", "UPDATE": "blue", "UNCHANGED": "gray", "LINK": "indigo", "CONFLICT": "amber",
+		"ERROR": "red", "DEACTIVATE": "orange", "MISSING": "orange",
+	},
+	"sync_status": {
+		"SUCCESS": "green", "PARTIAL": "amber", "FAILED": "red", "RUNNING": "blue",
 	},
 	"notif_channel": {
 		"NONE": "gray", "INBOX": "blue", "PUSH": "green",

@@ -49,6 +49,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/{id}/reopen", h.reopen)
 	r.Post("/{id}/takeover", h.takeOver)
 	r.Post("/{id}/priority", h.changePriority)
+	r.Post("/{id}/category", h.changeCategory)
 	r.Post("/{id}/support", h.addSupport)
 	r.Post("/{id}/support/{uid}/remove", h.removeSupport)
 	r.Post("/{id}/comments", h.addComment)
@@ -68,6 +69,8 @@ type queueData struct {
 	ShowAll         bool
 	UserID          int64
 	SelfURL         string
+	// CoordinatedFields: bidang yang dikoordinasi (koordinator).
+	CoordinatedFields []string
 }
 
 type cardData struct {
@@ -88,6 +91,8 @@ type newData struct {
 	MaxMB       int
 	Incident    []struct{ Value, Label string }
 	CanClaim    bool
+	// Employees: saran nama pelapor dari direktori pegawai (Master Data › Pegawai).
+	Employees []EmployeeOption
 }
 
 func (h *Handler) queue(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +115,21 @@ func (h *Handler) queue(w http.ResponseWriter, r *http.Request) {
 		f.Priority = p
 	}
 	showAll := q.Get("semua") == "1"
-	f.OnlyCompetency = mode == "available" && hasComp && !showAll
+	// Koordinator: antrean baru & aktif default ke bidang yang dikoordinasinya.
+	var fields []string
+	if u.RoleCode == rbac.RoleCoordinator {
+		if fields, err = h.Service.CoordinatedFields(ctx, u.ID); err != nil {
+			h.Renderer.ServerError(w, r, err)
+			return
+		}
+	}
+	if field, _ := strconv.ParseInt(q.Get("bidang"), 10, 64); field > 0 {
+		f.ITCategoryID = field // bidang tertentu (mis. tautan "perlu dipilah")
+	} else if len(fields) > 0 && mode != "mine" {
+		f.OnlyCoordinated = !showAll
+	} else {
+		f.OnlyCompetency = mode == "available" && hasComp && !showAll
+	}
 	list, total, err := h.Service.Queue(ctx, f)
 	if err != nil {
 		h.Renderer.ServerError(w, r, err)
@@ -131,7 +150,7 @@ func (h *Handler) queue(w http.ResponseWriter, r *http.Request) {
 		Title: "Antrean Tiket", Nav: "tickets",
 		Data: queueData{Mode: mode, Tickets: list, Pager: pager, Filter: f, HasCompetencies: hasComp, Workload: wl,
 			Departments: depts, CanClaim: u.Has(rbac.PermTicketClaim), CanCreate: u.Has(rbac.PermTicketCreate),
-			ShowAll: showAll, UserID: u.ID, SelfURL: r.URL.RequestURI()},
+			ShowAll: showAll, UserID: u.ID, SelfURL: r.URL.RequestURI(), CoordinatedFields: fields},
 	})
 }
 
@@ -228,9 +247,14 @@ func (h *Handler) renderNew(w http.ResponseWriter, r *http.Request, status int, 
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
+	employees, err := h.Service.EmployeeOptions(ctx)
+	if err != nil {
+		h.Renderer.ServerError(w, r, err)
+		return
+	}
 	h.Renderer.Render(w, r, status, "tickets/new", web.Page{
 		Title: "Catat tiket", Nav: "tickets", Errors: errs,
-		Data: newData{Form: form, Categories: cats, Departments: depts, Rooms: rooms, Assets: assets,
+		Data: newData{Form: form, Categories: cats, Departments: depts, Rooms: rooms, Assets: assets, Employees: employees,
 			MaxFiles: h.Settings.Int(ctx, settings.KeyUploadMaxFiles), MaxMB: h.Settings.Int(ctx, settings.KeyUploadMaxMB),
 			Incident: IncidentOptions, CanClaim: reqctx.UserFrom(ctx).Has(rbac.PermTicketClaim)},
 	})

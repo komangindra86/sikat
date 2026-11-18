@@ -36,7 +36,7 @@
         {{if .Data.CanManage}}<img src="/app/qr/{{.Data.QRID}}/png" alt="QR perangkat" class="h-24 w-24 rounded border border-line" width="96" height="96">{{end}}
         <div class="text-sm">
           <span class="badge badge-green">QR aktif</span>
-          {{if .Data.CanManage}}<div class="mt-2"><a class="font-semibold text-teal-700 hover:underline" href="/app/qr/{{.Data.QRID}}">Kelola / cetak QR</a></div>{{end}}
+          {{if .Data.CanManage}}<div class="mt-2"><a class="font-semibold text-brand-700 hover:underline" href="/app/qr/{{.Data.QRID}}">Kelola / cetak QR</a></div>{{end}}
         </div>
       </div>
     {{else}}
@@ -71,7 +71,7 @@
   {{if .Data.History}}
   <ol class="space-y-3">
     {{range .Data.History}}
-    <li class="border-l-2 border-teal-200 pl-3">
+    <li class="border-l-2 border-brand-200 pl-3">
       <div class="text-sm font-medium">{{if eq .Action "asset.create"}}Perangkat didaftarkan{{else}}Data diubah{{end}}
         oleh {{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}</div>
       <div class="text-xs text-slate-500">{{wita .CreatedAt}} WITA</div>
@@ -131,8 +131,8 @@
       <div class="flex flex-wrap items-center gap-2 text-sm">
         <span class="font-semibold">{{witaDate .FinishedAt}}</span>
         <span class="badge badge-indigo">{{label "maintenance_type" .Type}}</span>
-        {{if .TicketID.Valid}}<a class="font-mono text-xs font-semibold text-teal-700 hover:underline" href="/app/tickets/{{.TicketID.Int64}}">{{.TicketNo.String}}</a>{{if gt .TicketCycle.Int64 1}}<span class="text-xs">(siklus {{.TicketCycle.Int64}})</span>{{end}}{{end}}
-        {{if .ActivityID.Valid}}<a class="font-mono text-xs font-semibold text-teal-700 hover:underline" href="/app/activities/{{.ActivityID.Int64}}">{{.ActivityNo.String}}</a>{{end}}
+        {{if .TicketID.Valid}}<a class="font-mono text-xs font-semibold text-brand-700 hover:underline" href="/app/tickets/{{.TicketID.Int64}}">{{.TicketNo.String}}</a>{{if gt .TicketCycle.Int64 1}}<span class="text-xs">(siklus {{.TicketCycle.Int64}})</span>{{end}}{{end}}
+        {{if .ActivityID.Valid}}<a class="font-mono text-xs font-semibold text-brand-700 hover:underline" href="/app/activities/{{.ActivityID.Int64}}">{{.ActivityNo.String}}</a>{{end}}
         {{if eq .Source "MANUAL"}}<span class="badge badge-gray">Manual</span>{{end}}
         {{if .VoidedAt.Valid}}<span class="badge badge-gray">Dibatalkan</span>{{end}}
       </div>
@@ -167,7 +167,7 @@
 
   {{if $m.CanRecord}}
   <details class="mt-4 rounded-lg border border-line" {{if $m.Errors}}open{{end}}>
-    <summary class="cursor-pointer p-3 text-sm font-semibold text-teal-800">+ Catat pemeliharaan manual (mis. servis vendor)</summary>
+    <summary class="cursor-pointer p-3 text-sm font-semibold text-brand-800">+ Catat pemeliharaan manual (mis. servis vendor)</summary>
     <form method="post" action="/app/maintenance/assets/{{$a.ID}}" class="grid gap-3 border-t border-slate-100 p-3 sm:grid-cols-2" novalidate>
       {{template "csrf" $.CSRFToken}}
       {{if $m.Errors}}<div class="flash flash-error sm:col-span-2" role="alert">Periksa kembali isian pemeliharaan.</div>{{end}}

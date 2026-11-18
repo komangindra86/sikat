@@ -4,9 +4,9 @@
 <nav class="mb-2 text-sm text-slate-500"><a href="/app/tickets" class="hover:underline">Tiket</a> › {{$t.TicketNo}}</nav>
 
 {{if $d.NewLink}}
-<div class="card card-body mb-4 border-teal-300 bg-teal-50">
-  <div class="text-sm font-semibold text-teal-900">Link pemantauan untuk pelapor</div>
-  <p class="text-xs text-teal-900">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali.</p>
+<div class="card card-body mb-4 border-brand-300 bg-brand-50">
+  <div class="text-sm font-semibold text-brand-900">Link pemantauan untuk pelapor</div>
+  <p class="text-xs text-brand-900">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali.</p>
   <div id="new-link" class="mt-2 break-all rounded bg-white p-2 font-mono text-xs">{{$d.NewLink}}</div>
   <div class="mt-2"><button type="button" class="btn btn-secondary btn-sm" data-copy="#new-link">Salin link</button></div>
 </div>
@@ -33,7 +33,7 @@
 <section class="mt-4 space-y-2" aria-label="Tindakan">
   {{if $a.Resolve}}
   <details class="card" {{if eq $d.Open "resolve"}}open{{end}}>
-    <summary class="card-body cursor-pointer font-semibold text-teal-800">Selesaikan tiket</summary>
+    <summary class="card-body cursor-pointer font-semibold text-brand-800">Selesaikan tiket</summary>
     <form method="post" action="/app/tickets/{{$t.ID}}/resolve" class="space-y-4 border-t border-slate-100 p-4" novalidate>
       {{template "csrf" $csrf}}
       {{if $d.Templates}}
@@ -145,16 +145,39 @@
         <div><dt class="text-slate-500">Yang terdampak</dt><dd class="font-medium">{{label "scope" (printf "%d" $t.Scope)}}</dd></div>
         <div><dt class="text-slate-500">Perangkat pengganti</dt><dd class="font-medium">{{label "replacement" $t.Replacement}}</dd></div>
         <div><dt class="text-slate-500">Perkiraan awal gangguan</dt><dd class="font-medium">{{wita $t.IncidentStartedAt}}</dd></div>
-        <div><dt class="text-slate-500">Bidang</dt><dd class="font-medium">{{$t.ITCategoryName}}</dd></div>
+        <div><dt class="text-slate-500">Bidang</dt><dd class="font-medium">{{$t.ITCategoryName}}{{if $t.IsTriage}} <span class="badge badge-amber ml-1">Perlu dipilah</span>{{end}}</dd></div>
+        {{if $t.ReportedCategoryName.Valid}}<div><dt class="text-slate-500">Dipilih pelapor</dt><dd>{{$t.ReportedCategoryName.String}} <span class="text-xs text-slate-500">(sudah dikoreksi)</span></dd></div>{{end}}
+        <div><dt class="text-slate-500">Koordinator bidang</dt><dd class="font-medium">{{with $d.Coordinator}}{{if .Active}}{{.Name}}{{else}}<span class="font-normal text-amber-700">Belum ditetapkan</span>{{end}}{{end}}</dd></div>
         <div><dt class="text-slate-500">Layanan klinis kritis</dt><dd class="font-medium">{{if $t.CriticalService}}Ya{{else}}Tidak{{end}}</dd></div>
       </dl>
       <div class="mt-4 rounded-lg bg-slate-50 p-3 text-sm">
         Prioritas <strong>{{label "priority" $t.Priority}}</strong> ditentukan
         {{if eq $t.PrioritySource "MANUAL"}}manual oleh koordinator (lihat histori){{else if $t.PriorityRuleName.Valid}}oleh aturan "<strong>{{$t.PriorityRuleName.String}}</strong>"{{else}}dari prioritas bawaan jenis gangguan{{end}}.
       </div>
+      {{if $a.Recategorize}}
+      <details class="mt-3" {{if or (eq $d.Open "category") $t.IsTriage}}open{{end}}>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-700">{{if $t.IsTriage}}Pilah: tentukan jenis gangguan{{else}}Koreksi jenis gangguan{{end}}</summary>
+        {{if $t.IsTriage}}<p class="mt-2 text-xs text-slate-600">Pelapor tidak menemukan masalahnya di daftar. Baca keterangannya, lalu pilih jenis gangguan yang paling tepat — tiket akan pindah ke bidangnya dan koordinator/petugas bidang itu diberi tahu.</p>{{end}}
+        <form method="post" action="/app/tickets/{{$t.ID}}/category" class="mt-3 grid gap-3" novalidate>
+          {{template "csrf" $csrf}}
+          <div>
+            <label class="label" for="ticket_category_id">Jenis gangguan yang tepat</label>
+            <select class="input {{if and (eq $d.Open "category") ($p.Err "ticket_category_id")}}input-error{{end}}" id="ticket_category_id" name="ticket_category_id">
+              {{range $d.Categories}}<optgroup label="{{.Field}}">{{range .Items}}<option value="{{.ID}}" {{if eq .ID $t.TicketCategoryID}}selected{{end}}>{{.Name}}</option>{{end}}</optgroup>{{end}}
+            </select>
+          </div>
+          <div>
+            <label class="label" for="category-reason">Alasan {{if not $t.IsTriage}}<span class="text-red-600" aria-hidden="true">*</span>{{else}}<span class="font-normal text-slate-500">(opsional)</span>{{end}}</label>
+            <input class="input {{if and (eq $d.Open "category") ($p.Err "category_reason")}}input-error{{end}}" id="category-reason" name="category_reason" maxlength="255" placeholder="mis. ternyata kabel jaringan putus" value="{{if eq $d.Open "category"}}{{index $d.Form "category_reason"}}{{end}}">
+          </div>
+          {{if eq $d.Open "category"}}{{with $p.Err "ticket_category_id"}}<p class="error-text">{{.}}</p>{{end}}{{with $p.Err "category_reason"}}<p class="error-text">{{.}}</p>{{end}}{{end}}
+          <div><button type="submit" class="btn btn-secondary" data-busy-text="Menyimpan…">Simpan</button></div>
+        </form>
+      </details>
+      {{end}}
       {{if $a.Priority}}
       <details class="mt-3" {{if eq $d.Open "priority"}}open{{end}}>
-        <summary class="cursor-pointer text-sm font-semibold text-teal-700">Ubah prioritas</summary>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-700">Ubah prioritas</summary>
         <form method="post" action="/app/tickets/{{$t.ID}}/priority" class="mt-3 grid gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-end" novalidate>
           {{template "csrf" $csrf}}
           <div>
@@ -227,7 +250,7 @@
       {{if $a.Photo}}
       <form method="post" action="/app/tickets/{{$t.ID}}/photos" enctype="multipart/form-data" class="mt-4 space-y-3" novalidate>
         {{template "csrf" $csrf}}
-        <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal-800" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}" aria-label="Pilih foto">
+        <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}" aria-label="Pilih foto">
         <div class="grid grid-cols-4 gap-2" data-photo-preview></div>
         {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}
         <div class="flex flex-wrap items-center gap-3">
@@ -242,7 +265,7 @@
       <h2 id="histori" class="mb-3 section-title">Histori</h2>
       <ol class="space-y-3">
         {{range $d.Histories}}
-        <li class="border-l-2 border-teal-200 pl-3">
+        <li class="border-l-2 border-brand-200 pl-3">
           <div class="text-sm font-medium">
             {{label "ticket_event" .EventType}}
             oleh {{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}
@@ -289,13 +312,13 @@
       <h2 class="mb-2 section-title">Lokasi</h2>
       <div class="font-medium">{{$t.Location}}</div>
       {{if $t.RoomLocation.Valid}}<div class="text-slate-600">{{$t.RoomLocation.String}}</div>{{end}}
-      {{if $t.AssetID.Valid}}<div class="mt-2">Perangkat: <a class="font-semibold text-teal-700 hover:underline" href="/app/assets/{{$t.AssetID.Int64}}">{{$t.AssetName.String}} ({{$t.AssetCode.String}})</a></div>{{end}}
+      {{if $t.AssetID.Valid}}<div class="mt-2">Perangkat: <a class="font-semibold text-brand-700 hover:underline" href="/app/assets/{{$t.AssetID.Int64}}">{{$t.AssetName.String}} ({{$t.AssetCode.String}})</a></div>{{end}}
     </section>
     <section class="card card-body text-sm">
       <h2 class="mb-2 section-title">Pelapor</h2>
       <div class="font-medium">{{$t.ReporterName}}</div>
       {{if $t.ReporterDeptName.Valid}}<div class="text-slate-600">{{$t.ReporterDeptName.String}}</div>{{end}}
-      {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-semibold text-teal-700" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
+      {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-semibold text-brand-700" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
       {{if $t.CreatedByName.Valid}}<div class="mt-2 text-xs text-slate-500">Dicatat oleh {{$t.CreatedByName.String}}</div>{{end}}
       {{if $t.ReporterFeedback.Valid}}<div class="mt-2 text-xs">Konfirmasi pelapor: <strong>{{if eq $t.ReporterFeedback.String "OK"}}sudah beres{{else}}belum beres{{end}}</strong></div>{{end}}
     </section>

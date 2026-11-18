@@ -31,14 +31,19 @@
       toggle(el, n > 0);
     });
   }
-  function refresh() {
+  // Jeda minimum antar-permintaan: halaman yang sering berganti terlihat/tersembunyi
+  // (pindah aplikasi berulang) tidak membanjiri server.
+  var lastRefresh = Date.now();
+  function refresh(force) {
     if (document.visibilityState === "hidden") return;
+    if (!force && Date.now() - lastRefresh < 30000) return;
+    lastRefresh = Date.now();
     fetch("/app/notifications/badge", { credentials: "same-origin", headers: { Accept: "application/json" } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d && typeof d.unread === "number") setUnread(d.unread); })
       .catch(function () { /* offline / session habis: abaikan */ });
   }
-  window.setInterval(refresh, 60000);
+  window.setInterval(function () { refresh(true); }, 60000);
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") refresh(); });
 
   // ---- Service worker ----------------------------------------------------
@@ -49,7 +54,7 @@
     swReg = navigator.serviceWorker.register("/sw.js");
     swReg.catch(function () { /* ditangani panel push */ });
     navigator.serviceWorker.addEventListener("message", function (e) {
-      if (e.data && e.data.type === "sikat:notification") refresh();
+      if (e.data && e.data.type === "sikat:notification") refresh(true);
     });
   }
 

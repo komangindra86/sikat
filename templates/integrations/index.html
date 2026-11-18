@@ -1,0 +1,114 @@
+{{template "base" .}}
+{{define "content"}}{{$d := .Data}}{{$p := .}}
+<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">Integrasi master data</h1>
+    <p class="muted mt-1">Unit, ruangan, pegawai, dan perangkat tetap tersimpan di SIKAT. Data dari SIMRS atau file CSV dipetakan lewat ID sumber; perubahan manual di SIKAT tidak ditimpa tanpa keputusan Anda.</p>
+  </div>
+  <a href="/app/integrations/logs" class="btn btn-secondary shrink-0"><span class="icon h-4 w-4">{{template "icon" "list"}}</span>Log sinkronisasi</a>
+</div>
+
+<div class="flash flash-info mt-5">
+  <span class="flex-1"><strong class="font-medium">SIMRS belum terhubung.</strong> Adapter SIMRS (REST API atau database read-only) dibuat setelah spesifikasi koneksi dari tim SIMRS tersedia — lihat <code>docs/INTEGRATION.md</code>. Aplikasi berjalan penuh dengan master data lokal; untuk memasukkan data massal gunakan impor CSV di bawah.</span>
+</div>
+
+<section class="mt-6" aria-labelledby="sumber-data">
+  <h2 id="sumber-data" class="section-title mb-2.5">Sumber data</h2>
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    {{range $d.Statuses}}
+    <div class="card card-body">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="font-semibold text-slate-900">{{label "integration_entity" .Entity}}</h3>
+        <span class="badge {{if eq .Provider "LOCAL"}}badge-gray{{else}}badge-blue{{end}}">{{if eq .Provider "LOCAL"}}Lokal{{else}}{{label "integration_provider" .Provider}}{{end}}</span>
+      </div>
+      <p class="mt-2 text-2xl font-semibold tabular-nums text-slate-900">{{.Total}}</p>
+      <p class="text-xs text-slate-500">data · {{.FromSource}} dari CSV/SIMRS{{if .LocalEdited}} · <span class="text-amber-700">{{.LocalEdited}} diubah manual</span>{{end}}</p>
+      {{with .LastLog}}
+      <a href="/app/integrations/logs/{{.ID}}" class="mt-3 flex items-center justify-between gap-2 rounded-md bg-slate-50 px-2.5 py-2 text-xs hover:bg-slate-100">
+        <span class="min-w-0 truncate text-slate-600">{{label "integration_provider" .Provider}} · {{since .StartedAt}} lalu</span>
+        <span class="badge badge-{{tone "sync_status" .Status}} shrink-0">{{label "sync_status" .Status}}</span>
+      </a>
+      {{else}}<p class="mt-3 text-xs text-slate-400">Belum pernah diimpor/disinkronkan.</p>{{end}}
+      {{if and (ne .Provider "LOCAL") (ne .Provider "CSV")}}
+      <form method="post" action="/app/integrations/sync/{{.Entity}}" class="mt-3">
+        {{template "csrf" $p.CSRFToken}}
+        <button type="submit" class="btn btn-secondary btn-sm w-full" data-busy-text="Menyinkronkan…"><span class="icon h-4 w-4">{{template "icon" "sync"}}</span>Sinkron sekarang</button>
+      </form>
+      {{if .NextRetryAt.Valid}}<p class="mt-2 text-xs text-amber-700">Percobaan ulang ke-{{add .RetryCount 1}} pada {{wita .NextRetryAt}} WITA</p>{{end}}
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+</section>
+
+<div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_22rem]">
+  <section class="card" aria-labelledby="impor-csv">
+    <div class="card-header"><h2 id="impor-csv" class="card-title">Impor CSV</h2><span class="text-xs text-slate-500">Unggah → pratinjau → terapkan</span></div>
+    <form method="post" action="/app/integrations/imports" enctype="multipart/form-data" class="card-body space-y-4" novalidate>
+      {{template "csrf" .CSRFToken}}
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label" for="entity">Jenis data</label>
+          <select class="input {{if $p.Err "entity"}}input-error{{end}}" id="entity" name="entity">
+            {{range labels "integration_entity"}}<option value="{{.Value}}" {{if eq .Value (index $d.Form "entity")}}selected{{end}}>{{.Label}}</option>{{end}}
+          </select>
+          <p class="help">Impor berurutan: Unit → Ruangan → Pegawai → Perangkat.</p>
+        </div>
+        <div>
+          <label class="label" for="file">File CSV (maks. 5 MB)</label>
+          <input class="input {{if $p.Err "file"}}input-error{{end}} file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-2.5 file:py-1 file:text-sm" id="file" name="file" type="file" accept=".csv,text/csv">
+          {{with $p.Err "file"}}<p class="error-text">{{.}}</p>{{end}}
+        </div>
+      </div>
+      <div>
+        <label class="label" for="policy">Bila data di SIKAT sudah diubah manual</label>
+        <select class="input sm:max-w-sm" id="policy" name="policy">
+          <option value="KEEP_LOCAL" {{if ne (index $d.Form "policy") "PREFER_SOURCE"}}selected{{end}}>Pertahankan perubahan di SIKAT (dicatat sebagai konflik)</option>
+          <option value="PREFER_SOURCE" {{if eq (index $d.Form "policy") "PREFER_SOURCE"}}selected{{end}}>Utamakan data file (timpa perubahan manual)</option>
+        </select>
+      </div>
+      <label class="flex items-start gap-2.5 text-sm"><input class="checkbox mt-0.5" type="checkbox" name="mark_missing" value="1" {{if eq (index $d.Form "mark_missing") "1"}}checked{{end}}>
+        <span><span class="font-medium text-slate-900">File berisi data lengkap</span><span class="block text-xs text-slate-500">Data yang pernah diimpor dari CSV tetapi tidak ada di file ini akan dinonaktifkan (tidak dihapus). Perangkat tidak diubah statusnya.</span></span></label>
+      <div class="flex justify-end"><button type="submit" class="btn btn-primary" data-busy-text="Membaca file…"><span class="icon h-4 w-4">{{template "icon" "upload"}}</span>Unggah &amp; pratinjau</button></div>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="format-csv">
+    <div class="card-header"><h2 id="format-csv" class="card-title">Format & template</h2></div>
+    <div class="divide-y divide-slate-100">
+      {{range $d.Entities}}
+      <details class="px-4 py-3 sm:px-5">
+        <summary class="flex cursor-pointer items-center justify-between gap-2 text-sm font-medium text-slate-900">{{label "integration_entity" .Code}}
+          <a href="/app/integrations/template/{{.Code}}.csv" class="text-xs font-medium text-brand-700 hover:underline" download>Unduh template</a></summary>
+        <ul class="mt-2 space-y-1 text-xs text-slate-600">
+          {{$e := .}}{{range .Columns}}<li><code class="rounded bg-slate-100 px-1 text-slate-800">{{.}}</code>{{if index $e.Required .}} <span class="text-red-600">wajib</span>{{end}}{{with index $e.Help .}} — {{.}}{{end}}</li>{{end}}
+        </ul>
+      </details>
+      {{end}}
+    </div>
+    <p class="border-t border-line px-4 py-3 text-xs text-slate-500 sm:px-5">Pemisah koma atau titik koma; simpan dari Excel sebagai <em>CSV UTF-8</em>. Kolom <code>aktif</code> dan <code>layanan_kritis</code> diisi ya/tidak.</p>
+  </section>
+</div>
+
+<section class="mt-6" aria-labelledby="log-terbaru">
+  <div class="mb-2.5 flex items-center justify-between"><h2 id="log-terbaru" class="section-title">Aktivitas terbaru</h2><a href="/app/integrations/logs" class="text-sm font-medium text-brand-700 hover:text-brand-800">Semua</a></div>
+  {{template "sync-log-list" $d.Logs}}
+</section>
+{{end}}
+
+{{define "sync-log-list"}}
+{{if .}}
+<ul class="list">
+  {{range .}}
+  <li><a href="/app/integrations/logs/{{.ID}}" class="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <span class="min-w-0">
+      <span class="font-medium text-slate-900">{{label "integration_entity" .Entity}}</span>
+      <span class="text-sm text-slate-500">· {{label "integration_provider" .Provider}}{{with .FileName.String}} · {{.}}{{end}} · {{label "sync_trigger" .Trigger}}{{if gt .Attempt 1}} (ke-{{.Attempt}}){{end}}</span>
+      <span class="block text-xs text-slate-500">{{wita .StartedAt}} WITA{{with .By.String}} · {{.}}{{end}} · +{{.Inserted}} baru, {{.Updated}} diperbarui{{if .Conflicts}}, <span class="text-amber-700">{{.Conflicts}} konflik</span>{{end}}{{if .Failed}}, <span class="text-red-700">{{.Failed}} galat</span>{{end}}{{if .Deactivated}}, {{.Deactivated}} nonaktif{{end}}</span>
+    </span>
+    <span class="badge badge-{{tone "sync_status" .Status}} shrink-0">{{label "sync_status" .Status}}</span>
+  </a></li>
+  {{end}}
+</ul>
+{{else}}<div class="card px-4 py-8 text-center text-sm text-slate-500">Belum ada impor atau sinkronisasi.</div>{{end}}
+{{end}}

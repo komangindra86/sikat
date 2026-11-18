@@ -9,10 +9,10 @@
     {{if $d.Unread}}
     <form method="post" action="/app/notifications/read-all">
       {{template "csrf" .CSRFToken}}
-      <button type="submit" class="btn btn-secondary" data-busy-text="Memproses…">{{template "icon" "check"}}Tandai semua dibaca</button>
+      <button type="submit" class="btn btn-secondary" data-busy-text="Memproses…"><span class="icon h-4 w-4">{{template "icon" "check"}}</span>Tandai semua dibaca</button>
     </form>
     {{end}}
-    <a href="/app/notifications/settings" class="btn btn-secondary">{{template "icon" "sliders"}}Pengaturan</a>
+    <a href="/app/notifications/settings" class="btn btn-secondary"><span class="icon h-4 w-4">{{template "icon" "sliders"}}</span>Pengaturan</a>
   </div>
 </div>
 
@@ -25,9 +25,9 @@
 
 <div class="mt-5 flex gap-1 border-b border-line" role="tablist" aria-label="Saring notifikasi">
   <a href="/app/notifications" role="tab" aria-selected="{{if not $d.UnreadOnly}}true{{else}}false{{end}}"
-     class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if not $d.UnreadOnly}}border-teal-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Semua</a>
+     class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if not $d.UnreadOnly}}border-brand-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Semua</a>
   <a href="/app/notifications?f=unread" role="tab" aria-selected="{{if $d.UnreadOnly}}true{{else}}false{{end}}"
-     class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if $d.UnreadOnly}}border-teal-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Belum dibaca{{if $d.Unread}} <span class="ml-1 text-xs tabular-nums text-slate-400">{{$d.Unread}}</span>{{end}}</a>
+     class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if $d.UnreadOnly}}border-brand-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Belum dibaca{{if $d.Unread}} <span class="ml-1 text-xs tabular-nums text-slate-400">{{$d.Unread}}</span>{{end}}</a>
 </div>
 
 {{if $d.Items}}
@@ -35,7 +35,7 @@
   {{range $d.Items}}{{$unread := not .ReadAt.Valid}}
   <li>
     <a href="/app/notifications/{{.ID}}" class="notif-item {{if $unread}}notif-unread{{end}}">
-      <span class="notif-dot {{if $unread}}bg-teal-600{{else}}bg-transparent{{end}}" aria-hidden="true"></span>
+      <span class="notif-dot {{if $unread}}bg-brand-600{{else}}bg-transparent{{end}}" aria-hidden="true"></span>
       <span class="min-w-0 flex-1">
         <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
           <span class="min-w-0 {{if $unread}}font-semibold text-slate-900{{else}}font-medium text-slate-700{{end}}">{{.Title}}</span>

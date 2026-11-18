@@ -21,7 +21,7 @@ type pwaHandler struct {
 // precache: aset yang disimpan saat service worker dipasang (URL berversi).
 var precache = []string{
 	"css/app.css", "js/app.js", "js/pwa.js", "js/htmx.min.js", "fonts/inter-latin.woff2",
-	"icons/favicon.svg", "icons/icon-192.png", "icons/badge-96.png",
+	"icons/favicon-32.png", "icons/logo-64.png", "icons/icon-192.png", "icons/badge-96.png",
 }
 
 func (p *pwaHandler) serviceWorker(w http.ResponseWriter, r *http.Request) {
@@ -58,8 +58,8 @@ func (p *pwaHandler) manifest(w http.ResponseWriter, r *http.Request) {
 		"scope":            "/",
 		"display":          "standalone",
 		"orientation":      "any",
-		"background_color": "#f8fafc",
-		"theme_color":      "#0f766e",
+		"background_color": "#eef5fe",
+		"theme_color":      "#1b57a5",
 		"icons": []map[string]string{
 			icon("icons/icon-192.png", "192x192", "any"),
 			icon("icons/icon-512.png", "512x512", "any"),

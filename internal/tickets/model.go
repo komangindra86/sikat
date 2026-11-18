@@ -37,49 +37,55 @@ const (
 
 // Ticket adalah tiket beserta label relasinya.
 type Ticket struct {
-	ID                int64
-	TicketNo          string
-	Channel           string
-	Status            string
-	Priority          string
-	PrioritySource    string
-	PriorityRuleName  sql.NullString
-	DepartmentID      sql.NullInt64
-	DepartmentName    sql.NullString
-	RoomName          sql.NullString
-	RoomLocation      sql.NullString
-	AssetID           sql.NullInt64
-	AssetCode         sql.NullString
-	AssetName         sql.NullString
-	ReporterName      string
-	ReporterPhone     sql.NullString
-	ReporterDeptName  sql.NullString
-	CategoryName      string
-	ITCategoryName    string
-	Description       string
-	Impact            int
-	Scope             int
-	Replacement       string
-	CriticalService   bool
-	IncidentStartedAt sql.NullTime
-	AssigneeID        sql.NullInt64
-	AssigneeName      sql.NullString
-	CreatedByName     sql.NullString
-	FirstResponseAt   sql.NullTime
-	CreatedAt         time.Time
-	AttachmentCount   int
-	WorkStartedAt     sql.NullTime
-	PendingSince      sql.NullTime
-	PendingReason     sql.NullString
-	ResolvedAt        sql.NullTime
-	ClosedAt          sql.NullTime
-	ServiceRestoredAt sql.NullTime
-	ResolutionAction  sql.NullString
-	ResolutionResult  sql.NullString
-	ResolutionNote    sql.NullString
-	ReporterFeedback  sql.NullString
-	CancelReason      sql.NullString
-	SLACycle          int
+	ID               int64
+	TicketNo         string
+	Channel          string
+	Status           string
+	Priority         string
+	PrioritySource   string
+	PriorityRuleName sql.NullString
+	DepartmentID     sql.NullInt64
+	DepartmentName   sql.NullString
+	RoomName         sql.NullString
+	RoomLocation     sql.NullString
+	AssetID          sql.NullInt64
+	AssetCode        sql.NullString
+	AssetName        sql.NullString
+	ReporterName     string
+	ReporterPhone    sql.NullString
+	ReporterDeptName sql.NullString
+	CategoryName     string
+	ITCategoryName   string
+	TicketCategoryID int64
+	ITCategoryID     int64
+	// IsTriage: bidang tiket adalah Triase (perlu dipilah ke jenis/bidang yang tepat).
+	IsTriage bool
+	// ReportedCategoryName: jenis pilihan pelapor bila sudah dikoreksi.
+	ReportedCategoryName sql.NullString
+	Description          string
+	Impact               int
+	Scope                int
+	Replacement          string
+	CriticalService      bool
+	IncidentStartedAt    sql.NullTime
+	AssigneeID           sql.NullInt64
+	AssigneeName         sql.NullString
+	CreatedByName        sql.NullString
+	FirstResponseAt      sql.NullTime
+	CreatedAt            time.Time
+	AttachmentCount      int
+	WorkStartedAt        sql.NullTime
+	PendingSince         sql.NullTime
+	PendingReason        sql.NullString
+	ResolvedAt           sql.NullTime
+	ClosedAt             sql.NullTime
+	ServiceRestoredAt    sql.NullTime
+	ResolutionAction     sql.NullString
+	ResolutionResult     sql.NullString
+	ResolutionNote       sql.NullString
+	ReporterFeedback     sql.NullString
+	CancelReason         sql.NullString
+	SLACycle             int
 	// SLA diisi service untuk tampilan petugas (nil bila tiket tanpa kebijakan SLA).
 	SLA *sla.TicketRow
 }
@@ -210,9 +216,13 @@ type QueueFilter struct {
 	Mode           string // available | mine | active
 	UserID         int64
 	OnlyCompetency bool
-	Priority       string
-	DepartmentID   int64
-	Limit, Offset  int
+	// OnlyCoordinated: hanya bidang yang dikoordinasi pengguna (koordinator per bidang).
+	OnlyCoordinated bool
+	// ITCategoryID: hanya satu bidang (mis. tiket triase dari tautan dashboard).
+	ITCategoryID  int64
+	Priority      string
+	DepartmentID  int64
+	Limit, Offset int
 }
 
 // Workload adalah beban kerja satu petugas.
@@ -226,10 +236,12 @@ type Workload struct {
 
 // Category adalah pilihan jenis gangguan.
 type Category struct {
-	ID           int64
-	Name         string
-	HelpText     sql.NullString
-	ITCategoryID int64
+	ID             int64
+	Name           string
+	HelpText       sql.NullString
+	ITCategoryID   int64
+	ITCategoryName string
+	IsTriage       bool
 }
 
 // Option adalah pilihan select umum.

@@ -3,8 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"selfRequestsOnly":true}'>
 {{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
-<meta name="theme-color" content="#0f766e">
-<link rel="icon" href="{{static "icons/favicon.svg"}}" type="image/svg+xml">
+<meta name="theme-color" content="#1b57a5">
+<link rel="icon" href="{{static "icons/favicon-32.png"}}" type="image/png" sizes="32x32">
+<link rel="icon" href="{{static "icons/icon-192.png"}}" type="image/png" sizes="192x192">
 {{if .User}}<link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="{{static "icons/apple-touch-icon.png"}}">
 <meta name="mobile-web-app-capable" content="yes">
@@ -18,7 +19,7 @@
 {{if .User}}<script src="{{static "js/pwa.js"}}" defer></script>{{end}}
 {{end}}
 
-{{define "brand-mark"}}<span class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-teal-700 text-[13px] font-semibold text-white">S</span>{{end}}
+{{define "brand-mark"}}<img src="{{static "icons/logo-64.png"}}" alt="" width="32" height="32" class="h-8 w-8 shrink-0">{{end}}
 
 {{define "base"}}<!doctype html>
 <html lang="id">
@@ -120,7 +121,7 @@
 {{end}}
 
 {{define "bottom-link"}}
-<a href="{{.Href}}" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium {{if .Active}}text-teal-700{{else}}text-slate-500{{end}}">
+<a href="{{.Href}}" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium {{if .Active}}text-brand-700{{else}}text-slate-500{{end}}">
   <span class="icon h-6 w-6">{{template "icon" .Icon}}</span>{{.Label}}</a>
 {{end}}
 
@@ -131,6 +132,7 @@
 <a href="/app/notifications" class="{{.Link}} {{if eq $p.Nav "notifications"}}{{.Active}}{{end}}" {{if eq $p.Nav "notifications"}}aria-current="page"{{end}}>{{template "icon" "bell"}}<span>Notifikasi</span><span class="count-badge" data-unread {{if not $p.Unread}}hidden{{end}}>{{template "notif-count" $p.Unread}}</span></a>
 {{if $u.Can "ticket.view_queue"}}{{template "nav-link" (dict "C" . "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "On" (eq $p.Nav "tickets"))}}{{end}}
 {{if $u.Can "activity.create"}}{{template "nav-link" (dict "C" . "Href" "/app/activities" "Icon" "activity" "Label" "Kegiatan" "On" (eq $p.Nav "activities"))}}{{end}}
+{{if or ($u.Can "report.view_all") ($u.Can "report.view_own")}}{{template "nav-link" (dict "C" . "Href" "/app/reports" "Icon" "chart" "Label" "Laporan" "On" (eq $p.Nav "reports"))}}{{end}}
 {{if $u.Can "sla.view"}}{{template "nav-link" (dict "C" . "Href" "/app/sla" "Icon" "clock" "Label" "SLA" "On" (eq $p.Nav "sla"))}}{{end}}
 {{if $u.Can "asset.view"}}
 <div class="{{.Group}}">Perangkat</div>
@@ -141,6 +143,8 @@
 <div class="{{.Group}}">Administrasi</div>
 {{if $u.Can "master.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/master" "Icon" "grid" "Label" "Master Data" "On" (eq $p.Nav "master"))}}{{end}}
 {{if $u.Can "user.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/users" "Icon" "users" "Label" "Pengguna" "On" (eq $p.Nav "users"))}}{{end}}
+{{/* Menu Integrasi disembunyikan (18/11/2026): integrasi direncanakan lewat API SIMRS.
+     Halaman /app/integrations tetap ada untuk Admin bila dibutuhkan. */}}
 {{if $u.Can "config.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/settings" "Icon" "sliders" "Label" "Pengaturan" "On" (eq $p.Nav "settings"))}}{{end}}
 {{if $u.Can "audit.view"}}{{template "nav-link" (dict "C" . "Href" "/app/audit" "Icon" "document" "Label" "Jejak Audit" "On" (eq $p.Nav "audit"))}}{{end}}
 {{end}}

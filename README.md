@@ -13,7 +13,9 @@ perangkat, dan manajemen pekerjaan IT rumah sakit.
 | 3 — Work Management | Selesai |
 | 4 — Asset Maintenance | Selesai |
 | 5 — SLA & Eskalasi | Selesai |
-| 6 — PWA & Notifikasi | **Selesai, menunggu validasi** |
+| 6 — PWA & Notifikasi | Selesai |
+| 7 — Dashboard & Reporting | Selesai |
+| 8 — SIMRS Integration Ready | **Selesai, menunggu validasi** |
 
 Fitur yang sudah berjalan: login & keamanan, RBAC, master data, perangkat,
 pengguna, pengaturan sistem, jejak audit, QR ruangan/perangkat, pengajuan
@@ -22,7 +24,11 @@ tiket, pencatatan tiket via telepon/WA, alur kerja tiket lengkap (tunda, selesai
 konfirmasi pelapor, ambil alih, prioritas manual), tutup otomatis, kegiatan internal IT,
 riwayat & statistik perangkat, sparepart & biaya, deteksi perangkat sering rusak,
 SLA berbasis kalender kerja & hari libur, eskalasi otomatis, dashboard & laporan SLA bulanan,
-inbox notifikasi, Web Push (VAPID) dengan preferensi per role, PWA installable. Rincian di [CHANGELOG.md](CHANGELOG.md).
+inbox notifikasi, Web Push (VAPID) dengan preferensi per role, PWA installable,
+dashboard per role, 15 laporan (termasuk laporan koordinator pengganti spreadsheet)
+dengan filter dan ekspor Excel/PDF, koordinator per bidang, triase & koreksi jenis gangguan,
+integrasi master data siap SIMRS lewat API (pemetaan external_id, perlindungan perubahan
+lokal, log & retry; panduan di [docs/INTEGRATION.md](docs/INTEGRATION.md)). Rincian di [CHANGELOG.md](CHANGELOG.md).
 
 ## Mulai cepat
 

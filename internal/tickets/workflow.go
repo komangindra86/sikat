@@ -40,6 +40,7 @@ const (
 	EventSupportRemoved  = "SUPPORT_REMOVED"
 	EventPriorityChanged = "PRIORITY_CHANGED"
 	EventPhotoAdded      = "PHOTO_ADDED"
+	EventCategoryChanged = "CATEGORY_CHANGED"
 )
 
 // Hasil penyelesaian.
@@ -417,6 +418,9 @@ func (s *Service) Cancel(ctx context.Context, id int64, u *rbac.User, reason str
 		if err != nil {
 			return err
 		}
+		if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
+			return err
+		}
 		if err := s.applyTransition(ctx, tx, t, transitionOpts{
 			action: workflows.Cancel, event: EventCancelled, actorType: "USER", actorID: u.ID, note: reason,
 			sets: "cancelled_at = ?, cancel_reason = ?, pending_reason_id = NULL, pending_since = NULL", args: []any{now, reason},
@@ -445,6 +449,9 @@ func (s *Service) Close(ctx context.Context, id int64, u *rbac.User, note string
 		if err != nil {
 			return err
 		}
+		if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
+			return err
+		}
 		return s.applyTransition(ctx, tx, t, transitionOpts{
 			action: workflows.Close, event: EventClosed, actorType: "USER", actorID: u.ID, note: note,
 			sets: "closed_at = ?", args: []any{now},
@@ -469,6 +476,9 @@ func (s *Service) Reopen(ctx context.Context, id int64, u *rbac.User, reason str
 	return nil, database.WithTxRetry(ctx, s.db, 3, func(tx *sql.Tx) error {
 		t, err := lockTicket(ctx, tx, id)
 		if err != nil {
+			return err
+		}
+		if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
 			return err
 		}
 		sets, args, err := s.reopenSLA(ctx, tx, t, now)
@@ -581,6 +591,9 @@ func (s *Service) TakeOver(ctx context.Context, id int64, u *rbac.User, reason s
 		if err != nil {
 			return err
 		}
+		if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
+			return err
+		}
 		switch {
 		case t.Status == workflows.New:
 			claimNew = true
@@ -636,8 +649,13 @@ func (s *Service) AddSupport(ctx context.Context, id int64, u *rbac.User, userID
 		if err != nil {
 			return err
 		}
-		if !t.isPrimary(u) && !u.Has(rbac.PermTicketTakeover) {
-			return ErrForbidden
+		if !t.isPrimary(u) {
+			if !u.Has(rbac.PermTicketTakeover) {
+				return ErrForbidden
+			}
+			if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
+				return err
+			}
 		}
 		if t.Status != workflows.Claimed && t.Status != workflows.InProgress && t.Status != workflows.Pending {
 			return ErrTransition
@@ -679,8 +697,13 @@ func (s *Service) RemoveSupport(ctx context.Context, id int64, u *rbac.User, use
 		if err != nil {
 			return err
 		}
-		if !t.isPrimary(u) && !u.Has(rbac.PermTicketTakeover) && u.ID != userID {
-			return ErrForbidden
+		if !t.isPrimary(u) && u.ID != userID {
+			if !u.Has(rbac.PermTicketTakeover) {
+				return ErrForbidden
+			}
+			if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
+				return err
+			}
 		}
 		var name string
 		_ = tx.QueryRowContext(ctx, `SELECT full_name FROM users WHERE id = ?`, userID).Scan(&name)
@@ -714,6 +737,9 @@ func (s *Service) ChangePriority(ctx context.Context, id int64, u *rbac.User, p,
 	err := database.WithTxRetry(ctx, s.db, 3, func(tx *sql.Tx) error {
 		t, err := lockTicket(ctx, tx, id)
 		if err != nil {
+			return err
+		}
+		if err := requireField(ctx, tx, u, t.ITCategoryID); err != nil {
 			return err
 		}
 		if workflows.IsTerminal(t.Status) {
