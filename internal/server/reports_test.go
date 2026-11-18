@@ -79,7 +79,7 @@ func TestReportsAndDashboardsOverHTTP(t *testing.T) {
 	admin := newClient()
 	admin.login("admin", "password-admin-123")
 	_, body = admin.get("/app")
-	if !strings.Contains(body, "Status sistem") || !strings.Contains(body, "Integrasi SIMRS") || !strings.Contains(body, "SIMRS belum terhubung") || !strings.Contains(body, "Riwayat backup") {
+	if !strings.Contains(body, "Status sistem") || !strings.Contains(body, "Integrasi SIMRS") || !strings.Contains(body, "SIMRS belum terhubung") || !strings.Contains(body, "Backup database") {
 		t.Fatal("dashboard admin menampilkan status sistem apa adanya")
 	}
 	if resp, _ := admin.get("/app/reports/beban-kerja"); resp.StatusCode != 200 {

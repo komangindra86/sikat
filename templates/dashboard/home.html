@@ -274,7 +274,7 @@
     {{if .FieldsWithoutCoordinator}}{{template "status-row" (dict "Label" "Koordinator bidang" "OK" false "Warn" true "Text" (printf "Belum ada koordinator aktif untuk: %s. Notifikasi bidang tersebut dikirim ke semua koordinator — tetapkan di Master Data › Bidang." (join .FieldsWithoutCoordinator ", ")))}}
     {{else}}{{template "status-row" (dict "Label" "Koordinator bidang" "OK" true "Warn" false "Text" "Setiap bidang aktif memiliki koordinator")}}{{end}}
     {{template "status-row" (dict "Label" "Integrasi SIMRS" "OK" .IntegrationOK "Warn" (not .IntegrationOK) "Text" .Integration)}}
-    {{template "status-row" (dict "Label" "Riwayat backup" "OK" false "Warn" true "Text" .Backup)}}
+    <a href="/app/backups" class="block transition-colors hover:bg-slate-50">{{template "status-row" (dict "Label" "Backup database" "OK" .BackupOK "Warn" (not .BackupOK) "Text" .Backup)}}</a>
   </div>
 </section>
 {{end}}

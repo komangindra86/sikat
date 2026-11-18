@@ -1,9 +1,31 @@
 # SIKAT — Rancangan Database
 
-> Status: **PHASE 0 — rancangan tervalidasi di MySQL 8.0.30 lokal.**
-> DDL lengkap: [`schema-draft.sql`](schema-draft.sql) (42 tabel, 8 trigger).
-> Migrasi final (goose) dibuat di PHASE 1 dari file tersebut.
-> Diagram relasi: [`ERD.md`](ERD.md).
+> Status: **sesuai implementasi (PHASE 9).** Sumber kebenaran skema adalah migrasi
+> goose di folder [`migrations/`](../migrations) (00001–00012); dokumen ini
+> menjelaskan maksud & aturannya. `schema-draft.sql` adalah rancangan PHASE 0
+> (referensi sejarah; perbedaan dicatat di §0). Diagram relasi: [`ERD.md`](ERD.md).
+
+## 0. Migrasi & perbedaan dari rancangan PHASE 0
+
+| Migrasi | Isi |
+|---|---|
+| 00001_init | Organisasi, katalog, perangkat, sistem, audit |
+| 00002_seed_config | Konfigurasi awal (bidang, jenis gangguan, alasan tunda, pengaturan) |
+| 00003_qr_tickets | QR, tiket, penugasan, histori, komentar, lampiran, penomoran |
+| 00004_seed_phase2 | Aturan prioritas awal, pengaturan upload |
+| 00005_activities | Kegiatan internal & anggota |
+| 00006_maintenance | Riwayat pemeliharaan, sparepart per entri, peringatan kerusakan berulang |
+| 00007_sla | Kalender kerja, hari libur, kebijakan SLA, eskalasi, kolom siklus/revisi SLA tiket |
+| 00008_notifications | Outbox, inbox, langganan & pengiriman push, preferensi per role |
+| 00009_bidang_coordinator | `it_categories.coordinator_user_id` (satu koordinator per bidang) |
+| 00010_triage | `it_categories.is_triage` (bidang Triase, unik), `tickets.reported_ticket_category_id` (jenis pilihan pelapor sebelum dikoreksi) |
+| 00011_integration | `employees`, `integration_configs`, `integration_sync_logs`, `external_id_mappings`, `integration_imports` |
+| 00012_backups | `backup_logs`, `attachments.file_deleted_at` (retensi foto), pengaturan `attachments.retention_days` |
+
+Perbedaan penting dari rancangan: `push_deliveries` ditambahkan (antrean push per
+perangkat dengan retry); `integration_configs` belum menyimpan rahasia terenkripsi
+(belum ada adapter SIMRS); `employees` ditambahkan sebagai direktori pegawai
+(bukan akun login); penomoran memakai tabel `number_sequences`.
 
 ---
 
@@ -41,13 +63,14 @@ Tabel dari master prompt (✓) dan tambahan yang diperlukan (＋) beserta alasan
 | `users` | ✓ | Akun petugas IT | Argon2id, lockout (`failed_login_count`, `locked_until`), wajib ganti password pertama kali |
 | `user_competencies` | ＋ | Petugas ↔ bidang | Filter antrean "sesuai kemampuan saya" (master prompt §10) |
 | `departments` | ✓ | Unit/bagian | `is_critical_service` → input otomatis mesin prioritas |
+| `employees` | ＋ | Direktori pegawai (bukan akun login) | NIP unik; saran nama pelapor saat petugas mencatat tiket; dapat diisi dari CSV/SIMRS |
 | `rooms` | ✓ | Ruangan milik unit | `is_critical_service` NULL = ikut unit |
 
 ### 2.2 Katalog
 
 | Tabel | | Isi |
 |---|:-:|---|
-| `it_categories` | ✓ | **Bidang** (Hardware, Software & SIMRS, Jaringan, Server, …). Dipakai laporan "Bidang". |
+| `it_categories` | ✓ | **Bidang** (Hardware, Software & SIMRS, Jaringan, Server, …). `coordinator_user_id`: satu koordinator per bidang; `is_triage`: bidang Triase (unik) untuk masalah di luar daftar. |
 | `ticket_categories` | ✓ | **Jenis gangguan** bahasa awam ("Komputer tidak menyala", "Tidak bisa cetak"), terhubung ke bidang + `default_priority` |
 | `action_templates` | ✓ | Teks tindakan siap pakai untuk petugas |
 | `pending_reasons` | ＋ | Alasan tunda siap pakai + flag `pauses_sla` (penghentian SLA hanya bila dikonfigurasi) |
@@ -74,7 +97,7 @@ Tabel dari master prompt (✓) dan tambahan yang diperlukan (＋) beserta alasan
 | `ticket_assignments` | ✓ | Riwayat penugasan (utama & pendukung) | UNIQUE generated → **maks satu PJ utama aktif per tiket**; user tidak dobel aktif |
 | `ticket_histories` | ✓ | Semua kejadian tiket | Append-only (trigger); CHECK actor USER wajib `actor_user_id` |
 | `ticket_comments` | ✓ | Komentar pelapor/petugas, catatan internal | Append-only |
-| `attachments` | ✓ | Foto tiket/kegiatan/pemeliharaan | CHECK tepat satu pemilik; CHECK MIME jpeg/png/webp |
+| `attachments` | ✓ | Foto tiket/kegiatan/pemeliharaan | CHECK tepat satu pemilik; CHECK MIME jpeg/png/webp; `file_deleted_at` = file dihapus sesuai retensi (metadata tetap) |
 
 ### 2.5 Prioritas & SLA
 
@@ -100,20 +123,22 @@ Tabel dari master prompt (✓) dan tambahan yang diperlukan (＋) beserta alasan
 |---|:-:|---|---|
 | `outbox_events` | ＋ | Event domain yang ditulis dalam transaksi bisnis | UNIQUE `dedupe_key`; retry via `attempts`/`next_attempt_at` |
 | `notifications` | ✓ | Inbox in-app per user + status push | UNIQUE (user, event) |
-| `push_subscriptions` | ✓ | Endpoint Web Push per perangkat | UNIQUE hash endpoint; nonaktif otomatis saat 404/410 |
+| `push_subscriptions` | ✓ | Endpoint Web Push per perangkat | UNIQUE hash endpoint; hanya host push service resmi; nonaktif otomatis saat 404/410 |
+| `push_deliveries` | ＋ | Pengiriman push per notifikasi × perangkat | UNIQUE (notifikasi, perangkat); retry, kedaluwarsa 1 jam |
 | `notification_preferences` | ＋ | Event × role → inbox/push + cakupan | UNIQUE (role, event) |
 
 ### 2.8 Integrasi & sistem
 
 | Tabel | | Isi |
 |---|:-:|---|
-| `integration_configs` | ✓ | Provider per entitas, jadwal, kebijakan konflik, rahasia terenkripsi |
+| `integration_configs` | ✓ | Provider per entitas, jadwal, kebijakan konflik, percobaan ulang |
+| `integration_imports` | ＋ | File CSV yang menunggu pratinjau → terapkan (isi dibuang setelah diterapkan/7 hari) |
 | `integration_sync_logs` | ✓ | Hasil tiap sinkronisasi (jumlah tambah/ubah/lewati/konflik/gagal, error) |
 | `external_id_mappings` | ✓ | `(source, entity, external_id) ↔ local_id`, hash payload terakhir |
 | `audit_logs` | ✓ | Login, perubahan master/konfigurasi (before/after JSON) — append-only |
 | `system_settings` | ✓ | Key-value bertipe (ambang kerusakan berulang, auto-close, batas upload, …) |
 | `sessions` | ＋ | Session server-side (skema `scs` mysqlstore) |
-| `backup_logs` | ＋ | Riwayat backup untuk dashboard admin |
+| `backup_logs` | ＋ | Riwayat backup (file, ukuran, SHA-256, versi migrasi, jumlah baris tabel utama) & hasil uji restore |
 
 ---
 
@@ -260,3 +285,9 @@ tiket/tahun; histori ~10 baris/tiket. Ini kecil untuk MySQL; index di atas
 sudah cukup. Yang tumbuh paling cepat adalah **file foto** — dikompres di klien
 (maks ~1600 px) dan di server. Kebijakan retensi foto (mis. hapus foto tiket
 CLOSED > 2 tahun, metadata tetap) diputuskan bersama pihak RS.
+
+**Implementasi (PHASE 9):** pengaturan `attachments.retention_days` (default 730,
+0 = selamanya). Worker `retensi-lampiran` menghapus file foto tiket yang sudah
+ditutup/dibatalkan lewat masa simpan dan mengisi `file_deleted_at`; foto
+kegiatan & pemeliharaan tidak tersentuh. Uji beban PHASE 9: 20.000 tiket dan
+54.000 histori — halaman utama p95 < 1 detik dengan 20 pengguna bersamaan.

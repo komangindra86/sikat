@@ -32,6 +32,7 @@ const (
 	KeyRepeatInspect       = "repeat_damage.inspect_threshold"
 	KeyReplaceAgeYears     = "repeat_damage.replace_age_years"
 	KeyReplaceCost         = "repeat_damage.replace_cost"
+	KeyAttachmentRetention = "attachments.retention_days"
 )
 
 // Def mendefinisikan satu pengaturan.
@@ -54,6 +55,7 @@ var Defs = []Def{
 	{Key: KeyLoginMaxAttempts, Label: "Batas gagal login", Help: "Jumlah percobaan gagal berturut-turut sebelum akun dikunci sementara.", Type: "INT", Default: "5", Min: 3, Max: 20, Group: "Keamanan"},
 	{Key: KeyLoginLockoutMinutes, Label: "Lama kunci akun (menit)", Help: "Lama akun dikunci setelah melewati batas gagal login.", Type: "INT", Default: "15", Min: 1, Max: 1440, Group: "Keamanan"},
 	{Key: KeyUploadMaxMB, Label: "Ukuran maksimal foto (MB)", Help: "Batas ukuran satu foto yang diunggah. Foto dari HP dikompres otomatis sebelum dikirim.", Type: "INT", Default: "8", Min: 1, Max: 20, Group: "Lampiran"},
+	{Key: KeyAttachmentRetention, Label: "Simpan foto tiket (hari setelah ditutup)", Help: "File foto dihapus setelah tiket ditutup/dibatalkan selama jangka ini; data tiket & keterangan foto tetap. 0 = simpan selamanya.", Type: "INT", Default: "730", Min: 0, Max: 3650, Group: "Lampiran"},
 	{Key: KeyAutoCloseDays, Label: "Tutup otomatis tiket selesai (hari)", Help: "Tiket berstatus Selesai ditutup otomatis bila pelapor tidak mengonfirmasi dalam jangka ini.", Type: "INT", Default: "3", Min: 1, Max: 30, Group: "Tiket"},
 	{Key: KeyRepeatThreshold, Label: "Ambang kerusakan berulang", Help: "Jumlah gangguan pada satu perangkat dalam jendela waktu yang memicu peringatan ke koordinator.", Type: "INT", Default: "3", Min: 2, Max: 50, Group: "Perangkat"},
 	{Key: KeyRepeatWindowDays, Label: "Jendela waktu (hari)", Help: "Periode penghitungan gangguan berulang.", Type: "INT", Default: "90", Min: 7, Max: 730, Group: "Perangkat"},

@@ -25,6 +25,13 @@ type Config struct {
 	SessionLifetime    time.Duration
 	SessionIdleTimeout time.Duration
 	StorageDir         string
+	// Backup database harian (mysqldump → gzip) & uji restore.
+	BackupEnabled  bool
+	BackupDir      string
+	BackupHour     int
+	BackupKeepDays int
+	Mysqldump      string
+	MysqlClient    string
 	// Web Push (VAPID). Kosong = push nonaktif; inbox in-app tetap berjalan.
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
@@ -104,6 +111,24 @@ func FromEnv(get func(string) string) (Config, error) {
 		errs = append(errs, err.Error())
 	}
 	cfg.SessionIdleTimeout = time.Duration(idle) * time.Minute
+
+	cfg.BackupEnabled = true
+	if v := get("SIKAT_BACKUP_ENABLED"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			errs = append(errs, "SIKAT_BACKUP_ENABLED harus true/false")
+		}
+		cfg.BackupEnabled = b
+	}
+	cfg.BackupDir = defaultStr(get("SIKAT_BACKUP_DIR"), strings.TrimRight(cfg.StorageDir, `/\`)+"/backups")
+	if cfg.BackupHour, err = intEnv(get, "SIKAT_BACKUP_HOUR", 2, 0, 23); err != nil {
+		errs = append(errs, err.Error())
+	}
+	if cfg.BackupKeepDays, err = intEnv(get, "SIKAT_BACKUP_KEEP_DAYS", 14, 1, 3650); err != nil {
+		errs = append(errs, err.Error())
+	}
+	cfg.Mysqldump = defaultStr(get("SIKAT_MYSQLDUMP"), "mysqldump")
+	cfg.MysqlClient = defaultStr(get("SIKAT_MYSQL"), "mysql")
 
 	cfg.VAPIDPublicKey = strings.TrimSpace(get("SIKAT_VAPID_PUBLIC_KEY"))
 	cfg.VAPIDPrivateKey = strings.TrimSpace(get("SIKAT_VAPID_PRIVATE_KEY"))

@@ -4,6 +4,8 @@
 //	sikat migrate up|down|status mengelola migrasi database
 //	sikat create-admin          membuat akun Admin IT pertama (interaktif)
 //	sikat vapid-keys            membuat pasangan kunci Web Push (VAPID)
+//	sikat backup                membuat backup database sekarang
+//	sikat restore-test          menguji restore backup terbaru ke database sementara
 //	sikat version               menampilkan versi
 package main
 
@@ -18,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -26,6 +29,7 @@ import (
 	"golang.org/x/term"
 
 	"sikat"
+	"sikat/internal/backup"
 	"sikat/internal/clock"
 	"sikat/internal/config"
 	"sikat/internal/database"
@@ -52,6 +56,8 @@ perintah:
   migrate up|down|status   mengelola migrasi database
   create-admin             membuat akun Admin IT (interaktif)
   vapid-keys               membuat pasangan kunci Web Push (VAPID) untuk .env
+  backup                   membuat backup database sekarang (mysqldump → gzip)
+  restore-test             menguji restore backup terbaru ke database sementara
   version                  menampilkan versi`)
 }
 
@@ -102,6 +108,27 @@ func run(args []string) error {
 		return migrate(ctx, db, args[1:])
 	case "create-admin":
 		return createAdmin(ctx, db)
+	case "backup", "restore-test":
+		svc := backup.NewService(db, clock.Real{}, log, backup.Config{Enabled: true, Dir: cfg.BackupDir, Hour: cfg.BackupHour,
+			KeepDays: cfg.BackupKeepDays, Mysqldump: cfg.Mysqldump, Mysql: cfg.MysqlClient, DSN: cfg.DBDSN})
+		if args[0] == "backup" {
+			id, err := svc.Run(ctx, "CLI", 0)
+			if err != nil {
+				return err
+			}
+			logs, err := svc.Logs(ctx, 1)
+			if err == nil && len(logs) > 0 && logs[0].ID == id {
+				fmt.Println("Backup selesai:", filepath.Join(cfg.BackupDir, logs[0].FileName.String),
+					"("+logs[0].SizeText()+"), SHA-256", logs[0].SHA256.String)
+			}
+			return err
+		}
+		msg, err := svc.RestoreTest(ctx, 0)
+		if err != nil {
+			return err
+		}
+		fmt.Println(msg)
+		return nil
 	default:
 		return usage()
 	}

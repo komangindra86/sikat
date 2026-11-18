@@ -373,3 +373,41 @@ func TestStaffCreatedTicket(t *testing.T) {
 		t.Fatal("CHECK chk_tickets_channel harus menolak tiket telepon tanpa pembuat")
 	}
 }
+
+// Retensi foto (Q9): file foto tiket yang sudah ditutup/dibatalkan lewat masa
+// simpan dihapus; baris metadata & data tiket tetap.
+func TestAttachmentRetention(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	old, _, err := f.svc.Create(ctx, f.draft(nil), []tickets.Photo{pngPhoto(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	active, _, _ := f.svc.Create(ctx, f.draft(nil), []tickets.Photo{pngPhoto(t)})
+	now := time.Now().UTC()
+	if _, err := f.db.Exec(`UPDATE tickets SET status = 'CANCELLED', cancelled_at = ?, cancel_reason = 'uji' WHERE id = ?`, now.AddDate(0, 0, -800), old.ID); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := attachments.PurgeExpired(ctx, f.db, f.store, now, 0); err != nil || n != 0 {
+		t.Fatalf("retensi 0 = simpan selamanya: %d %v", n, err)
+	}
+	n, err := attachments.PurgeExpired(ctx, f.db, f.store, now, 730)
+	if err != nil || n != 1 {
+		t.Fatalf("hanya foto tiket lama yang dihapus: %d %v", n, err)
+	}
+	if countFiles(t, f.store.Dir) != 1 {
+		t.Fatal("file foto tiket lama terhapus, foto tiket aktif tetap")
+	}
+	if testutil.Count(t, f.db, `SELECT COUNT(*) FROM attachments WHERE ticket_id = ? AND file_deleted_at IS NOT NULL`, old.ID) != 1 {
+		t.Fatal("metadata foto tetap dengan tanda file dihapus")
+	}
+	if _, _, atts, _ := f.svc.Get(ctx, old.ID); len(atts) != 0 {
+		t.Fatal("foto yang dihapus tidak ditampilkan")
+	}
+	if _, _, atts, _ := f.svc.Get(ctx, active.ID); len(atts) != 1 {
+		t.Fatal("foto tiket aktif tetap tampil")
+	}
+	if n, _ := attachments.PurgeExpired(ctx, f.db, f.store, now, 730); n != 0 {
+		t.Fatal("pemrosesan ulang idempoten")
+	}
+}

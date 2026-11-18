@@ -42,6 +42,12 @@ Foto lampiran disimpan di `SIKAT_STORAGE_DIR/attachments` (default `./storage`).
 Folder ini harus dapat ditulisi aplikasi, berada di luar folder yang disajikan
 Nginx, dan ikut dicadangkan. Aplikasi menolak start bila folder tidak dapat ditulisi.
 
+Backup database harian memakai `mysqldump` (variabel `SIKAT_BACKUP_*`,
+`SIKAT_MYSQLDUMP`, `SIKAT_MYSQL`). Di Laragon, isi path lengkap binary, mis.
+`SIKAT_MYSQLDUMP=C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysqldump.exe` dan
+`SIKAT_MYSQL=C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin/mysql.exe` (gunakan `/`).
+Produksi: lihat [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## 4. Build & migrasi
 
 ```bash
@@ -164,3 +170,12 @@ SIKAT_TEST_DSN="root@tcp(127.0.0.1:3306)/" ./scripts/test.sh
 
 Tanpa `SIKAT_TEST_DSN`, test yang membutuhkan database dilewati (SKIP) dan
 hanya unit test murni yang berjalan.
+
+Test backup membutuhkan `mysqldump`/`mysql` (variabel `SIKAT_MYSQLDUMP`/`SIKAT_MYSQL`,
+atau terdeteksi otomatis dari Laragon); bila tidak ada, test tersebut dilewati.
+
+Uji beban (opsional, ±1–2 menit, membuat 20.000 tiket di database test sementara):
+
+```bash
+SIKAT_LOAD_TEST=1 SIKAT_TEST_DSN="root@tcp(127.0.0.1:3306)/" go test ./internal/server -run TestLoad -v
+```

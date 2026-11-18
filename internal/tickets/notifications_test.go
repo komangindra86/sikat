@@ -245,9 +245,9 @@ func TestPushDeliveryRetryAndExpiredSubscription(t *testing.T) {
 	ctx := context.Background()
 	fs := &fakeSender{statuses: []int{503, 0, 201}}
 	n := notifSvc(w, fs)
-	subID := subscribe(t, n, w.tech.ID, "https://push.example/sub/1")
+	subID := subscribe(t, n, w.tech.ID, "https://fcm.googleapis.com/fcm/send/uji-1")
 	// Langganan yang sama didaftarkan ulang (mis. setelah login lagi) tidak menggandakan perangkat.
-	if again := subscribe(t, n, w.tech.ID, "https://push.example/sub/1"); again != subID {
+	if again := subscribe(t, n, w.tech.ID, "https://fcm.googleapis.com/fcm/send/uji-1"); again != subID {
 		t.Fatalf("endpoint sama harus memperbarui baris yang sama: %d vs %d", again, subID)
 	}
 
@@ -306,7 +306,7 @@ func TestPushDeliveryRetryAndExpiredSubscription(t *testing.T) {
 	}
 
 	// Push basi (> 1 jam) tidak dikirim.
-	subscribe(t, n, w.tech.ID, "https://push.example/sub/2")
+	subscribe(t, n, w.tech.ID, "https://fcm.googleapis.com/fcm/send/uji-2")
 	w.svc.Create(ctx, w.draft(nonCritical), nil)
 	process(t, n)
 	w.clk.Advance(61 * time.Minute)

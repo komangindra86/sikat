@@ -352,7 +352,7 @@ func (s *Service) GetPublic(ctx context.Context, token string) (Ticket, []Histor
 
 // AttachmentKey mengembalikan kunci file lampiran untuk petugas.
 func (s *Service) AttachmentKey(ctx context.Context, attachmentID int64) (string, error) {
-	return s.repo.attachmentKey(ctx, s.db, `SELECT storage_key FROM attachments WHERE id = ? AND ticket_id IS NOT NULL`, attachmentID)
+	return s.repo.attachmentKey(ctx, s.db, `SELECT storage_key FROM attachments WHERE id = ? AND ticket_id IS NOT NULL AND file_deleted_at IS NULL`, attachmentID)
 }
 
 // PublicAttachmentKey mengembalikan kunci file hanya bila lampiran milik tiket token tsb dan boleh dilihat pelapor.
@@ -362,7 +362,7 @@ func (s *Service) PublicAttachmentKey(ctx context.Context, token string, attachm
 	}
 	return s.repo.attachmentKey(ctx, s.db, `
 		SELECT a.storage_key FROM attachments a JOIN tickets t ON t.id = a.ticket_id
-		 WHERE a.id = ? AND t.public_token_hash = ? AND a.visible_to_reporter = TRUE`, attachmentID, hashToken(token))
+		 WHERE a.id = ? AND t.public_token_hash = ? AND a.visible_to_reporter = TRUE AND a.file_deleted_at IS NULL`, attachmentID, hashToken(token))
 }
 
 // Store memberi akses ke penyimpanan file (untuk handler yang menyajikan foto).

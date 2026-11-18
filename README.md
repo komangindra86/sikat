@@ -15,7 +15,8 @@ perangkat, dan manajemen pekerjaan IT rumah sakit.
 | 5 — SLA & Eskalasi | Selesai |
 | 6 — PWA & Notifikasi | Selesai |
 | 7 — Dashboard & Reporting | Selesai |
-| 8 — SIMRS Integration Ready | **Selesai, menunggu validasi** |
+| 8 — SIMRS Integration Ready | Selesai |
+| 9 — Production Ready | **Selesai, menunggu validasi** |
 
 Fitur yang sudah berjalan: login & keamanan, RBAC, master data, perangkat,
 pengguna, pengaturan sistem, jejak audit, QR ruangan/perangkat, pengajuan
@@ -28,7 +29,9 @@ inbox notifikasi, Web Push (VAPID) dengan preferensi per role, PWA installable,
 dashboard per role, 15 laporan (termasuk laporan koordinator pengganti spreadsheet)
 dengan filter dan ekspor Excel/PDF, koordinator per bidang, triase & koreksi jenis gangguan,
 integrasi master data siap SIMRS lewat API (pemetaan external_id, perlindungan perubahan
-lokal, log & retry; panduan di [docs/INTEGRATION.md](docs/INTEGRATION.md)). Rincian di [CHANGELOG.md](CHANGELOG.md).
+lokal, log & retry; panduan di [docs/INTEGRATION.md](docs/INTEGRATION.md)), backup harian
+dengan uji restore, retensi foto lampiran, dan paket deploy Linux (systemd + Nginx + HTTPS).
+Rincian di [CHANGELOG.md](CHANGELOG.md).
 
 ## Mulai cepat
 
@@ -58,6 +61,11 @@ Panduan lengkap: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 | Dokumen | Isi |
 |---|---|
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Panduan pelapor, petugas, koordinator |
+| [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) | Panduan Admin IT |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment produksi, backup & pemulihan, update |
+| [docs/SECURITY.md](docs/SECURITY.md) | Hasil audit keamanan & uji beban |
+| [docs/INTEGRATION.md](docs/INTEGRATION.md) | Integrasi SIMRS |
 | [docs/INSTALLATION.md](docs/INSTALLATION.md) | Instalasi, konfigurasi, development, menjalankan test |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arsitektur sistem & keputusan teknis |
 | [docs/ERD.md](docs/ERD.md) | Entity Relationship Diagram |
@@ -69,12 +77,13 @@ Panduan lengkap: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 ## Stack
 
-Go · chi · html/template · HTMX · Tailwind CSS · MySQL 8 · PWA (Web Push/VAPID, fase 6)
+Go · chi · html/template · HTMX · Tailwind CSS · MySQL 8 · PWA (Web Push/VAPID)
 
 ## Struktur
 
 ```
-cmd/server/        binary sikat (serve, migrate, create-admin)
+cmd/server/        binary sikat (serve, migrate, create-admin, vapid-keys, backup, restore-test)
+deploy/            build-release.sh, unit systemd, konfigurasi Nginx
 internal/          modul aplikasi (handler → service → repository)
 migrations/        migrasi SQL (goose, di-embed)
 templates/         template HTML (di-embed)

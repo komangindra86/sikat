@@ -1,0 +1,35 @@
+# /etc/systemd/system/sikat.service
+# SIKAT — layanan aplikasi (binary tunggal). Lihat docs/DEPLOYMENT.md.
+[Unit]
+Description=SIKAT - Sistem Informasi Kelola Aduan & Tindak Lanjut
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sikat
+Group=sikat
+WorkingDirectory=/opt/sikat
+# .env berisi rahasia (DSN, VAPID); izin 600, milik user sikat.
+EnvironmentFile=/opt/sikat/.env
+ExecStartPre=/opt/sikat/sikat migrate up
+ExecStart=/opt/sikat/sikat serve
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+
+# Pengerasan: proses hanya dapat menulis ke folder data & backup.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/sikat /var/backups/sikat
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

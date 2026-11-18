@@ -10,7 +10,10 @@ import (
 	"sikat/internal/reqctx"
 )
 
-const sessionUserKey = "user_id"
+const (
+	sessionUserKey = "user_id"
+	sessionCredKey = "cred" // cap kredensial saat login
+)
 
 // NewSessionManager membuat session manager dengan cookie aman.
 func NewSessionManager(store scs.Store, lifetime, idle time.Duration, secure bool) *scs.SessionManager {
@@ -40,6 +43,11 @@ func (g *Guard) StartSession(r *http.Request, userID int64) error {
 		return err
 	}
 	g.Sessions.Put(r.Context(), sessionUserKey, userID)
+	if _, stamp, err := g.Service.LoadSessionUser(r.Context(), userID); err != nil {
+		return err
+	} else if stamp != "" {
+		g.Sessions.Put(r.Context(), sessionCredKey, stamp)
+	}
 	return nil
 }
 
@@ -57,10 +65,20 @@ func (g *Guard) LoadUser(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		u, err := g.Service.LoadActiveUser(r.Context(), id)
+		u, stamp, err := g.Service.LoadSessionUser(r.Context(), id)
 		if err != nil {
 			g.Fail(w, r, err)
 			return
+		}
+		// Password diganti/di-reset sejak login → session lama tidak berlaku
+		// (mis. HP yang hilang). Session lama tanpa cap diberi cap saat ini.
+		if u != nil {
+			switch prev := g.Sessions.GetString(r.Context(), sessionCredKey); {
+			case prev == "":
+				g.Sessions.Put(r.Context(), sessionCredKey, stamp)
+			case prev != stamp:
+				u = nil
+			}
 		}
 		if u == nil {
 			_ = g.Sessions.Destroy(r.Context())

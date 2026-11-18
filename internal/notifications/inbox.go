@@ -134,9 +134,29 @@ type SubscribeInput struct {
 // ErrInvalidSubscription: data langganan dari browser tidak valid.
 var ErrInvalidSubscription = errors.New("data langganan push tidak valid")
 
+// pushHosts: push service resmi browser. Endpoint lain ditolak agar server tidak
+// dapat diarahkan mengirim permintaan ke alamat sembarang (SSRF).
+var pushHosts = []string{
+	"fcm.googleapis.com", "android.googleapis.com", // Chrome, Android
+	"push.services.mozilla.com", // Firefox (updates.push.services.mozilla.com)
+	"notify.windows.com",        // Edge (*.notify.windows.com)
+	"push.apple.com",            // Safari/iOS (web.push.apple.com)
+}
+
+// AllowedPushHost memeriksa host endpoint terhadap daftar push service.
+func AllowedPushHost(host string) bool {
+	host = strings.ToLower(host)
+	for _, h := range pushHosts {
+		if host == h || strings.HasSuffix(host, "."+h) {
+			return true
+		}
+	}
+	return false
+}
+
 func (in SubscribeInput) validate() error {
 	u, err := url.Parse(in.Endpoint)
-	if err != nil || u.Scheme != "https" || u.Host == "" || len(in.Endpoint) > 2000 {
+	if err != nil || u.Scheme != "https" || u.Host == "" || len(in.Endpoint) > 2000 || u.Port() != "" || !AllowedPushHost(u.Hostname()) {
 		return ErrInvalidSubscription
 	}
 	if pub, err := decodeB64(in.Keys.P256dh); err != nil || len(pub) != 65 || pub[0] != 4 {

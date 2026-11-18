@@ -20,6 +20,7 @@ import (
 	"sikat/internal/assets"
 	"sikat/internal/attachments"
 	"sikat/internal/auth"
+	"sikat/internal/backup"
 	"sikat/internal/clock"
 	"sikat/internal/config"
 	"sikat/internal/dashboard"
@@ -60,6 +61,8 @@ type Deps struct {
 	QRRate int
 	// PushSender menggantikan pengirim Web Push (test). Kunci VAPID tetap dari Config.
 	PushSender notifications.Sender
+	// DisableBackup mematikan backup terjadwal (test).
+	DisableBackup bool
 }
 
 // App adalah server yang sudah dirakit.
@@ -71,6 +74,8 @@ type App struct {
 	Worker *worker.Runner
 	// Notifications: outbox, inbox, dan Web Push.
 	Notifications *notifications.Service
+	// Backup: backup database & uji restore (dipakai perintah CLI).
+	Backup *backup.Service
 }
 
 // New merakit handler HTTP.
@@ -114,6 +119,9 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	// Integrasi master data: lokal secara default; adapter SIMRS didaftarkan di sini
 	// setelah spesifikasinya tersedia (integSvc.RegisterProvider).
 	integSvc := integration.NewService(d.DB, d.Clock, d.Log)
+	backupSvc := backup.NewService(d.DB, d.Clock, d.Log, backup.Config{Enabled: d.Config.BackupEnabled && !d.DisableBackup,
+		Dir: d.Config.BackupDir, Hour: d.Config.BackupHour, KeepDays: d.Config.BackupKeepDays,
+		Mysqldump: d.Config.Mysqldump, Mysql: d.Config.MysqlClient, DSN: d.Config.DBDSN})
 	authSvc := auth.NewService(d.DB, d.Clock, settingsSvc)
 
 	var renderer *web.Renderer
@@ -234,6 +242,23 @@ func New(ctx context.Context, d Deps) (*App, error) {
 			return integSvc.Cleanup(ctx)
 		},
 	}, {
+		// Backup harian pada jam yang dikonfigurasi (WITA); gagal → dicoba lagi tiap jam.
+		Name: "backup-harian", Interval: 10 * time.Minute,
+		Run: func(ctx context.Context) error {
+			_, err := backupSvc.RunDue(ctx)
+			return err
+		},
+	}, {
+		// Retensi foto lampiran (Q9): hapus file foto tiket lama, metadata tetap.
+		Name: "retensi-lampiran", Interval: 6 * time.Hour,
+		Run: func(ctx context.Context) error {
+			n, err := attachments.PurgeExpired(ctx, d.DB, store, d.Clock.Now(), settingsSvc.Int(ctx, settings.KeyAttachmentRetention))
+			if n > 0 {
+				d.Log.Info("file foto dihapus sesuai retensi", "jumlah", n)
+			}
+			return err
+		},
+	}, {
 		Name: "tutup-otomatis-tiket", Interval: time.Hour,
 		Run: func(ctx context.Context) error {
 			n, err := ticketSvc.AutoClose(ctx, settingsSvc.Int(ctx, settings.KeyAutoCloseDays))
@@ -300,6 +325,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.Route("/notifications", notifH.Routes)
 		r.Route("/reports", reportH.Routes)
 		r.With(guard.Require(rbac.PermIntegration)).Route("/integrations", integH.Routes)
+		r.With(guard.Require(rbac.PermConfigManage)).Route("/backups", (&backup.Handler{Service: backupSvc, Renderer: renderer}).Routes)
 		r.With(guard.Require(rbac.PermConfigManage)).Route("/settings/notifications", notifH.AdminRoutes)
 	})
 
@@ -360,5 +386,5 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	h = middleware.Logger(d.Log)(h)
 	h = middleware.RequestInfo(d.Config.TrustProxyHeaders)(h)
 
-	return &App{Handler: h, Sessions: sessions, Settings: settingsSvc, Worker: runner, Notifications: notifSvc}, nil
+	return &App{Handler: h, Sessions: sessions, Settings: settingsSvc, Worker: runner, Notifications: notifSvc, Backup: backupSvc}, nil
 }

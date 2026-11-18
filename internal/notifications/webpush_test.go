@@ -221,3 +221,19 @@ func TestDeviceLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestAllowedPushHost(t *testing.T) {
+	for host, want := range map[string]bool{
+		"fcm.googleapis.com": true, "updates.push.services.mozilla.com": true, "wns2-sg2p.notify.windows.com": true,
+		"web.push.apple.com": true, "127.0.0.1": false, "localhost": false, "intranet.rs.local": false,
+		"evilfcm.googleapis.com.attacker.example": false, "notify.windows.com.evil.example": false,
+	} {
+		if got := AllowedPushHost(host); got != want {
+			t.Errorf("AllowedPushHost(%q) = %v, mau %v", host, got, want)
+		}
+	}
+	in := SubscribeInput{Endpoint: "https://10.0.0.5/admin"}
+	if in.validate() == nil {
+		t.Fatal("endpoint ke jaringan internal harus ditolak")
+	}
+}

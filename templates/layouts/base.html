@@ -145,7 +145,8 @@
 {{if $u.Can "user.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/users" "Icon" "users" "Label" "Pengguna" "On" (eq $p.Nav "users"))}}{{end}}
 {{/* Menu Integrasi disembunyikan (18/11/2026): integrasi direncanakan lewat API SIMRS.
      Halaman /app/integrations tetap ada untuk Admin bila dibutuhkan. */}}
-{{if $u.Can "config.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/settings" "Icon" "sliders" "Label" "Pengaturan" "On" (eq $p.Nav "settings"))}}{{end}}
+{{if $u.Can "config.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/settings" "Icon" "sliders" "Label" "Pengaturan" "On" (eq $p.Nav "settings"))}}
+{{template "nav-link" (dict "C" . "Href" "/app/backups" "Icon" "database" "Label" "Backup" "On" (eq $p.Nav "backups"))}}{{end}}
 {{if $u.Can "audit.view"}}{{template "nav-link" (dict "C" . "Href" "/app/audit" "Icon" "document" "Label" "Jejak Audit" "On" (eq $p.Nav "audit"))}}{{end}}
 {{end}}
 <div class="{{.Group}}">Akun</div>

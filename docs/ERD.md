@@ -1,6 +1,7 @@
 # SIKAT — Entity Relationship Diagram
 
-> Status: **PHASE 0.** Diagram menampilkan kolom kunci & relasi. Kolom lengkap,
+> Status: **PHASE 0, dilengkapi tambahan implementasi di §6.** Skema aktual = migrasi
+> `migrations/00001–00012`. Diagram menampilkan kolom kunci & relasi. Kolom lengkap,
 > constraint, dan index ada di [`schema-draft.sql`](schema-draft.sql); penjelasan
 > di [`DATABASE.md`](DATABASE.md).
 >
@@ -543,3 +544,61 @@ erDiagram
 > `external_id_mappings.local_id` sengaja **tanpa FK** karena menunjuk ke
 > beberapa tabel (sesuai `entity_type`); integritasnya dijaga service
 > integrasi. Tidak ada FK ke database SIMRS.
+
+---
+
+## 6. Tambahan implementasi (PHASE 5–9)
+
+```mermaid
+erDiagram
+    users ||--o{ it_categories : "koordinator bidang"
+    it_categories ||--o{ tickets : "bidang"
+    ticket_categories ||--o{ tickets : "jenis (pilihan pelapor: reported_ticket_category_id)"
+    departments ||--o{ employees : "unit"
+    notifications ||--o{ push_deliveries : "dikirim ke"
+    push_subscriptions ||--o{ push_deliveries : "perangkat"
+    integration_configs ||--o{ integration_sync_logs : "riwayat"
+    integration_sync_logs ||--o| integration_imports : "hasil impor"
+    users ||--o{ backup_logs : "dipicu"
+
+    it_categories {
+        bigint id PK
+        bigint coordinator_user_id FK "satu koordinator per bidang"
+        bool is_triage "unik: bidang Triase"
+    }
+    employees {
+        bigint id PK
+        varchar nip UK
+        varchar full_name
+        bigint department_id FK
+        enum source "LOCAL/CSV/SIMRS"
+    }
+    external_id_mappings {
+        varchar source
+        enum entity_type
+        varchar external_id
+        bigint local_id "tanpa FK ke SIMRS"
+        binary source_hash
+        datetime missing_since
+    }
+    integration_imports {
+        bigint id PK
+        enum entity_type
+        mediumblob content "dibuang setelah diterapkan"
+        enum status "PREVIEW/APPLIED/CANCELLED"
+    }
+    push_deliveries {
+        bigint notification_id FK
+        bigint subscription_id FK
+        enum status "PENDING/SENT/FAILED/GONE/EXPIRED"
+        smallint attempts
+    }
+    backup_logs {
+        bigint id PK
+        enum status
+        varchar file_name
+        char sha256
+        json row_counts "pembanding uji restore"
+        enum restore_status
+    }
+```

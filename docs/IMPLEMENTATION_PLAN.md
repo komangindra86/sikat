@@ -1,6 +1,6 @@
 # SIKAT — Implementation Plan, Asumsi & Risiko
 
-> Status (18 November 2026): **PHASE 0–7 selesai. PHASE 8 selesai, menunggu validasi.**
+> Status (18 November 2026): **PHASE 0–8 selesai. PHASE 9 selesai, menunggu validasi.**
 > Default yang dipakai karena belum dijawab: Q1 (VPS publik + HTTPS), Q3 (tutup
 > otomatis 3 hari), Q4 (pencatatan pemeliharaan saja, tanpa jadwal preventif),
 > Q6 (Admin IT tidak menangani tiket), **Q7 (kolom laporan koordinator sesuai master
@@ -11,6 +11,15 @@
 > bidangnya tetapi tetap dapat melihat semua; bidang tanpa koordinator → semua koordinator),
 > triase (16/11/2026: masalah di luar daftar → bidang Triase, dipilah dengan koreksi
 > jenis gangguan; laporan pemilahan untuk menambah jenis gangguan baru).
+>
+> Hasil PHASE 9: audit keamanan OWASP Top 10 (SECURITY.md) dengan 2 perbaikan
+> (session berakhir saat password diganti/direset; allowlist host Web Push mencegah
+> SSRF). Uji beban 20.000 tiket / 20 pengguna bersamaan tanpa error, p95 halaman
+> utama < 1 detik. Backup harian + **uji restore otomatis** diuji end-to-end dengan
+> mysqldump/mysql 8.0.30; retensi foto (Q9, default 2 tahun) diuji. Paket deploy
+> Linux (build statis diverifikasi), systemd, Nginx/HTTPS, DEPLOYMENT/USER_GUIDE/
+> ADMIN_GUIDE. Belum dijalankan: `govulncheck` dan `go test -race` (lihat SECURITY.md §4);
+> deploy ke server Linux sungguhan menunggu server tersedia.
 >
 > Hasil PHASE 8: 127 automated test lulus (MySQL 8.0.30 lokal), termasuk kriteria
 > rencana: **sinkron tidak menimpa perubahan lokal** (konflik dicatat; hanya ditimpa
@@ -239,7 +248,7 @@ yang memengaruhi konfigurasi deployment.
 | Q6 | Apakah Admin IT juga menangani tiket? (memengaruhi model 1 user = 1 role) | PHASE 1 | Tidak; bila ya, gunakan akun terpisah |
 | Q7 | Mohon contoh spreadsheet laporan koordinator yang dipakai sekarang | PHASE 7 | **Dipakai default (13/11/2026):** kolom sesuai master prompt §18; kolom tambahan dapat ditambahkan setelah contoh diterima |
 | Q8 | Daftar awal bidang & jenis gangguan yang biasa dipakai tim IT | PHASE 1 (seed) | Hardware, Software & SIMRS, Jaringan, Server & Infrastruktur, Printer, Akun & Akses |
-| Q9 | Berapa lama foto lampiran disimpan? | PHASE 9 | 2 tahun setelah tiket ditutup, metadata tetap |
+| Q9 | Berapa lama foto lampiran disimpan? | PHASE 9 | **Dipakai default (18/11/2026):** 2 tahun setelah tiket ditutup, metadata tetap; dapat diubah di Pengaturan › Lampiran |
 
 ---
 

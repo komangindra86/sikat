@@ -3,7 +3,9 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -125,7 +127,7 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 		}); err != nil {
 			return err
 		}
-		u, err := loadUser(ctx, tx, id)
+		u, err := loadUser(ctx, tx, id, nil)
 		if err != nil {
 			return err
 		}
@@ -144,20 +146,43 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 // LoadActiveUser memuat pengguna aktif berdasarkan ID (dipakai tiap request).
 // Mengembalikan nil tanpa error bila user tidak ada atau sudah nonaktif.
 func (s *Service) LoadActiveUser(ctx context.Context, id int64) (*rbac.User, error) {
-	u, err := loadUser(ctx, s.db, id)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
+	u, _, err := s.LoadSessionUser(ctx, id)
 	return u, err
 }
 
-func loadUser(ctx context.Context, q database.DBTX, id int64) (*rbac.User, error) {
+// LoadSessionUser memuat pengguna aktif beserta cap kredensialnya (sidik dari
+// hash password). Cap berubah setiap kali password diganti/di-reset, sehingga
+// session lama tidak berlaku lagi.
+func (s *Service) LoadSessionUser(ctx context.Context, id int64) (*rbac.User, string, error) {
+	var hash string
+	u, err := loadUser(ctx, s.db, id, &hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, "", nil
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	return u, credentialStamp(hash), nil
+}
+
+// credentialStamp: 16 karakter heksadesimal pertama SHA-256 dari hash password
+// (bukan rahasia yang dapat dipakai menebak password).
+func credentialStamp(passwordHash string) string {
+	sum := sha256.Sum256([]byte(passwordHash))
+	return hex.EncodeToString(sum[:8])
+}
+
+func loadUser(ctx context.Context, q database.DBTX, id int64, passwordHash *string) (*rbac.User, error) {
 	var u rbac.User
+	var hash string
 	err := q.QueryRowContext(ctx, `
-		SELECT u.id, u.username, u.full_name, r.code, r.name, u.must_change_password
+		SELECT u.id, u.username, u.full_name, r.code, r.name, u.must_change_password, u.password_hash
 		  FROM users u JOIN roles r ON r.id = u.role_id
 		 WHERE u.id = ? AND u.is_active = TRUE`, id).
-		Scan(&u.ID, &u.Username, &u.FullName, &u.RoleCode, &u.RoleName, &u.MustChangePassword)
+		Scan(&u.ID, &u.Username, &u.FullName, &u.RoleCode, &u.RoleName, &u.MustChangePassword, &hash)
+	if passwordHash != nil {
+		*passwordHash = hash
+	}
 	if err != nil {
 		return nil, err
 	}

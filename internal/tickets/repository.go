@@ -26,7 +26,7 @@ const selectTicket = `
 	       t.ticket_category_id, t.it_category_id, ic.is_triage, rtc.name, t.description,
 	       t.impact_level, t.affected_scope, t.replacement_available, t.critical_service, t.incident_started_at,
 	       t.assignee_id, au.full_name, cu.full_name, t.first_response_at, t.created_at,
-	       (SELECT COUNT(*) FROM attachments x WHERE x.ticket_id = t.id),
+	       (SELECT COUNT(*) FROM attachments x WHERE x.ticket_id = t.id AND x.file_deleted_at IS NULL),
 	       t.work_started_at, t.pending_since, prs.label, t.resolved_at, t.closed_at, t.service_restored_at,
 	       t.resolution_action, t.resolution_result, t.resolution_note, t.reporter_feedback, t.cancel_reason, t.sla_cycle
 	  FROM tickets t
@@ -99,7 +99,8 @@ func (repository) histories(ctx context.Context, db database.DBTX, ticketID int6
 }
 
 func (repository) attachments(ctx context.Context, db database.DBTX, ticketID int64, reporterOnly bool) ([]Attachment, error) {
-	q := `SELECT id, width, height, size_bytes, uploaded_by_type, created_at FROM attachments WHERE ticket_id = ?`
+	// Foto yang filenya sudah dihapus sesuai retensi tidak ditampilkan.
+	q := `SELECT id, width, height, size_bytes, uploaded_by_type, created_at FROM attachments WHERE ticket_id = ? AND file_deleted_at IS NULL`
 	if reporterOnly {
 		q += " AND visible_to_reporter = TRUE"
 	}

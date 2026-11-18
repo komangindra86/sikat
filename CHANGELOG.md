@@ -2,6 +2,28 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
+## PHASE 9: Production Ready (2026-11-18)
+
+### Ditambahkan
+- **Backup database terjadwal**: `mysqldump` harian (jam `SIKAT_BACKUP_HOUR` WITA) ke
+  file `.sql.gz`, SHA-256, versi migrasi & jumlah baris tabel utama dicatat di
+  `backup_logs` (migrasi `00012_backups`); retensi `SIKAT_BACKUP_KEEP_DAYS` (3 file
+  terbaru selalu disimpan); gagal → dicoba lagi tiap jam.
+- **Uji restore**: backup terbaru dipulihkan ke database sementara, dibandingkan,
+  lalu dihapus. Menu **Backup** (Admin) dengan *Backup sekarang* & *Uji restore*,
+  perintah CLI `sikat backup` dan `sikat restore-test`, status backup di dashboard Admin.
+- **Retensi foto lampiran** (Q9): file foto tiket yang ditutup/dibatalkan lebih dari
+  `attachments.retention_days` (default 730 hari) dihapus otomatis; metadata tetap.
+- Paket deploy: `deploy/build-release.sh` (binary Linux statis + tarball + sha256),
+  unit systemd dengan hardening, konfigurasi Nginx (HTTPS, HTTP/2, gzip).
+- Uji beban (`SIKAT_LOAD_TEST=1`): 20.000 tiket, 20 pengguna bersamaan.
+- Dokumen: `DEPLOYMENT.md`, `USER_GUIDE.md`, `ADMIN_GUIDE.md`, `SECURITY.md`;
+  `DATABASE.md` & `ERD.md` diselaraskan dengan migrasi aktual.
+
+### Keamanan
+- Mengganti atau mereset password kini mengakhiri semua session lain pengguna tersebut.
+- Langganan Web Push hanya menerima endpoint push service resmi (mencegah SSRF).
+
 ## PHASE 8: SIMRS Integration Ready (2026-11-18)
 
 ### Ditambahkan

@@ -66,6 +66,7 @@ type AdminView struct {
 	Integration      string
 	IntegrationOK    bool
 	Backup           string
+	BackupOK         bool
 	LastAuditFailure sql.NullTime
 	// FieldsWithoutCoordinator: bidang aktif tanpa koordinator aktif (notifikasi ke semua koordinator).
 	FieldsWithoutCoordinator []string
@@ -252,7 +253,7 @@ func (h *Handler) coordView(ctx context.Context, u *rbac.User, now time.Time) (C
 func (h *Handler) adminView(ctx context.Context) (AdminView, error) {
 	v := AdminView{
 		Integration: "SIMRS belum terhubung — integrasi direncanakan lewat API SIMRS (menunggu spesifikasi). Master data dikelola lokal di Master Data.",
-		Backup:      "Belum tersedia — backup otomatis terjadwal disiapkan pada PHASE 9. Lakukan backup manual (mysqldump) sampai fitur ini aktif.",
+		Backup:      "Belum ada backup. Buka menu Backup untuk membuat backup pertama dan menguji restore.",
 	}
 	pctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -291,6 +292,35 @@ func (h *Handler) adminView(ctx context.Context) (AdminView, error) {
 	} else if lastAt.Valid {
 		v.Integration += " Impor terakhir " + lastAt.Time.In(clock.Location).Format("02/01/2006 15:04") + " WITA."
 	}
+	// Backup terakhir & uji restore terakhir.
+	var bStatus, bFile, rStatus sql.NullString
+	var bAt, rAt sql.NullTime
+	if err = h.DB.QueryRowContext(ctx, `
+		SELECT (SELECT status FROM backup_logs ORDER BY id DESC LIMIT 1),
+		       (SELECT file_name FROM backup_logs WHERE status = 'SUCCESS' ORDER BY id DESC LIMIT 1),
+		       (SELECT started_at FROM backup_logs WHERE status = 'SUCCESS' ORDER BY id DESC LIMIT 1),
+		       (SELECT restore_status FROM backup_logs WHERE restore_tested_at IS NOT NULL ORDER BY restore_tested_at DESC LIMIT 1),
+		       (SELECT MAX(restore_tested_at) FROM backup_logs)`).Scan(&bStatus, &bFile, &bAt, &rStatus, &rAt); err != nil {
+		return v, err
+	}
+	if bAt.Valid {
+		age := h.now().Sub(bAt.Time)
+		v.BackupOK = age < 26*time.Hour && bStatus.String != "FAILED"
+		v.Backup = "Backup berhasil terakhir " + bAt.Time.In(clock.Location).Format("02/01/2006 15:04") + " WITA"
+		if bStatus.String == "FAILED" {
+			v.Backup += "; backup terbaru GAGAL"
+		} else if age >= 26*time.Hour {
+			v.Backup += " (lebih dari sehari lalu)"
+		}
+		if rAt.Valid {
+			v.Backup += "; uji restore " + strings.ToLower(map[string]string{"SUCCESS": "berhasil", "FAILED": "GAGAL"}[rStatus.String]) +
+				" " + rAt.Time.In(clock.Location).Format("02/01/2006")
+		} else {
+			v.Backup += "; belum pernah diuji restore"
+		}
+	} else if bStatus.String == "FAILED" {
+		v.Backup = "Backup gagal — periksa riwayat di menu Backup."
+	}
 	if v.FieldsWithoutCoordinator, err = FieldsWithoutCoordinator(ctx, h.DB); err != nil {
 		return v, err
 	}
@@ -325,4 +355,11 @@ func FieldsWithoutCoordinator(ctx context.Context, db *sql.DB) ([]string, error)
 		out = append(out, n)
 	}
 	return out, rows.Err()
+}
+
+func (h *Handler) now() time.Time {
+	if h.Reports != nil {
+		return h.Reports.Now()
+	}
+	return time.Now()
 }
