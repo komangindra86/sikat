@@ -99,7 +99,7 @@ func TestErrorHelpers(t *testing.T) {
 }
 
 func TestUniformCodesMigration(t *testing.T) {
-	db := testutil.DB(t) // sudah Up, termasuk 00013
+	db := testutil.DB(t) // sudah Up, termasuk 00015
 	ctx := context.Background()
 	code := func(q string, args ...any) string {
 		t.Helper()
@@ -135,7 +135,7 @@ func TestUniformCodesMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := m.Down(ctx); err != nil {
-		t.Fatalf("down 00013: %v", err)
+		t.Fatalf("down 00015: %v", err)
 	}
 	if c := code(`SELECT code FROM it_categories WHERE name = 'Hardware'`); c != "HW" {
 		t.Fatalf("setelah down Hardware = %q, harus HW", c)
@@ -167,7 +167,7 @@ func TestUniformCodesMigration(t *testing.T) {
 	exec(`INSERT INTO assets (asset_code, name, asset_category_id, created_at, updated_at) VALUES ('PRK-2026-0001','PC',?,?,?)`, cat, now, now)
 
 	if _, err := m.Up(ctx); err != nil {
-		t.Fatalf("up 00013 dengan data lama: %v", err)
+		t.Fatalf("up 00015 dengan data lama: %v", err)
 	}
 	checks := []struct{ q, want string }{
 		{`SELECT code FROM departments WHERE id = ` + itoa(igd), "UNT-006"},        // lanjut setelah nomor teralokasi (5)
@@ -186,6 +186,14 @@ func TestUniformCodesMigration(t *testing.T) {
 		if got := code(c.q); got != c.want {
 			t.Errorf("%s = %q, harus %q", c.q, got, c.want)
 		}
+	}
+	// Relasi & pemetaan memakai ID: tidak berubah. Baris CSV yang kodenya diganti
+	// ditandai lokal agar impor ulang tidak mengembalikan kode LEGACY- diam-diam.
+	if testutil.Count(t, db, `SELECT COUNT(*) FROM departments WHERE id = ? AND local_modified_at IS NOT NULL`, legacyDept) != 1 {
+		t.Error("baris CSV berkode LEGACY- harus ditandai local_modified_at")
+	}
+	if testutil.Count(t, db, `SELECT COUNT(*) FROM departments WHERE name = 'Radiologi' AND local_modified_at IS NULL`) != 1 {
+		t.Error("baris SIMRS yang kodenya tidak diganti tidak boleh ditandai")
 	}
 	// Kode baru melanjutkan nomor setelah migrasi.
 	tx, err := db.BeginTx(ctx, nil)
