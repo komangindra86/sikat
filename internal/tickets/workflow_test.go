@@ -34,8 +34,8 @@ func setupWF(t *testing.T) wf {
 	w.other = user(testutil.CreateUser(t, f.db, "tek2", "TECHNICIAN", "password-tek2", false), rbac.RoleTechnician)
 	w.coord = user(testutil.CreateUser(t, f.db, "koor", "COORDINATOR", "password-koor", false), rbac.RoleCoordinator)
 	w.admin = user(testutil.CreateUser(t, f.db, "adm", "ADMIN", "password-adm1", false), rbac.RoleAdmin)
-	_ = f.db.QueryRow(`SELECT id FROM pending_reasons WHERE code = 'WAIT_PART'`).Scan(&w.reasonID)
-	_ = f.db.QueryRow(`SELECT id FROM pending_reasons WHERE code = 'OTHER'`).Scan(&w.otherReason)
+	_ = f.db.QueryRow(`SELECT id FROM pending_reasons WHERE label = 'Menunggu sparepart'`).Scan(&w.reasonID)
+	_ = f.db.QueryRow(`SELECT id FROM pending_reasons WHERE label = 'Lainnya'`).Scan(&w.otherReason)
 	return w
 }
 

@@ -10,6 +10,15 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
   kode inventaris Perangkat (`PRK-<tahun>-0001`, urutan diulang tiap tahun) kini dibuat
   sistem saat data disimpan dan tidak dapat diubah. Kode lama tetap; kode yang
   kebetulan sudah terpakai dilewati. Impor CSV/SIMRS tetap memakai kode dari sumber.
+- Migrasi `00013_uniform_codes`: **kode lama diseragamkan** ke format di atas
+  (mis. HW → BDG-01, IGD → UNT-001, IGD-PC-01 → PRK-2026-0001), termasuk data bawaan
+  instalasi baru. Bidang & alasan tunda diberi nomor sesuai urutan tampil, perangkat
+  sesuai tahun dibuat (WITA). Data dari SIMRS/CSV tidak diubah, kecuali kode berawalan
+  `LEGACY-` (pindahan sekali jalan dari aplikasi lama) yang ikut diseragamkan. Kode lama tersimpan di
+  tabel `legacy_codes` (migrasi dapat dibatalkan). **Cetak ulang label QR** yang sudah
+  ditempel bila ingin kode baru tampil (QR tetap berfungsi tanpa dicetak ulang).
+- Alasan tunda yang wajib diberi keterangan kini diatur lewat kolom **Wajib keterangan**
+  (`pending_reasons.requires_note`), bukan lagi dikenali dari kode `OTHER`.
 
 ## PHASE 9: Production Ready (2026-11-18)
 

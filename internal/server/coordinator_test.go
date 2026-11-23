@@ -22,7 +22,7 @@ func TestFieldCoordinatorMasterDataOverHTTP(t *testing.T) {
 	}
 
 	var fieldID int64
-	if err := db.QueryRow(`SELECT id FROM it_categories WHERE code = 'HW'`).Scan(&fieldID); err != nil {
+	if err := db.QueryRow(`SELECT id FROM it_categories WHERE name = 'Hardware'`).Scan(&fieldID); err != nil {
 		t.Fatal(err)
 	}
 	path := "/app/master/it-categories/" + itoa(fieldID)

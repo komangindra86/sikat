@@ -198,7 +198,7 @@ func TestSLAPauseOnlyWhenConfigured(t *testing.T) {
 	ctx := context.Background()
 	slaPolicies(t, w.db, "24 jam", 60, 240, true)
 	var vendor int64
-	if err := w.db.QueryRow(`SELECT id FROM pending_reasons WHERE code = 'WAIT_VENDOR'`).Scan(&vendor); err != nil {
+	if err := w.db.QueryRow(`SELECT id FROM pending_reasons WHERE label = 'Menunggu vendor'`).Scan(&vendor); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := w.db.Exec(`UPDATE pending_reasons SET pauses_sla = TRUE WHERE id = ?`, vendor); err != nil {

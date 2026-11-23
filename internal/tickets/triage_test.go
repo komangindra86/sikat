@@ -21,10 +21,10 @@ func catID(t *testing.T, w wf, name string) int64 {
 	return id
 }
 
-func fieldID(t *testing.T, w wf, code string) int64 {
+func fieldID(t *testing.T, w wf, name string) int64 {
 	t.Helper()
 	var id int64
-	if err := w.db.QueryRow(`SELECT id FROM it_categories WHERE code = ?`, code).Scan(&id); err != nil {
+	if err := w.db.QueryRow(`SELECT id FROM it_categories WHERE name = ?`, name).Scan(&id); err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -34,7 +34,7 @@ func TestTriageTicketIsSortedIntoTheRightField(t *testing.T) {
 	w := setupWF(t)
 	ctx := context.Background()
 	n := notifSvc(w, nil)
-	triage, network, hw := fieldID(t, w, "TRIASE"), fieldID(t, w, "NET"), fieldID(t, w, "HW")
+	triage, network, hw := fieldID(t, w, "Triase / Belum terklasifikasi"), fieldID(t, w, "Jaringan"), fieldID(t, w, "Hardware")
 	now := w.clk.Now()
 	// tek1: kompetensi Hardware; tek2: kompetensi Jaringan.
 	if _, err := w.db.Exec(`INSERT INTO user_competencies (user_id, it_category_id, created_at) VALUES (?, ?, ?), (?, ?, ?)`,

@@ -1,7 +1,7 @@
 # SIKAT — Rancangan Database
 
 > Status: **sesuai implementasi (PHASE 9).** Sumber kebenaran skema adalah migrasi
-> goose di folder [`migrations/`](../migrations) (00001–00012); dokumen ini
+> goose di folder [`migrations/`](../migrations) (00001–00013); dokumen ini
 > menjelaskan maksud & aturannya. `schema-draft.sql` adalah rancangan PHASE 0
 > (referensi sejarah; perbedaan dicatat di §0). Diagram relasi: [`ERD.md`](ERD.md).
 
@@ -21,6 +21,7 @@
 | 00010_triage | `it_categories.is_triage` (bidang Triase, unik), `tickets.reported_ticket_category_id` (jenis pilihan pelapor sebelum dikoreksi) |
 | 00011_integration | `employees`, `integration_configs`, `integration_sync_logs`, `external_id_mappings`, `integration_imports` |
 | 00012_backups | `backup_logs`, `attachments.file_deleted_at` (retensi foto), pengaturan `attachments.retention_days` |
+| 00013_uniform_codes | Kode lama diseragamkan ke format otomatis (UNT/RNG/BDG/KAT/ALS/SPR/PRK); `legacy_codes` (kode sebelum diseragamkan); `pending_reasons.requires_note` |
 
 Perbedaan penting dari rancangan: `push_deliveries` ditambahkan (antrean push per
 perangkat dengan retry); `integration_configs` belum menyimpan rahasia terenkripsi

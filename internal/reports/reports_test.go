@@ -163,7 +163,7 @@ func TestReportCalculations(t *testing.T) {
 		t.Fatal(err)
 	}
 	var reason int64
-	_ = f.db.QueryRow(`SELECT id FROM pending_reasons WHERE code = 'WAIT_PART'`).Scan(&reason)
+	_ = f.db.QueryRow(`SELECT id FROM pending_reasons WHERE label = 'Menunggu sparepart'`).Scan(&reason)
 	if errs, err := f.tk.Pend(ctx, b, f.tech2, reason, "Menunggu PSU"); err != nil || errs != nil {
 		t.Fatalf("%v %v", errs, err)
 	}

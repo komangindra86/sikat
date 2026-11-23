@@ -129,6 +129,8 @@ var Entities = []*Entity{
 			{Column: "label", Label: "Alasan", Kind: KindText, Required: true, MaxLen: 120, InList: true},
 			{Column: "pauses_sla", Label: "Menghentikan SLA", Kind: KindBool, InList: true,
 				Help: "Hanya berlaku bila kebijakan SLA tiket mengizinkan penghentian (diatur di modul SLA)."},
+			{Column: "requires_note", Label: "Wajib keterangan", Kind: KindBool, InList: true,
+				Help: "Petugas harus menulis keterangan saat memilih alasan ini (mis. \"Lainnya\")."},
 			sortField(),
 		},
 		OrderBy: "sort_order, label", Search: []string{"code", "label"}, HasActive: true,

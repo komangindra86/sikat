@@ -220,16 +220,16 @@ func (s *Service) Pend(ctx context.Context, id int64, u *rbac.User, reasonID int
 		if !t.isPrimary(u) || !u.Has(rbac.PermTicketWork) {
 			return ErrForbidden
 		}
-		var code, label string
-		var pauses bool
-		err = tx.QueryRowContext(ctx, `SELECT code, label, pauses_sla FROM pending_reasons WHERE id = ? AND is_active = TRUE`, reasonID).Scan(&code, &label, &pauses)
+		var label string
+		var pauses, needsNote bool
+		err = tx.QueryRowContext(ctx, `SELECT label, pauses_sla, requires_note FROM pending_reasons WHERE id = ? AND is_active = TRUE`, reasonID).Scan(&label, &pauses, &needsNote)
 		if errors.Is(err, sql.ErrNoRows) {
 			errs["pending_reason_id"] = "Pilih alasan tiket ditunda."
 		} else if err != nil {
 			return err
 		}
-		if code == "OTHER" && note == "" {
-			errs["note"] = "Jelaskan alasan lainnya."
+		if needsNote && note == "" {
+			errs["note"] = "Alasan ini wajib diberi keterangan."
 		}
 		if len(errs) > 0 {
 			return nil
