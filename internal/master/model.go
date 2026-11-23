@@ -9,6 +9,7 @@ package master
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -56,7 +57,18 @@ type Field struct {
 	Choices  []Choice // untuk KindEnum; Value "" berarti NULL
 	Default  string
 	InList   bool // tampil sebagai kolom di daftar
+	// Auto: nilai dibuat sistem saat data dibuat dan tidak dapat diubah lewat form.
+	Auto *AutoCode
 }
+
+// AutoCode adalah format kode otomatis: Prefix-NNN (Width digit).
+type AutoCode struct {
+	Prefix string
+	Width  int
+}
+
+// Example mengembalikan contoh kode pertama, mis. "UNT-001".
+func (a AutoCode) Example() string { return fmt.Sprintf("%s-%0*d", a.Prefix, a.Width, 1) }
 
 // Helper jenis field untuk template.
 func (f Field) IsText() bool     { return f.Kind == KindText }

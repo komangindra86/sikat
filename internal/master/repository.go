@@ -129,6 +129,9 @@ func (r repository) update(ctx context.Context, db database.DBTX, e *Entity, id 
 	sets := []string{}
 	args := []any{}
 	for _, f := range e.Fields {
+		if f.Auto != nil {
+			continue // kode otomatis tidak pernah diubah
+		}
 		sets = append(sets, f.Column+" = ?")
 		args = append(args, nullable(vals[f.Column]))
 	}

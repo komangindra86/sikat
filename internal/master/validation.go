@@ -24,6 +24,9 @@ func (v Validated) OK() bool { return len(v.Errors) == 0 }
 func Validate(e *Entity, get func(string) string) Validated {
 	out := Validated{Values: map[string]*string{}, Form: map[string]string{}, Errors: map[string]string{}}
 	for _, f := range e.Fields {
+		if f.Auto != nil {
+			continue // dibuat sistem (Create) dan tidak diubah lewat form (Update)
+		}
 		raw := strings.TrimSpace(get(f.Column))
 		if f.Upper {
 			raw = strings.ToUpper(raw)

@@ -10,7 +10,9 @@ Instalasi server: DEPLOYMENT.md.
    otomatis, ambang kerusakan berulang, masa simpan foto.
 2. **Master Data** (urutan): Unit → Ruangan → Bidang (tetapkan **koordinator** tiap
    bidang) → Jenis Gangguan → Kategori Perangkat → Perangkat (menu Daftar
-   Perangkat) → Pegawai (opsional, saran nama pelapor).
+   Perangkat) → Pegawai (opsional, saran nama pelapor). Kode (mis. `UNT-001`,
+   `RNG-0001`, kode inventaris `PRK-2026-0001`) dibuat otomatis saat disimpan dan
+   tidak dapat diubah; cukup isi nama dan data lainnya.
 3. **Pengguna** → buat akun petugas & koordinator (password sementara, wajib
    diganti saat login pertama), centang **kompetensi** (bidang) petugas.
 4. **QR Code** → *Buat semua QR ruangan* / QR perangkat → cetak → tempel.

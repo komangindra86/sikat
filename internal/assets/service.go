@@ -52,6 +52,9 @@ func (s *Service) StatusCounts(ctx context.Context) ([]StatusCount, error) {
 	return s.repo.statusCounts(ctx, s.db)
 }
 
+// CodePrefix adalah awalan kode inventaris otomatis: PRK-<tahun>-NNNN.
+const CodePrefix = "PRK"
+
 func today(now time.Time) time.Time {
 	y, m, d := now.In(clock.Location).Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, clock.Location)
@@ -156,6 +159,12 @@ func (s *Service) Create(ctx context.Context, get func(string) string) (int64, m
 		if len(errs) > 0 {
 			return nil
 		}
+		code, err := database.NextCode(ctx, tx, "assets", "asset_code", CodePrefix, today(now).Year(), 4)
+		if err != nil {
+			return err
+		}
+		in.AssetCode = code
+		form["asset_code"] = code
 		newID, err := s.repo.insert(ctx, tx, in, now)
 		if err != nil {
 			return err
@@ -187,6 +196,8 @@ func (s *Service) Update(ctx context.Context, id int64, get func(string) string)
 		if err != nil {
 			return err
 		}
+		in.AssetCode = before.AssetCode // kode inventaris tidak dapat diubah
+		form["asset_code"] = before.AssetCode
 		if err := s.checkRefs(ctx, tx, &in, errs, &before); err != nil {
 			return err
 		}

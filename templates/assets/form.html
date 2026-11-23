@@ -10,9 +10,17 @@
   <form method="post" action="/app/assets{{if $d.ID}}/{{$d.ID}}{{end}}" class="card card-body mt-4" novalidate>
     {{template "csrf" .CSRFToken}}
     {{template "form-errors" .}}
-    <p class="muted mb-4">Hanya kode, nama, dan kategori yang wajib. Isi lainnya bila tersedia.</p>
+    <p class="muted mb-4">Hanya nama dan kategori yang wajib. Isi lainnya bila tersedia.</p>
     <div class="grid gap-4 sm:grid-cols-2">
-      {{template "asset-input" (dict "P" $p "Name" "asset_code" "Label" "Kode inventaris" "Req" true "Max" 50 "Help" "Kode unik, contoh: IGD-PC-01" "Upper" true)}}
+      <div>
+        <label class="label" for="asset_code">Kode inventaris</label>
+        {{if $d.ID}}
+        <input class="input bg-slate-50 font-mono text-slate-600" id="asset_code" type="text" value="{{index $d.Form "asset_code"}}" readonly>
+        <p class="help">Dibuat otomatis oleh sistem dan tidak dapat diubah.</p>
+        {{else}}
+        <p id="asset_code" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">Dibuat otomatis saat disimpan, contoh <span class="font-mono">{{$d.CodeExample}}</span>.</p>
+        {{end}}
+      </div>
       {{template "asset-input" (dict "P" $p "Name" "name" "Label" "Nama perangkat" "Req" true "Max" 150 "Help" "Contoh: Komputer Triase IGD")}}
       <div>
         <label class="label" for="asset_category_id">Kategori <span class="text-red-600" aria-hidden="true">*</span></label>

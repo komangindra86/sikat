@@ -38,8 +38,8 @@ func TestValidate(t *testing.T) {
 	if v.Errors["name"] == "" {
 		t.Fatal("nama wajib harus error")
 	}
-	if *v.Values["code"] != "IGD" {
-		t.Fatalf("kode harus di-trim & uppercase, dapat %q", *v.Values["code"])
+	if _, ok := v.Values["code"]; ok {
+		t.Fatal("kode otomatis tidak boleh diambil dari form")
 	}
 	if *v.Values["is_critical_service"] != "0" {
 		t.Fatal("checkbox kosong harus 0")
@@ -94,9 +94,12 @@ func TestServiceCRUD(t *testing.T) {
 	if err != nil || id == 0 {
 		t.Fatalf("create gagal: %v %v", v.Errors, err)
 	}
-	// Kode unik → error pada field, bukan error server.
-	id2, v, err := svc.Create(ctx, depts, testutil.Form(map[string]string{"code": "IGD", "name": "Lain"}))
-	if err != nil || id2 != 0 || v.Errors["code"] != "Kode unit sudah dipakai." {
+	if rec, _ := svc.Get(ctx, depts, id); rec.Get("code") != "UNT-001" {
+		t.Fatalf("kode unit otomatis harus UNT-001 (input form diabaikan), dapat %q", rec.Get("code"))
+	}
+	// Nama unik → error pada field, bukan error server.
+	id2, v, err := svc.Create(ctx, depts, testutil.Form(map[string]string{"name": "IGD"}))
+	if err != nil || id2 != 0 || v.Errors["name"] != "Nama unit sudah ada." {
 		t.Fatalf("duplikat harus error field: id=%d errs=%v err=%v", id2, v.Errors, err)
 	}
 
@@ -122,9 +125,12 @@ func TestServiceCRUD(t *testing.T) {
 	if v.Errors["department_id"] == "" {
 		t.Fatal("unit nonaktif tidak boleh dipilih untuk data baru")
 	}
-	v, err = svc.Update(ctx, rooms, roomID, testutil.Form(map[string]string{"department_id": itoa(id), "code": "R1", "name": "Triase Baru"}))
+	v, err = svc.Update(ctx, rooms, roomID, testutil.Form(map[string]string{"department_id": itoa(id), "code": "GANTI", "name": "Triase Baru"}))
 	if err != nil || !v.OK() {
 		t.Fatalf("edit dengan referensi lama yang nonaktif harus boleh: %v %v", v.Errors, err)
+	}
+	if rec, _ := svc.Get(ctx, rooms, roomID); rec.Get("code") != "RNG-0001" || rec.Get("name") != "Triase Baru" {
+		t.Fatalf("kode ruangan otomatis harus tetap RNG-0001 setelah diubah, dapat %q", rec.Get("code"))
 	}
 
 	// Ruangan belum dipakai → bisa dihapus.
@@ -200,4 +206,28 @@ func itoa(n int64) string {
 		n /= 10
 	}
 	return string(b)
+}
+
+func TestAutoCodeSkipsExisting(t *testing.T) {
+	db := testutil.DB(t)
+	svc := master.NewService(db, clock.NewFake(time.Now()))
+	ctx := context.Background()
+	parts, _ := master.EntityBySlug("spare-parts")
+	now := time.Now().UTC()
+	// Kode lama/impor yang kebetulan berformat sama dilewati.
+	if _, err := db.Exec(`INSERT INTO spare_parts (code, name, unit, created_at, updated_at) VALUES ('SPR-0002','Lama','pcs',?,?)`, now, now); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, name := range []string{"PSU", "RAM", "SSD"} {
+		id, v, err := svc.Create(ctx, parts, testutil.Form(map[string]string{"name": name, "unit": "pcs"}))
+		if err != nil || id == 0 {
+			t.Fatalf("create gagal: %v %v", v.Errors, err)
+		}
+		rec, _ := svc.Get(ctx, parts, id)
+		got = append(got, rec.Get("code"))
+	}
+	if got[0] != "SPR-0001" || got[1] != "SPR-0003" || got[2] != "SPR-0004" {
+		t.Fatalf("kode otomatis = %v, harus SPR-0001, SPR-0003, SPR-0004", got)
+	}
 }

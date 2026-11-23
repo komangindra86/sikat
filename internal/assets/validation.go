@@ -14,6 +14,7 @@ var validStatus = map[string]bool{
 }
 
 // Validate memeriksa input form. Keberadaan referensi diperiksa di service.
+// Kode inventaris tidak dibaca dari form: dibuat otomatis saat Create.
 func Validate(get func(string) string, today time.Time) (Input, map[string]string, map[string]string) {
 	errs := map[string]string{}
 	form := map[string]string{}
@@ -50,7 +51,6 @@ func Validate(get func(string) string, today time.Time) (Input, map[string]strin
 	}
 
 	in := Input{
-		AssetCode:    field("asset_code", 50, true, "Kode inventaris", true),
 		Name:         field("name", 150, false, "Nama perangkat", true),
 		CategoryID:   id("asset_category_id", "Kategori", true),
 		Brand:        field("brand", 80, false, "Merk", false),

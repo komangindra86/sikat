@@ -13,9 +13,9 @@ var (
 		Where: "role_id IN (SELECT id FROM roles WHERE code = 'COORDINATOR')"}
 )
 
-func codeField(maxLen int) Field {
-	return Field{Column: "code", Label: "Kode", Kind: KindText, Required: true, MaxLen: maxLen, Upper: true, InList: true,
-		Help: "Singkatan unik, huruf besar. Contoh: IGD"}
+// codeField adalah kode otomatis Prefix-NNN; data lama/impor tetap memakai kodenya sendiri.
+func codeField(prefix string, width int) Field {
+	return Field{Column: "code", Label: "Kode", Kind: KindText, InList: true, Auto: &AutoCode{Prefix: prefix, Width: width}}
 }
 
 func sortField() Field {
@@ -29,7 +29,7 @@ var Entities = []*Entity{
 		Slug: "departments", Table: "departments", Title: "Unit", Singular: "unit",
 		Description: "Unit/bagian rumah sakit. Unit layanan klinis kritis menaikkan prioritas tiket otomatis.",
 		Fields: []Field{
-			codeField(30),
+			codeField("UNT", 3),
 			{Column: "name", Label: "Nama unit", Kind: KindText, Required: true, MaxLen: 150, InList: true},
 			{Column: "is_critical_service", Label: "Layanan klinis kritis", Kind: KindBool, InList: true,
 				Help: "Contoh: IGD, ICU, kamar operasi. Dipakai mesin prioritas otomatis."},
@@ -45,7 +45,7 @@ var Entities = []*Entity{
 		Description: "Ruangan milik setiap unit. QR ruangan (fase 2) mengisi lokasi otomatis.",
 		Fields: []Field{
 			{Column: "department_id", Label: "Unit", Kind: KindSelect, Required: true, Ref: refDepartments, InList: true},
-			codeField(30),
+			codeField("RNG", 4),
 			{Column: "name", Label: "Nama ruangan", Kind: KindText, Required: true, MaxLen: 150, InList: true},
 			{Column: "location_note", Label: "Gedung / lantai", Kind: KindText, MaxLen: 150, InList: true},
 			{Column: "is_critical_service", Label: "Layanan klinis kritis", Kind: KindEnum, InList: true,
@@ -77,7 +77,7 @@ var Entities = []*Entity{
 		Slug: "it-categories", Table: "it_categories", Title: "Bidang", Singular: "bidang",
 		Description: "Bidang pekerjaan IT dan koordinatornya. Dipakai untuk kompetensi petugas, notifikasi koordinator, dan laporan per bidang.",
 		Fields: []Field{
-			codeField(30),
+			codeField("BDG", 2),
 			{Column: "name", Label: "Nama bidang", Kind: KindText, Required: true, MaxLen: 100, InList: true},
 			{Column: "coordinator_user_id", Label: "Koordinator", Kind: KindSelect, Ref: refCoordinators, InList: true,
 				Help: "Satu koordinator per bidang (satu koordinator boleh memegang beberapa bidang). Notifikasi & eskalasi bidang ini dikirim kepadanya; bila kosong, ke semua koordinator."},
@@ -111,7 +111,7 @@ var Entities = []*Entity{
 	{
 		Slug: "asset-categories", Table: "asset_categories", Title: "Kategori Perangkat", Singular: "kategori perangkat",
 		Fields: []Field{
-			codeField(30),
+			codeField("KAT", 2),
 			{Column: "name", Label: "Nama kategori", Kind: KindText, Required: true, MaxLen: 100, InList: true},
 			{Column: "it_category_id", Label: "Bidang", Kind: KindSelect, Ref: refITCategories, InList: true},
 		},
@@ -125,7 +125,7 @@ var Entities = []*Entity{
 		Slug: "pending-reasons", Table: "pending_reasons", Title: "Alasan Tunda", Singular: "alasan tunda",
 		Description: "Pilihan alasan saat petugas menunda tiket.",
 		Fields: []Field{
-			codeField(30),
+			codeField("ALS", 2),
 			{Column: "label", Label: "Alasan", Kind: KindText, Required: true, MaxLen: 120, InList: true},
 			{Column: "pauses_sla", Label: "Menghentikan SLA", Kind: KindBool, InList: true,
 				Help: "Hanya berlaku bila kebijakan SLA tiket mengizinkan penghentian (diatur di modul SLA)."},
@@ -165,7 +165,7 @@ var Entities = []*Entity{
 		Slug: "spare-parts", Table: "spare_parts", Title: "Sparepart", Singular: "sparepart",
 		Description: "Katalog sparepart dan harga acuan (tanpa stok).",
 		Fields: []Field{
-			{Column: "code", Label: "Kode", Kind: KindText, Required: true, MaxLen: 50, Upper: true, InList: true},
+			codeField("SPR", 4),
 			{Column: "name", Label: "Nama sparepart", Kind: KindText, Required: true, MaxLen: 150, InList: true},
 			{Column: "unit", Label: "Satuan", Kind: KindText, Required: true, MaxLen: 20, Default: "pcs", InList: true},
 			{Column: "default_unit_cost", Label: "Harga acuan (Rp)", Kind: KindMoney, InList: true,

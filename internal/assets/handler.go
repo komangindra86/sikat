@@ -3,6 +3,7 @@ package assets
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,6 +72,7 @@ type formData struct {
 	Departments []Option
 	Rooms       []RoomOption
 	Source      string
+	CodeExample string // contoh kode inventaris otomatis, mis. PRK-2026-0001
 }
 
 type detailData struct {
@@ -151,7 +153,8 @@ func (h *Handler) renderForm(w http.ResponseWriter, r *http.Request, status int,
 	}
 	h.Renderer.Render(w, r, status, "assets/form", web.Page{
 		Title: title, Nav: "assets", Errors: errs,
-		Data: formData{ID: id, Form: form, Categories: cats, Departments: depts, Rooms: rooms, Source: source},
+		Data: formData{ID: id, Form: form, Categories: cats, Departments: depts, Rooms: rooms, Source: source,
+			CodeExample: fmt.Sprintf("%s-%d-0001", CodePrefix, today(h.Service.clock.Now()).Year())},
 	})
 }
 

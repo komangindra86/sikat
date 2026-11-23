@@ -2,6 +2,15 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
+## Belum dirilis
+
+### Diubah
+- **Kode otomatis**: kode Unit (`UNT-001`), Ruangan (`RNG-0001`), Bidang (`BDG-01`),
+  Kategori Perangkat (`KAT-01`), Alasan Tunda (`ALS-01`), Sparepart (`SPR-0001`), dan
+  kode inventaris Perangkat (`PRK-<tahun>-0001`, urutan diulang tiap tahun) kini dibuat
+  sistem saat data disimpan dan tidak dapat diubah. Kode lama tetap; kode yang
+  kebetulan sudah terpakai dilewati. Impor CSV/SIMRS tetap memakai kode dari sumber.
+
 ## PHASE 9: Production Ready (2026-11-18)
 
 ### Ditambahkan

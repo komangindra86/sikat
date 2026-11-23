@@ -204,6 +204,33 @@ func NextSequence(ctx context.Context, tx *sql.Tx, name string, year int) (int64
 	return n, err
 }
 
+// NextCode membuat kode otomatis unik untuk kolom table.column, mis. "UNT-001"
+// (year = 0) atau "PRK-2026-0001" (year > 0, urutan diulang tiap tahun). Nomor
+// urut diambil dari number_sequences (nama = prefix) sehingga aman dipakai
+// bersamaan; kode yang kebetulan sudah dipakai (data lama/impor) dilewati.
+// table dan column harus konstanta dari kode program, bukan input pengguna.
+func NextCode(ctx context.Context, tx *sql.Tx, table, column, prefix string, year, width int) (string, error) {
+	for range 1000 {
+		n, err := NextSequence(ctx, tx, prefix, year)
+		if err != nil {
+			return "", err
+		}
+		code := fmt.Sprintf("%s-%0*d", prefix, width, n)
+		if year > 0 {
+			code = fmt.Sprintf("%s-%d-%0*d", prefix, year, width, n)
+		}
+		var exists bool
+		if err := tx.QueryRowContext(ctx,
+			"SELECT EXISTS(SELECT 1 FROM "+table+" WHERE "+column+" = ?)", code).Scan(&exists); err != nil {
+			return "", err
+		}
+		if !exists {
+			return code, nil
+		}
+	}
+	return "", fmt.Errorf("kode otomatis %s: terlalu banyak kode yang sudah terpakai", prefix)
+}
+
 // IsRetryable bernilai true untuk deadlock (1213) dan lock wait timeout (1205):
 // transaksi aman diulang dari awal.
 func IsRetryable(err error) bool {

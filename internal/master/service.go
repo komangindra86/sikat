@@ -144,6 +144,17 @@ func (s *Service) Create(ctx context.Context, e *Entity, get func(string) string
 		if !v.OK() {
 			return nil
 		}
+		for _, f := range e.Fields {
+			if f.Auto == nil {
+				continue
+			}
+			code, err := database.NextCode(ctx, tx, e.Table, f.Column, f.Auto.Prefix, 0, f.Auto.Width)
+			if err != nil {
+				return err
+			}
+			v.Values[f.Column] = &code
+			v.Form[f.Column] = code
+		}
 		newID, err := s.repo.insert(ctx, tx, e, v.Values, now)
 		if err != nil {
 			return err
@@ -174,6 +185,11 @@ func (s *Service) Update(ctx context.Context, e *Entity, id int64, get func(stri
 		before, err := s.repo.get(ctx, tx, e, id, true)
 		if err != nil {
 			return err
+		}
+		for _, f := range e.Fields {
+			if f.Auto != nil { // kode otomatis tetap; ditampilkan ulang bila form gagal
+				v.Form[f.Column] = before.Values[f.Column]
+			}
 		}
 		if err := s.checkRefs(ctx, tx, e, &v, before.Values); err != nil {
 			return err

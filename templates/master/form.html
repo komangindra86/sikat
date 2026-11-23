@@ -13,7 +13,15 @@
     {{range $f := $e.Fields}}
     {{$val := index $d.Form $f.Column}}{{$err := $p.Err $f.Column}}
     <div>
-      {{if $f.IsBool}}
+      {{if $f.Auto}}
+        <label class="label" for="f-{{$f.Column}}">{{$f.Label}}</label>
+        {{if $d.ID}}
+          <input class="input bg-slate-50 font-mono text-slate-600" id="f-{{$f.Column}}" type="text" value="{{$val}}" readonly>
+          <p class="help">Dibuat otomatis oleh sistem dan tidak dapat diubah.</p>
+        {{else}}
+          <p id="f-{{$f.Column}}" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">Dibuat otomatis saat disimpan, contoh <span class="font-mono">{{$f.Auto.Example}}</span>.</p>
+        {{end}}
+      {{else if $f.IsBool}}
         <label class="flex min-h-11 items-center gap-3">
           <input class="checkbox" type="checkbox" name="{{$f.Column}}" value="1" {{if eq $val "1"}}checked{{end}}>
           <span class="text-sm font-medium text-slate-800">{{$f.Label}}</span>
