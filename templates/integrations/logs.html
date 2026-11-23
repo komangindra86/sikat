@@ -3,10 +3,10 @@
 <nav class="mb-2"><a href="/app/integrations">Integrasi</a> › Log sinkronisasi</nav>
 <h1 class="page-title">Log sinkronisasi</h1>
 <p class="muted mt-1">Setiap impor CSV dan sinkronisasi SIMRS tercatat: waktu, hasil, konflik, dan galat.</p>
-<nav class="mt-5 flex flex-wrap gap-1 border-b border-line" aria-label="Saring entitas">
-  <a href="/app/integrations/logs" class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if eq $d.Entity ""}}border-brand-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">Semua</a>
+<nav class="mt-5 flex flex-wrap gap-1 border-b border-border" aria-label="Saring entitas">
+  <a href="/app/integrations/logs" class="-mb-px border-b-2 px-3 py-2 text-sm font-bold {{if eq $d.Entity ""}}border-primary text-foreground{{else}}border-transparent text-muted-foreground hover:text-foreground{{end}}">Semua</a>
   {{range labels "integration_entity"}}
-  <a href="/app/integrations/logs?entitas={{.Value}}" class="-mb-px border-b-2 px-3 py-2 text-sm font-medium {{if eq $d.Entity .Value}}border-brand-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-800{{end}}">{{.Label}}</a>
+  <a href="/app/integrations/logs?entitas={{.Value}}" class="-mb-px border-b-2 px-3 py-2 text-sm font-bold {{if eq $d.Entity .Value}}border-primary text-foreground{{else}}border-transparent text-muted-foreground hover:text-foreground{{end}}">{{.Label}}</a>
   {{end}}
 </nav>
 <div class="mt-4">{{template "sync-log-list" $d.Logs}}</div>
@@ -16,15 +16,15 @@
 {{if .}}
 <ul class="list">
   {{range .}}
-  <li><a href="/app/integrations/logs/{{.ID}}" class="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+  <li><a href="/app/integrations/logs/{{.ID}}" class="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-accent sm:flex-row sm:items-center sm:justify-between sm:px-5">
     <span class="min-w-0">
-      <span class="font-medium text-slate-900">{{label "integration_entity" .Entity}}</span>
-      <span class="text-sm text-slate-500">· {{label "integration_provider" .Provider}}{{with .FileName.String}} · {{.}}{{end}} · {{label "sync_trigger" .Trigger}}{{if gt .Attempt 1}} (ke-{{.Attempt}}){{end}}</span>
-      <span class="block text-xs text-slate-500">{{wita .StartedAt}} WITA{{with .By.String}} · {{.}}{{end}} · +{{.Inserted}} baru, {{.Updated}} diperbarui{{if .Conflicts}}, <span class="text-amber-700">{{.Conflicts}} konflik</span>{{end}}{{if .Failed}}, <span class="text-red-700">{{.Failed}} galat</span>{{end}}{{if .Deactivated}}, {{.Deactivated}} nonaktif{{end}}</span>
+      <span class="font-bold text-foreground">{{label "integration_entity" .Entity}}</span>
+      <span class="text-sm text-muted-foreground">· {{label "integration_provider" .Provider}}{{with .FileName.String}} · {{.}}{{end}} · {{label "sync_trigger" .Trigger}}{{if gt .Attempt 1}} (ke-{{.Attempt}}){{end}}</span>
+      <span class="block text-xs text-muted-foreground">{{wita .StartedAt}} WITA{{with .By.String}} · {{.}}{{end}} · +{{.Inserted}} baru, {{.Updated}} diperbarui{{if .Conflicts}}, <span class="text-warn">{{.Conflicts}} konflik</span>{{end}}{{if .Failed}}, <span class="text-bad">{{.Failed}} galat</span>{{end}}{{if .Deactivated}}, {{.Deactivated}} nonaktif{{end}}</span>
     </span>
     <span class="badge badge-{{tone "sync_status" .Status}} shrink-0">{{label "sync_status" .Status}}</span>
   </a></li>
   {{end}}
 </ul>
-{{else}}<div class="card px-4 py-8 text-center text-sm text-slate-500">Belum ada impor atau sinkronisasi.</div>{{end}}
+{{else}}<div class="card px-4 py-8 text-center text-sm text-muted-foreground">Belum ada impor atau sinkronisasi.</div>{{end}}
 {{end}}

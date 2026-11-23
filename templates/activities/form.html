@@ -1,7 +1,7 @@
 {{template "base" .}}
 {{define "content"}}
 {{$d := .Data}}{{$p := .}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/activities" class="hover:underline">Kegiatan</a>{{if $d.ID}} › <a href="/app/activities/{{$d.ID}}" class="hover:underline">{{$d.No}}</a>{{end}}</nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/activities" class="hover:underline">Kegiatan</a>{{if $d.ID}} › <a href="/app/activities/{{$d.ID}}" class="hover:underline">{{$d.No}}</a>{{end}}</nav>
 <div class="mx-auto max-w-3xl">
   <h1 class="page-title">{{.Title}}</h1>
   <form method="post" action="/app/activities{{if $d.ID}}/{{$d.ID}}{{end}}" class="mt-4 space-y-4" novalidate>
@@ -10,24 +10,24 @@
 
     <div class="card card-body grid gap-4 sm:grid-cols-2">
       <div>
-        <label class="label" for="activity_type_id">Jenis kegiatan <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="activity_type_id">Jenis kegiatan <span class="text-bad" aria-hidden="true">*</span></label>
         <select class="input {{if $p.Err "activity_type_id"}}input-error{{end}}" id="activity_type_id" name="activity_type_id" data-sets-target="#it_category_id">
-          <option value="">— Pilih —</option>
+          <option value="">Pilih</option>
           {{range $d.Types}}<option value="{{.ID}}" data-set="{{if .Extra}}{{.Extra}}{{end}}" {{if eq (printf "%d" .ID) (index $d.Form "activity_type_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "activity_type_id"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div>
-        <label class="label" for="it_category_id">Bidang <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="it_category_id">Bidang <span class="text-bad" aria-hidden="true">*</span></label>
         <select class="input {{if $p.Err "it_category_id"}}input-error{{end}}" id="it_category_id" name="it_category_id">
-          <option value="">— Pilih —</option>
+          <option value="">Pilih</option>
           {{range $d.Categories}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "it_category_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         <p class="help">Terisi otomatis dari jenis kegiatan, dapat diganti.</p>
         {{with $p.Err "it_category_id"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div class="sm:col-span-2">
-        <label class="label" for="title">Kegiatan <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="title">Kegiatan <span class="text-bad" aria-hidden="true">*</span></label>
         <input class="input {{if $p.Err "title"}}input-error{{end}}" id="title" name="title" maxlength="200" value="{{index $d.Form "title"}}" placeholder="Contoh: Pengecekan rutin server database" required>
         {{with $p.Err "title"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
@@ -62,7 +62,7 @@
         {{with $p.Err "ended_at"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div class="sm:col-span-2">
-        <label class="label" for="result">Hasil{{if eq (index $d.Form "status") "DONE"}} <span class="text-red-600" aria-hidden="true">*</span>{{end}}</label>
+        <label class="label" for="result">Hasil{{if eq (index $d.Form "status") "DONE"}} <span class="text-bad" aria-hidden="true">*</span>{{end}}</label>
         <textarea class="input {{if $p.Err "result"}}input-error{{end}}" id="result" name="result" rows="3" maxlength="4000" placeholder="Contoh: Semua normal, disk terpakai 62%">{{index $d.Form "result"}}</textarea>
         <p class="help">Wajib untuk kegiatan berstatus Selesai.</p>
         {{with $p.Err "result"}}<p class="error-text">{{.}}</p>{{end}}
@@ -74,7 +74,7 @@
         <label class="label" for="department_id">Unit</label>
         <select class="input {{if $p.Err "department_id"}}input-error{{end}}" id="department_id" name="department_id"
                 hx-get="/app/assets/rooms" hx-target="#room_id" hx-trigger="change" hx-include="this">
-          <option value="">— Tidak ada —</option>
+          <option value="">Tidak ada</option>
           {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "department_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -82,7 +82,7 @@
       <div>
         <label class="label" for="room_id">Ruangan</label>
         <select class="input {{if $p.Err "room_id"}}input-error{{end}}" id="room_id" name="room_id">
-          <option value="">— Tidak ada —</option>
+          <option value="">Tidak ada</option>
           {{range $d.Rooms}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "room_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "room_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -91,7 +91,7 @@
         <label class="label" for="asset_id">Perangkat</label>
         <select class="input {{if $p.Err "asset_id"}}input-error{{end}}" id="asset_id" name="asset_id"
                 hx-get="/app/tickets/assets" hx-trigger="change from:#room_id, change from:#department_id delay:400ms" hx-include="#department_id, #room_id">
-          <option value="">— Tidak ada —</option>
+          <option value="">Tidak ada</option>
           {{range $d.Assets}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "asset_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "asset_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -125,7 +125,7 @@
         <legend class="label">Petugas pendukung</legend>
         <div class="grid gap-2 sm:grid-cols-2">
           {{range $d.Staff}}
-          <label class="flex min-h-11 items-center gap-3 rounded-lg border border-line px-3">
+          <label class="flex min-h-11 items-center gap-3 rounded-lg border border-border px-3">
             <input class="checkbox" type="checkbox" name="support_ids" value="{{.ID}}" {{if index $d.Supports .ID}}checked{{end}}>
             <span class="text-sm">{{.Label}}</span>
           </label>

@@ -10,14 +10,14 @@
       <div class="card-header"><h2 id="perangkat-ini" class="card-title">Push di perangkat ini</h2></div>
       <div class="card-body">
         {{if not $d.PushOn}}
-        <p class="text-sm text-slate-600">Notifikasi push belum dikonfigurasi di server (kunci VAPID). Hubungi Admin IT. Notifikasi tetap masuk ke inbox.</p>
+        <p class="text-sm text-muted-foreground">Notifikasi push belum dikonfigurasi di server (kunci VAPID). Hubungi Admin IT. Notifikasi tetap masuk ke inbox.</p>
         {{else}}
         <div data-push-panel data-vapid-key="{{$d.VAPIDKey}}">
           <div class="flex items-start gap-3">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500"><span class="icon h-5 w-5">{{template "icon" "phone"}}</span></span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-muted-foreground"><span class="icon h-5 w-5">{{template "icon" "phone"}}</span></span>
             <div class="min-w-0 flex-1">
-              <p class="font-medium text-slate-900" data-push-state>Memeriksa dukungan browser…</p>
-              <p class="mt-0.5 text-sm text-slate-500" data-push-detail></p>
+              <p class="font-bold text-foreground" data-push-state>Memeriksa dukungan browser…</p>
+              <p class="mt-0.5 text-sm text-muted-foreground" data-push-detail></p>
             </div>
           </div>
           <div class="mt-4 flex flex-wrap gap-2">
@@ -26,8 +26,8 @@
           </div>
           <p class="error-text" data-push-error hidden></p>
         </div>
-        <div class="mt-5 rounded-md bg-slate-50 px-3.5 py-3 text-xs leading-relaxed text-slate-600">
-          <p class="font-medium text-slate-700">Tips</p>
+        <div class="mt-5 rounded-md bg-muted px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
+          <p class="font-bold text-foreground">Tips</p>
           <ul class="mt-1 list-disc space-y-0.5 pl-4">
             <li><strong>iPhone/iPad</strong> (iOS 16.4+): buka di Safari, ketuk Bagikan → <em>Tambah ke Layar Utama</em>, lalu buka SIKAT dari ikon tersebut dan aktifkan notifikasi.</li>
             <li><strong>Android</strong>: pasang aplikasi lewat menu browser → <em>Instal aplikasi</em> agar notifikasi lebih andal.</li>
@@ -50,47 +50,47 @@
         {{end}}
       </div>
       {{if $d.Devices}}
-      <ul class="divide-y divide-slate-100">
+      <ul class="divide-y divide-border">
         {{range $d.Devices}}
         <li class="flex items-start gap-3 px-4 py-3 sm:px-5" data-device-hash="{{.EndpointHash}}">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="font-medium text-slate-900">{{.Label}}</span>
-              <span class="badge badge-blue" data-this-device hidden>Perangkat ini</span>
-              {{if .DisabledAt.Valid}}<span class="badge badge-gray">Nonaktif</span>{{else}}<span class="badge badge-green">Aktif</span>{{end}}
+              <span class="font-bold text-foreground">{{.Label}}</span>
+              <span class="badge badge-proses" data-this-device hidden>Perangkat ini</span>
+              {{if .DisabledAt.Valid}}<span class="badge badge-muted">Nonaktif</span>{{else}}<span class="badge badge-selesai">Aktif</span>{{end}}
             </div>
-            <p class="mt-0.5 text-xs text-slate-500">
+            <p class="mt-0.5 text-xs text-muted-foreground">
               Terdaftar {{witaDate .CreatedAt}}
               {{if .LastSuccessAt.Valid}} · push terakhir terkirim {{since .LastSuccessAt}} lalu{{end}}
             </p>
-            {{if .DisabledAt.Valid}}<p class="mt-0.5 text-xs text-slate-500">{{.DisabledWhy.String}}.</p>
-            {{else if .LastError.Valid}}<p class="mt-0.5 text-xs text-amber-700">Kendala terakhir: {{.LastError.String}}</p>{{end}}
+            {{if .DisabledAt.Valid}}<p class="mt-0.5 text-xs text-muted-foreground">{{.DisabledWhy.String}}.</p>
+            {{else if .LastError.Valid}}<p class="mt-0.5 text-xs text-warn">Kendala terakhir: {{.LastError.String}}</p>{{end}}
           </div>
           <form method="post" action="/app/notifications/devices/{{.ID}}/delete" data-confirm="Hapus {{.Label}} dari penerima notifikasi?">
             {{template "csrf" $p.CSRFToken}}
-            <button type="submit" class="btn btn-ghost btn-sm text-red-700" data-no-busy>Hapus</button>
+            <button type="submit" class="btn btn-ghost btn-sm text-bad" data-no-busy>Hapus</button>
           </form>
         </li>
         {{end}}
       </ul>
       {{else}}
-      <p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Belum ada perangkat yang menerima push.</p>
+      <p class="px-4 py-6 text-center text-sm text-muted-foreground sm:px-5">Belum ada perangkat yang menerima push.</p>
       {{end}}
     </section>
   </div>
 
   <section class="card" aria-labelledby="yang-diterima">
-    <div class="card-header"><h2 id="yang-diterima" class="card-title">Yang Anda terima</h2><span class="text-xs text-slate-500">{{$d.RoleName}}</span></div>
-    <ul class="divide-y divide-slate-100">
+    <div class="card-header"><h2 id="yang-diterima" class="card-title">Yang Anda terima</h2><span class="text-xs text-muted-foreground">{{$d.RoleName}}</span></div>
+    <ul class="divide-y divide-border">
       {{range $d.Events}}{{$ch := index $d.Channels .Type}}
       <li class="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
-        <span class="text-sm {{if eq $ch "NONE"}}text-slate-400{{else}}text-slate-800{{end}}">{{.Label}}</span>
+        <span class="text-sm {{if eq $ch "NONE"}}text-tertiary{{else}}text-foreground{{end}}">{{.Label}}</span>
         <span class="badge badge-{{tone "notif_channel" $ch}} shrink-0">{{label "notif_channel" $ch}}</span>
       </li>
       {{end}}
     </ul>
-    <p class="border-t border-line px-4 py-3 text-xs text-slate-500 sm:px-5">
-      Diatur per role oleh Admin IT.{{if $d.CanConfig}} <a href="/app/settings/notifications" class="font-medium text-brand-700 hover:underline">Ubah preferensi</a>{{end}}
+    <p class="border-t border-border px-4 py-3 text-xs text-muted-foreground sm:px-5">
+      Diatur per role oleh Admin IT.{{if $d.CanConfig}} <a href="/app/settings/notifications" class="font-bold text-aksen hover:underline">Ubah preferensi</a>{{end}}
     </p>
   </section>
 </div>

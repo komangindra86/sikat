@@ -1,7 +1,7 @@
 {{template "base" .}}
 {{define "content"}}
 {{$d := .Data}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/master" class="hover:underline">Master data</a> › <a href="/app/master/priority-rules" class="hover:underline">Aturan Prioritas</a> › Uji aturan</nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/master" class="hover:underline">Master data</a> › <a href="/app/master/priority-rules" class="hover:underline">Aturan Prioritas</a> › Uji aturan</nav>
 <h1 class="page-title">Uji aturan prioritas</h1>
 <p class="muted mt-1">Coba jawaban pelapor untuk melihat prioritas yang akan diberikan sistem dengan aturan aktif saat ini.</p>
 
@@ -17,7 +17,7 @@
     <div>
       <label class="label" for="department_id">Unit lokasi</label>
       <select class="input" id="department_id" name="department_id">
-        <option value="">— Tanpa unit —</option>
+        <option value="">Tanpa unit</option>
         {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "department_id")}}selected{{end}}>{{.Label}}{{if .Critical}} (layanan kritis){{end}}</option>{{end}}
       </select>
       <label class="mt-2 flex min-h-11 items-center gap-2 text-sm"><input class="checkbox" type="checkbox" name="critical" value="1" {{if eq (index $d.Form "critical") "1"}}checked{{end}}> Anggap lokasi layanan klinis kritis (ruangan khusus)</label>
@@ -44,30 +44,30 @@
     </div>
     <button type="submit" class="btn btn-primary" data-no-busy>Uji</button>
     {{if $d.Tested}}
-    <div class="rounded-lg border border-line bg-slate-50 p-4">
-      <div class="text-sm text-slate-600">Hasil</div>
-      <div class="mt-1 flex items-center gap-2 text-lg font-semibold"><span class="badge badge-{{tone "priority" $d.Result.Priority}} text-sm">{{label "priority" $d.Result.Priority}}</span></div>
-      <p class="mt-1 text-sm text-slate-600">{{with $d.Result.Rule}}Aturan: <strong>{{.Name}}</strong> (urutan {{.SortOrder}}){{else}}Tidak ada aturan yang cocok — memakai prioritas bawaan jenis gangguan.{{end}}</p>
-      <p class="mt-1 text-xs text-slate-500">Layanan klinis kritis: {{if $d.Input.CriticalService}}ya{{else}}tidak{{end}}</p>
+    <div class="rounded-lg border border-border bg-muted p-4">
+      <div class="text-sm text-muted-foreground">Hasil</div>
+      <div class="mt-1 flex items-center gap-2 text-lg font-bold"><span class="badge badge-{{tone "priority" $d.Result.Priority}} text-sm">{{label "priority" $d.Result.Priority}}</span></div>
+      <p class="mt-1 text-sm text-muted-foreground">{{with $d.Result.Rule}}Aturan: <strong>{{.Name}}</strong> (urutan {{.SortOrder}}){{else}}Tidak ada aturan yang cocok, memakai prioritas bawaan jenis gangguan.{{end}}</p>
+      <p class="mt-1 text-xs text-muted-foreground">Layanan klinis kritis: {{if $d.Input.CriticalService}}ya{{else}}tidak{{end}}</p>
     </div>
     {{end}}
   </form>
 
   <div class="card">
-    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-      <h2 class="font-semibold">Aturan aktif (urutan evaluasi)</h2>
-      <a href="/app/master/priority-rules" class="text-sm font-semibold text-brand-700">Kelola</a>
+    <div class="flex items-center justify-between border-b border-border px-4 py-3">
+      <h2 class="font-bold">Aturan aktif (urutan evaluasi)</h2>
+      <a href="/app/master/priority-rules" class="text-sm font-bold text-aksen">Kelola</a>
     </div>
-    <ol class="divide-y divide-slate-100">
+    <ol class="divide-y divide-border">
       {{range $d.Rules}}
-      <li class="px-4 py-3 {{if .Matched}}bg-brand-50{{end}}">
+      <li class="px-4 py-3 {{if .Matched}}bg-tema{{end}}">
         <div class="flex items-start justify-between gap-2">
-          <div class="font-medium">{{.SortOrder}}. {{.Name}}{{if .Matched}} <span class="badge badge-green">Cocok</span>{{end}}</div>
+          <div class="font-bold">{{.SortOrder}}. {{.Name}}{{if .Matched}} <span class="badge badge-selesai">Cocok</span>{{end}}</div>
           <span class="badge badge-{{tone "priority" .Result}} shrink-0">{{label "priority" .Result}}</span>
         </div>
-        <div class="mt-1 text-sm text-slate-600">Bila {{range $i, $c := .Conditions}}{{if $i}} dan {{end}}{{$c}}{{end}}.</div>
+        <div class="mt-1 text-sm text-muted-foreground">Bila {{range $i, $c := .Conditions}}{{if $i}} dan {{end}}{{$c}}{{end}}.</div>
       </li>
-      {{else}}<li class="px-4 py-3 text-sm text-slate-500">Belum ada aturan aktif. Semua tiket memakai prioritas bawaan jenis gangguan.</li>{{end}}
+      {{else}}<li class="px-4 py-3 text-sm text-muted-foreground">Belum ada aturan aktif. Semua tiket memakai prioritas bawaan jenis gangguan.</li>{{end}}
     </ol>
   </div>
 </div>

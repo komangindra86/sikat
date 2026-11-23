@@ -1,7 +1,7 @@
 {{template "base" .}}
 {{define "content"}}
 {{$d := .Data}}{{$p := .}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/tickets" class="hover:underline">Tiket</a> › Catat tiket</nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/tickets" class="hover:underline">Tiket</a> › Catat tiket</nav>
 <div class="mx-auto max-w-3xl">
   <h1 class="page-title">Catat tiket atas nama pelapor</h1>
   <p class="muted mt-1">Untuk laporan lewat telepon, WA, atau datang langsung. Prioritas tetap ditentukan otomatis.</p>
@@ -11,10 +11,10 @@
     {{template "form-errors" .}}
 
     <fieldset class="card card-body">
-      <legend class="label">Sumber laporan <span class="text-red-600" aria-hidden="true">*</span></legend>
+      <legend class="label">Sumber laporan <span class="text-bad" aria-hidden="true">*</span></legend>
       <div class="mt-1 grid grid-cols-3 gap-2">
         {{range labels "channel"}}{{if ne .Value "QR"}}
-        <label class="choice text-center"><input type="radio" name="channel" value="{{.Value}}" class="sr-only" {{if eq .Value (index $d.Form "channel")}}checked{{end}}><span class="block font-semibold">{{.Label}}</span></label>
+        <label class="choice text-center"><input type="radio" name="channel" value="{{.Value}}" class="sr-only" {{if eq .Value (index $d.Form "channel")}}checked{{end}}><span class="block font-bold">{{.Label}}</span></label>
         {{end}}{{end}}
       </div>
       {{with $p.Err "channel"}}<p class="error-text">{{.}}</p>{{end}}
@@ -22,10 +22,10 @@
 
     <div class="card card-body grid gap-4 sm:grid-cols-2">
       <div>
-        <label class="label" for="department_id">Unit lokasi gangguan <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="department_id">Unit lokasi gangguan <span class="text-bad" aria-hidden="true">*</span></label>
         <select class="input {{if $p.Err "department_id"}}input-error{{end}}" id="department_id" name="department_id"
                 hx-get="/app/assets/rooms" hx-target="#room_id" hx-trigger="change" hx-include="this">
-          <option value="">— Pilih —</option>
+          <option value="">Pilih</option>
           {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "department_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -33,7 +33,7 @@
       <div>
         <label class="label" for="room_id">Ruangan</label>
         <select class="input {{if $p.Err "room_id"}}input-error{{end}}" id="room_id" name="room_id">
-          <option value="">— Tidak ada —</option>
+          <option value="">Tidak ada</option>
           {{range $d.Rooms}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "room_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "room_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -51,7 +51,7 @@
 
     <div class="card card-body grid gap-4 sm:grid-cols-2">
       <div>
-        <label class="label" for="reporter_name">Nama pelapor <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="reporter_name">Nama pelapor <span class="text-bad" aria-hidden="true">*</span></label>
         <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" maxlength="120" value="{{index $d.Form "reporter_name"}}" required {{if $d.Employees}}list="pegawai" autocomplete="off"{{end}}>
         {{if $d.Employees}}<datalist id="pegawai">{{range $d.Employees}}<option value="{{.Name}}">{{.Department}}</option>{{end}}</datalist>
         <p class="help">Ketik untuk memilih dari direktori pegawai, atau isi bebas.</p>{{end}}
@@ -65,7 +65,7 @@
       <div class="sm:col-span-2">
         <label class="label" for="reporter_department_id">Unit pelapor</label>
         <select class="input" id="reporter_department_id" name="reporter_department_id">
-          <option value="">— Sama dengan lokasi —</option>
+          <option value="">Sama dengan lokasi</option>
           {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "reporter_department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
       </div>
@@ -73,32 +73,32 @@
 
     <div class="card card-body space-y-4">
       <div>
-        <label class="label" for="ticket_category_id">Jenis gangguan <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="ticket_category_id">Jenis gangguan <span class="text-bad" aria-hidden="true">*</span></label>
         <select class="input {{if $p.Err "ticket_category_id"}}input-error{{end}}" id="ticket_category_id" name="ticket_category_id" required>
-          <option value="">— Pilih —</option>
+          <option value="">Pilih</option>
           {{range $d.Categories}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "ticket_category_id")}}selected{{end}}>{{.Name}}</option>{{end}}
         </select>
         {{with $p.Err "ticket_category_id"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div>
-        <label class="label" for="description">Kendala <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="description">Kendala <span class="text-bad" aria-hidden="true">*</span></label>
         <textarea class="input {{if $p.Err "description"}}input-error{{end}}" id="description" name="description" rows="4" maxlength="2000" required>{{index $d.Form "description"}}</textarea>
         <p class="help">Jangan menuliskan data pasien.</p>
         {{with $p.Err "description"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label" for="impact_level">Dampak pelayanan <span class="text-red-600" aria-hidden="true">*</span></label>
+          <label class="label" for="impact_level">Dampak pelayanan <span class="text-bad" aria-hidden="true">*</span></label>
           <select class="input {{if $p.Err "impact_level"}}input-error{{end}}" id="impact_level" name="impact_level">
-            <option value="">— Pilih —</option>
+            <option value="">Pilih</option>
             {{range labels "impact"}}<option value="{{.Value}}" {{if eq .Value (index $d.Form "impact_level")}}selected{{end}}>{{.Label}}</option>{{end}}
           </select>
           {{with $p.Err "impact_level"}}<p class="error-text">{{.}}</p>{{end}}
         </div>
         <div>
-          <label class="label" for="affected_scope">Yang terdampak <span class="text-red-600" aria-hidden="true">*</span></label>
+          <label class="label" for="affected_scope">Yang terdampak <span class="text-bad" aria-hidden="true">*</span></label>
           <select class="input {{if $p.Err "affected_scope"}}input-error{{end}}" id="affected_scope" name="affected_scope">
-            <option value="">— Pilih —</option>
+            <option value="">Pilih</option>
             {{range labels "scope"}}<option value="{{.Value}}" {{if eq .Value (index $d.Form "affected_scope")}}selected{{end}}>{{.Label}}</option>{{end}}
           </select>
           {{with $p.Err "affected_scope"}}<p class="error-text">{{.}}</p>{{end}}
@@ -120,7 +120,7 @@
 
     <div class="card card-body">
       <label class="label" for="photos">Foto (opsional, maks {{$d.MaxFiles}})</label>
-      <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
+      <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-tema file:px-4 file:font-bold file:text-aksen" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
       <div class="mt-2 grid grid-cols-4 gap-2" data-photo-preview></div>
       {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}
     </div>
@@ -128,7 +128,7 @@
     {{if $d.CanClaim}}
     <label class="card card-body flex min-h-11 cursor-pointer items-center gap-3">
       <input class="checkbox" type="checkbox" name="claim_now" value="1" {{if eq (index $d.Form "claim_now") "1"}}checked{{end}}>
-      <span class="text-sm font-medium">Saya langsung menangani tiket ini</span>
+      <span class="text-sm font-bold">Saya langsung menangani tiket ini</span>
     </label>
     {{end}}
 
@@ -141,6 +141,6 @@
 {{end}}
 
 {{define "asset-options"}}
-<option value="">— Tidak ada / tidak tahu —</option>
+<option value="">Tidak ada / tidak tahu</option>
 {{range .Data.Assets}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $.Data.Form "asset_id")}}selected{{end}}>{{.Label}}</option>{{end}}
 {{end}}

@@ -17,10 +17,10 @@
 <div class="metrics mt-6 sm:grid-cols-4">
   <div class="metric"><span class="metric-label">Tiket ber-SLA</span><span class="metric-value block">{{$d.Total}}</span></div>
   <div class="metric"><span class="metric-label">Respons tepat waktu</span><span class="metric-value block">{{template "rate" $d.Response}}</span>
-    <span class="text-xs text-slate-500">{{$d.Response.Met}} tercapai · {{$d.Response.Missed}} terlewati</span></div>
+    <span class="text-xs text-muted-foreground">{{$d.Response.Met}} tercapai · {{$d.Response.Missed}} terlewati</span></div>
   <div class="metric"><span class="metric-label">Penyelesaian tepat waktu</span><span class="metric-value block">{{template "rate" $d.Resolution}}</span>
-    <span class="text-xs text-slate-500">{{$d.Resolution.Met}} tercapai · {{$d.Resolution.Missed}} terlewati</span></div>
-  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Tiket melanggar SLA</span><span class="metric-value block {{if $d.Breaches}}text-red-600{{end}}">{{len $d.Breaches}}</span></div>
+    <span class="text-xs text-muted-foreground">{{$d.Resolution.Met}} tercapai · {{$d.Resolution.Missed}} terlewati</span></div>
+  <div class="metric"><span class="metric-label"><span class="h-1.5 w-1.5 rounded-full bg-bad-solid"></span>Tiket melanggar SLA</span><span class="metric-value block {{if $d.Breaches}}text-bad{{end}}">{{len $d.Breaches}}</span></div>
 </div>
 
 <section class="card mt-6 overflow-x-auto" aria-labelledby="per-prioritas">
@@ -33,10 +33,10 @@
         <td><span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span></td>
         <td class="text-right tabular-nums">{{.Total}}</td>
         <td class="text-right tabular-nums">{{.Response.Met}}</td>
-        <td class="text-right tabular-nums {{if .Response.Missed}}font-medium text-red-600{{end}}">{{.Response.Missed}}</td>
+        <td class="text-right tabular-nums {{if .Response.Missed}}font-bold text-bad{{end}}">{{.Response.Missed}}</td>
         <td class="text-right tabular-nums">{{.Resolution.Met}}</td>
-        <td class="text-right tabular-nums {{if .Resolution.Missed}}font-medium text-red-600{{end}}">{{.Resolution.Missed}}</td>
-        <td class="text-right tabular-nums text-slate-500">{{add .Response.Running .Resolution.Running}}</td>
+        <td class="text-right tabular-nums {{if .Resolution.Missed}}font-bold text-bad{{end}}">{{.Resolution.Missed}}</td>
+        <td class="text-right tabular-nums text-muted-foreground">{{add .Response.Running .Resolution.Running}}</td>
       </tr>
       {{end}}
     </tbody>
@@ -48,19 +48,19 @@
   {{if $d.Breaches}}
   <div class="list">
     {{range $d.Breaches}}
-    <a href="/app/tickets/{{.ID}}" class="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <a href="/app/tickets/{{.ID}}" class="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-accent sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span class="font-mono text-xs text-slate-500">{{.TicketNo}}</span>
+          <span class="font-bold text-xs text-muted-foreground">{{.TicketNo}}</span>
           <span class="badge badge-{{tone "priority" .Priority}}">{{label "priority" .Priority}}</span>
           <span class="badge badge-{{tone "ticket_status" .Status}}">{{label "ticket_status" .Status}}</span>
         </div>
-        <div class="mt-1 truncate font-medium text-slate-900 group-hover:text-brand-800">{{.Category}} <span class="font-normal text-slate-500">· {{.Location}}</span></div>
-        <div class="text-xs text-slate-500">Masuk {{wita .Snap.CreatedAt}}{{if .AssigneeName.Valid}} · {{.AssigneeName.String}}{{end}}</div>
+        <div class="mt-1 truncate font-bold text-foreground group-hover:text-aksen">{{.Category}} <span class="font-normal text-muted-foreground">· {{.Location}}</span></div>
+        <div class="text-xs text-muted-foreground">Masuk {{wita .Snap.CreatedAt}}{{if .AssigneeName.Valid}} · {{.AssigneeName.String}}{{end}}</div>
       </div>
       <div class="flex shrink-0 flex-wrap gap-1.5">
-        {{if .ResponseMissed}}<span class="badge badge-red">Respons{{if .Resp.Over}} +{{dur .Resp.Over}}{{end}}</span>{{end}}
-        {{if .ResolutionMissed}}<span class="badge badge-red">Penyelesaian{{if .Reso.Over}} +{{dur .Reso.Over}}{{end}}</span>{{end}}
+        {{if .ResponseMissed}}<span class="badge badge-bad">Respons{{if .Resp.Over}} +{{dur .Resp.Over}}{{end}}</span>{{end}}
+        {{if .ResolutionMissed}}<span class="badge badge-bad">Penyelesaian{{if .Reso.Over}} +{{dur .Reso.Over}}{{end}}</span>{{end}}
       </div>
     </a>
     {{end}}

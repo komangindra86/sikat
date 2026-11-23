@@ -1,25 +1,25 @@
 {{template "base" .}}
 {{define "content"}}
 {{$d := .Data}}{{$t := $d.Ticket}}{{$a := $d.Actions}}{{$p := .}}{{$csrf := .CSRFToken}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/tickets" class="hover:underline">Tiket</a> › {{$t.TicketNo}}</nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/tickets" class="hover:underline">Tiket</a> › {{$t.TicketNo}}</nav>
 
 {{if $d.NewLink}}
-<div class="card card-body mb-4 border-brand-300 bg-brand-50">
-  <div class="text-sm font-semibold text-brand-900">Link pemantauan untuk pelapor</div>
-  <p class="text-xs text-brand-900">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali.</p>
-  <div id="new-link" class="mt-2 break-all rounded bg-white p-2 font-mono text-xs">{{$d.NewLink}}</div>
+<div class="card card-body mb-4 border-tema-garis bg-tema">
+  <div class="text-sm font-bold text-aksen">Link pemantauan untuk pelapor</div>
+  <p class="text-xs text-aksen">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali.</p>
+  <div id="new-link" class="mt-2 break-all rounded bg-card p-2 font-bold text-xs">{{$d.NewLink}}</div>
   <div class="mt-2"><button type="button" class="btn btn-secondary btn-sm" data-copy="#new-link">Salin link</button></div>
 </div>
 {{end}}
 
 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
   <div>
-    <div class="font-mono text-sm font-semibold text-slate-500">{{$t.TicketNo}}</div>
+    <div class="font-bold text-sm font-bold text-muted-foreground">{{$t.TicketNo}}</div>
     <h1 class="page-title">{{$t.CategoryName}}</h1>
     <div class="mt-2 flex flex-wrap gap-1.5">
       <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
       <span class="badge badge-{{tone "priority" $t.Priority}}">Prioritas {{label "priority" $t.Priority}}</span>
-      <span class="badge badge-gray">{{label "channel" $t.Channel}}</span>
+      <span class="badge badge-muted">{{label "channel" $t.Channel}}</span>
     </div>
   </div>
   <div class="flex flex-col gap-2 sm:flex-row">
@@ -33,28 +33,28 @@
 <section class="mt-4 space-y-2" aria-label="Tindakan">
   {{if $a.Resolve}}
   <details class="card" {{if eq $d.Open "resolve"}}open{{end}}>
-    <summary class="card-body cursor-pointer font-semibold text-brand-800">Selesaikan tiket</summary>
-    <form method="post" action="/app/tickets/{{$t.ID}}/resolve" class="space-y-4 border-t border-slate-100 p-4" novalidate>
+    <summary class="card-body cursor-pointer font-bold text-aksen">Selesaikan tiket</summary>
+    <form method="post" action="/app/tickets/{{$t.ID}}/resolve" class="space-y-4 border-t border-border p-4" novalidate>
       {{template "csrf" $csrf}}
       {{if $d.Templates}}
       <div>
         <label class="label" for="tpl">Template tindakan</label>
         <select class="input" id="tpl" data-fill-target="#resolution_action">
-          <option value="">— Pilih template (opsional) —</option>
+          <option value="">Pilih template (opsional)</option>
           {{range $d.Templates}}<option value="{{.ID}}" data-body="{{.Body}}">{{.Title}}</option>{{end}}
         </select>
       </div>
       {{end}}
       <div>
-        <label class="label" for="resolution_action">Tindakan yang dilakukan <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="resolution_action">Tindakan yang dilakukan <span class="text-bad" aria-hidden="true">*</span></label>
         <textarea class="input {{if $p.Err "resolution_action"}}input-error{{end}}" id="resolution_action" name="resolution_action" rows="4" maxlength="4000" required>{{index $d.Form "resolution_action"}}</textarea>
         {{with $p.Err "resolution_action"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <fieldset>
-        <legend class="label">Hasil <span class="text-red-600" aria-hidden="true">*</span></legend>
+        <legend class="label">Hasil <span class="text-bad" aria-hidden="true">*</span></legend>
         <div class="grid gap-2 sm:grid-cols-2">
           {{range labels "resolution_result"}}
-          <label class="choice"><input type="radio" name="resolution_result" value="{{.Value}}" class="sr-only" {{if eq .Value (index $d.Form "resolution_result")}}checked{{end}}><span class="font-semibold">{{.Label}}</span></label>
+          <label class="choice"><input type="radio" name="resolution_result" value="{{.Value}}" class="sr-only" {{if eq .Value (index $d.Form "resolution_result")}}checked{{end}}><span class="font-bold">{{.Label}}</span></label>
           {{end}}
         </div>
         {{with $p.Err "resolution_result"}}<p class="error-text">{{.}}</p>{{end}}
@@ -73,8 +73,8 @@
         </div>
       </div>
       {{if $t.AssetID.Valid}}
-      <div class="grid gap-4 rounded-lg border border-line p-3 sm:grid-cols-2">
-        <div class="sm:col-span-2 text-sm font-semibold text-slate-700">Riwayat perangkat {{$t.AssetCode.String}} <span class="font-normal text-slate-500">— dicatat otomatis dari form ini</span></div>
+      <div class="grid gap-4 rounded-lg border border-border p-3 sm:grid-cols-2">
+        <div class="sm:col-span-2 text-sm font-bold text-foreground">Riwayat perangkat {{$t.AssetCode.String}} <span class="font-normal text-muted-foreground">· dicatat otomatis dari form ini</span></div>
         {{template "part-rows" (dict "Parts" $d.SpareParts "Err" ($p.Err "parts"))}}
         <div>
           <label class="label" for="service_cost">Biaya jasa/vendor (Rp)</label>
@@ -97,13 +97,13 @@
 
   {{if $a.Pend}}
   <details class="card" {{if eq $d.Open "pend"}}open{{end}}>
-    <summary class="card-body cursor-pointer font-semibold text-orange-800">⏸ Tunda</summary>
-    <form method="post" action="/app/tickets/{{$t.ID}}/pend" class="space-y-4 border-t border-slate-100 p-4" novalidate>
+    <summary class="card-body cursor-pointer font-bold text-warn">⏸ Tunda</summary>
+    <form method="post" action="/app/tickets/{{$t.ID}}/pend" class="space-y-4 border-t border-border p-4" novalidate>
       {{template "csrf" $csrf}}
       <fieldset>
-        <legend class="label">Alasan ditunda <span class="text-red-600" aria-hidden="true">*</span></legend>
+        <legend class="label">Alasan ditunda <span class="text-bad" aria-hidden="true">*</span></legend>
         <div class="grid gap-2 sm:grid-cols-2">
-          {{range $d.PendingReasons}}<label class="choice"><input type="radio" name="pending_reason_id" value="{{.ID}}" class="sr-only" {{if eq (printf "%d" .ID) (index $d.Form "pending_reason_id")}}checked{{end}}><span class="font-semibold">{{.Label}}</span></label>{{end}}
+          {{range $d.PendingReasons}}<label class="choice"><input type="radio" name="pending_reason_id" value="{{.ID}}" class="sr-only" {{if eq (printf "%d" .ID) (index $d.Form "pending_reason_id")}}checked{{end}}><span class="font-bold">{{.Label}}</span></label>{{end}}
         </div>
         {{with $p.Err "pending_reason_id"}}<p class="error-text">{{.}}</p>{{end}}
       </fieldset>
@@ -117,12 +117,12 @@
   </details>
   {{end}}
 
-  {{if $a.Release}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "release" "Title" "Kembalikan ke antrean" "Label" "Alasan dikembalikan" "Button" "Kembalikan ke antrean" "Tone" "text-slate-700")}}{{end}}
-  {{if $a.TakeOver}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "takeover" "Title" "Ambil alih tiket" "Label" "Alasan pengambilalihan" "Button" "Ambil alih" "Tone" "text-indigo-800")}}{{end}}
+  {{if $a.Release}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "release" "Title" "Kembalikan ke antrean" "Label" "Alasan dikembalikan" "Button" "Kembalikan ke antrean" "Tone" "text-foreground")}}{{end}}
+  {{if $a.TakeOver}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "takeover" "Title" "Ambil alih tiket" "Label" "Alasan pengambilalihan" "Button" "Ambil alih" "Tone" "text-aksen")}}{{end}}
   {{if $a.Close}}
   <details class="card" {{if eq $d.Open "close"}}open{{end}}>
-    <summary class="card-body cursor-pointer font-semibold text-slate-700">Tutup tiket</summary>
-    <form method="post" action="/app/tickets/{{$t.ID}}/close" class="space-y-3 border-t border-slate-100 p-4">
+    <summary class="card-body cursor-pointer font-bold text-foreground">Tutup tiket</summary>
+    <form method="post" action="/app/tickets/{{$t.ID}}/close" class="space-y-3 border-t border-border p-4">
       {{template "csrf" $csrf}}
       <label class="label" for="close-note">Catatan (opsional)</label>
       <input class="input" id="close-note" name="note" maxlength="1000">
@@ -130,8 +130,8 @@
     </form>
   </details>
   {{end}}
-  {{if $a.Reopen}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "reopen" "Title" "Buka kembali" "Label" "Alasan dibuka kembali" "Button" "Buka kembali" "Tone" "text-amber-800")}}{{end}}
-  {{if $a.Cancel}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "cancel" "Title" "Batalkan tiket" "Label" "Alasan pembatalan" "Button" "Batalkan tiket" "Tone" "text-red-700")}}{{end}}
+  {{if $a.Reopen}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "reopen" "Title" "Buka kembali" "Label" "Alasan dibuka kembali" "Button" "Buka kembali" "Tone" "text-warn")}}{{end}}
+  {{if $a.Cancel}}{{template "reason-form" (dict "T" $t "P" $p "D" $d "CSRF" $csrf "Name" "cancel" "Title" "Batalkan tiket" "Label" "Alasan pembatalan" "Button" "Batalkan tiket" "Tone" "text-bad")}}{{end}}
 </section>
 {{end}}
 
@@ -139,25 +139,25 @@
   <div class="space-y-4">
     <section class="card card-body" aria-labelledby="detail-masalah">
       <h2 id="detail-masalah" class="mb-3 section-title">Masalah</h2>
-      <p class="whitespace-pre-line text-slate-800">{{$t.Description}}</p>
+      <p class="whitespace-pre-line text-foreground">{{$t.Description}}</p>
       <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-        <div><dt class="text-slate-500">Dampak pelayanan</dt><dd class="font-medium">{{label "impact" (printf "%d" $t.Impact)}}</dd></div>
-        <div><dt class="text-slate-500">Yang terdampak</dt><dd class="font-medium">{{label "scope" (printf "%d" $t.Scope)}}</dd></div>
-        <div><dt class="text-slate-500">Perangkat pengganti</dt><dd class="font-medium">{{label "replacement" $t.Replacement}}</dd></div>
-        <div><dt class="text-slate-500">Perkiraan awal gangguan</dt><dd class="font-medium">{{wita $t.IncidentStartedAt}}</dd></div>
-        <div><dt class="text-slate-500">Bidang</dt><dd class="font-medium">{{$t.ITCategoryName}}{{if $t.IsTriage}} <span class="badge badge-amber ml-1">Perlu dipilah</span>{{end}}</dd></div>
-        {{if $t.ReportedCategoryName.Valid}}<div><dt class="text-slate-500">Dipilih pelapor</dt><dd>{{$t.ReportedCategoryName.String}} <span class="text-xs text-slate-500">(sudah dikoreksi)</span></dd></div>{{end}}
-        <div><dt class="text-slate-500">Koordinator bidang</dt><dd class="font-medium">{{with $d.Coordinator}}{{if .Active}}{{.Name}}{{else}}<span class="font-normal text-amber-700">Belum ditetapkan</span>{{end}}{{end}}</dd></div>
-        <div><dt class="text-slate-500">Layanan klinis kritis</dt><dd class="font-medium">{{if $t.CriticalService}}Ya{{else}}Tidak{{end}}</dd></div>
+        <div><dt class="text-muted-foreground">Dampak pelayanan</dt><dd class="font-bold">{{label "impact" (printf "%d" $t.Impact)}}</dd></div>
+        <div><dt class="text-muted-foreground">Yang terdampak</dt><dd class="font-bold">{{label "scope" (printf "%d" $t.Scope)}}</dd></div>
+        <div><dt class="text-muted-foreground">Perangkat pengganti</dt><dd class="font-bold">{{label "replacement" $t.Replacement}}</dd></div>
+        <div><dt class="text-muted-foreground">Perkiraan awal gangguan</dt><dd class="font-bold">{{wita $t.IncidentStartedAt}}</dd></div>
+        <div><dt class="text-muted-foreground">Bidang</dt><dd class="font-bold">{{$t.ITCategoryName}}{{if $t.IsTriage}} <span class="badge badge-warn ml-1">Perlu dipilah</span>{{end}}</dd></div>
+        {{if $t.ReportedCategoryName.Valid}}<div><dt class="text-muted-foreground">Dipilih pelapor</dt><dd>{{$t.ReportedCategoryName.String}} <span class="text-xs text-muted-foreground">(sudah dikoreksi)</span></dd></div>{{end}}
+        <div><dt class="text-muted-foreground">Koordinator bidang</dt><dd class="font-bold">{{with $d.Coordinator}}{{if .Active}}{{.Name}}{{else}}<span class="font-normal text-warn">Belum ditetapkan</span>{{end}}{{end}}</dd></div>
+        <div><dt class="text-muted-foreground">Layanan klinis kritis</dt><dd class="font-bold">{{if $t.CriticalService}}Ya{{else}}Tidak{{end}}</dd></div>
       </dl>
-      <div class="mt-4 rounded-lg bg-slate-50 p-3 text-sm">
+      <div class="mt-4 rounded-lg bg-muted p-3 text-sm">
         Prioritas <strong>{{label "priority" $t.Priority}}</strong> ditentukan
         {{if eq $t.PrioritySource "MANUAL"}}manual oleh koordinator (lihat histori){{else if $t.PriorityRuleName.Valid}}oleh aturan "<strong>{{$t.PriorityRuleName.String}}</strong>"{{else}}dari prioritas bawaan jenis gangguan{{end}}.
       </div>
       {{if $a.Recategorize}}
       <details class="mt-3" {{if or (eq $d.Open "category") $t.IsTriage}}open{{end}}>
-        <summary class="cursor-pointer text-sm font-semibold text-brand-700">{{if $t.IsTriage}}Pilah: tentukan jenis gangguan{{else}}Koreksi jenis gangguan{{end}}</summary>
-        {{if $t.IsTriage}}<p class="mt-2 text-xs text-slate-600">Pelapor tidak menemukan masalahnya di daftar. Baca keterangannya, lalu pilih jenis gangguan yang paling tepat — tiket akan pindah ke bidangnya dan koordinator/petugas bidang itu diberi tahu.</p>{{end}}
+        <summary class="cursor-pointer text-sm font-bold text-aksen">{{if $t.IsTriage}}Pilah: tentukan jenis gangguan{{else}}Koreksi jenis gangguan{{end}}</summary>
+        {{if $t.IsTriage}}<p class="mt-2 text-xs text-muted-foreground">Pelapor tidak menemukan masalahnya di daftar. Baca keterangannya, lalu pilih jenis gangguan yang paling tepat, tiket akan pindah ke bidangnya dan koordinator/petugas bidang itu diberi tahu.</p>{{end}}
         <form method="post" action="/app/tickets/{{$t.ID}}/category" class="mt-3 grid gap-3" novalidate>
           {{template "csrf" $csrf}}
           <div>
@@ -167,7 +167,7 @@
             </select>
           </div>
           <div>
-            <label class="label" for="category-reason">Alasan {{if not $t.IsTriage}}<span class="text-red-600" aria-hidden="true">*</span>{{else}}<span class="font-normal text-slate-500">(opsional)</span>{{end}}</label>
+            <label class="label" for="category-reason">Alasan {{if not $t.IsTriage}}<span class="text-bad" aria-hidden="true">*</span>{{else}}<span class="font-normal text-muted-foreground">(opsional)</span>{{end}}</label>
             <input class="input {{if and (eq $d.Open "category") ($p.Err "category_reason")}}input-error{{end}}" id="category-reason" name="category_reason" maxlength="255" placeholder="mis. ternyata kabel jaringan putus" value="{{if eq $d.Open "category"}}{{index $d.Form "category_reason"}}{{end}}">
           </div>
           {{if eq $d.Open "category"}}{{with $p.Err "ticket_category_id"}}<p class="error-text">{{.}}</p>{{end}}{{with $p.Err "category_reason"}}<p class="error-text">{{.}}</p>{{end}}{{end}}
@@ -177,7 +177,7 @@
       {{end}}
       {{if $a.Priority}}
       <details class="mt-3" {{if eq $d.Open "priority"}}open{{end}}>
-        <summary class="cursor-pointer text-sm font-semibold text-brand-700">Ubah prioritas</summary>
+        <summary class="cursor-pointer text-sm font-bold text-aksen">Ubah prioritas</summary>
         <form method="post" action="/app/tickets/{{$t.ID}}/priority" class="mt-3 grid gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-end" novalidate>
           {{template "csrf" $csrf}}
           <div>
@@ -187,7 +187,7 @@
             </select>
           </div>
           <div>
-            <label class="label" for="priority-reason">Alasan <span class="text-red-600" aria-hidden="true">*</span></label>
+            <label class="label" for="priority-reason">Alasan <span class="text-bad" aria-hidden="true">*</span></label>
             <input class="input {{if and (eq $d.Open "priority") ($p.Err "reason")}}input-error{{end}}" id="priority-reason" name="reason" maxlength="1000" value="{{if eq $d.Open "priority"}}{{index $d.Form "reason"}}{{end}}">
           </div>
           <button type="submit" class="btn btn-secondary" data-busy-text="Menyimpan…">Simpan</button>
@@ -198,13 +198,13 @@
     </section>
 
     {{if or (eq $t.Status "RESOLVED") (eq $t.Status "CLOSED")}}{{if $t.ResolutionAction.Valid}}
-    <section class="card card-body border-green-200" aria-labelledby="penyelesaian">
-      <h2 id="penyelesaian" class="mb-3 text-sm font-semibold uppercase tracking-wide text-green-800">Penyelesaian</h2>
+    <section class="card card-body border-tema-garis" aria-labelledby="penyelesaian">
+      <h2 id="penyelesaian" class="mb-3 text-sm font-bold text-ok">Penyelesaian</h2>
       <p class="whitespace-pre-line">{{$t.ResolutionAction.String}}</p>
       <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-        <div><dt class="text-slate-500">Hasil</dt><dd class="font-medium">{{label "resolution_result" $t.ResolutionResult.String}}</dd></div>
-        <div><dt class="text-slate-500">Layanan pulih</dt><dd class="font-medium">{{wita $t.ServiceRestoredAt}}</dd></div>
-        {{if $t.ResolutionNote.Valid}}<div class="sm:col-span-2"><dt class="text-slate-500">Catatan</dt><dd>{{$t.ResolutionNote.String}}</dd></div>{{end}}
+        <div><dt class="text-muted-foreground">Hasil</dt><dd class="font-bold">{{label "resolution_result" $t.ResolutionResult.String}}</dd></div>
+        <div><dt class="text-muted-foreground">Layanan pulih</dt><dd class="font-bold">{{wita $t.ServiceRestoredAt}}</dd></div>
+        {{if $t.ResolutionNote.Valid}}<div class="sm:col-span-2"><dt class="text-muted-foreground">Catatan</dt><dd>{{$t.ResolutionNote.String}}</dd></div>{{end}}
       </dl>
     </section>
     {{end}}{{end}}
@@ -214,10 +214,10 @@
       {{if $d.Comments}}
       <ul class="space-y-3">
         {{range $d.Comments}}
-        <li class="rounded-lg p-3 {{if .IsInternal}}bg-amber-50{{else if eq .AuthorType "REPORTER"}}bg-blue-50{{else}}bg-slate-50{{end}}">
-          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-            <span class="font-semibold text-slate-800">{{if eq .AuthorType "REPORTER"}}Pelapor{{else}}{{.AuthorName.String}}{{end}}</span>
-            {{if .IsInternal}}<span class="badge badge-amber">Internal</span>{{else if eq .AuthorType "USER"}}<span class="badge badge-blue">Terlihat pelapor</span>{{end}}
+        <li class="rounded-lg p-3 {{if .IsInternal}}bg-warn-bg{{else if eq .AuthorType "REPORTER"}}bg-tema{{else}}bg-muted{{end}}">
+          <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span class="font-bold text-foreground">{{if eq .AuthorType "REPORTER"}}Pelapor{{else}}{{.AuthorName.String}}{{end}}</span>
+            {{if .IsInternal}}<span class="badge badge-warn">Internal</span>{{else if eq .AuthorType "USER"}}<span class="badge badge-proses">Terlihat pelapor</span>{{end}}
             <span>{{wita .CreatedAt}}</span>
           </div>
           <p class="mt-1 whitespace-pre-line text-sm">{{.Body}}</p>
@@ -244,13 +244,13 @@
       <h2 id="foto" class="mb-3 section-title">Foto{{if $d.Attachments}} ({{len $d.Attachments}}){{end}}</h2>
       {{if $d.Attachments}}
       <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {{range $d.Attachments}}<a href="/app/tickets/attachments/{{.ID}}" target="_blank" rel="noopener" class="relative"><img src="/app/tickets/attachments/{{.ID}}" alt="Foto lampiran" class="aspect-square w-full rounded-lg object-cover" loading="lazy">{{if eq .UploadedBy "USER"}}<span class="absolute bottom-1 left-1 rounded bg-white/90 px-1 text-[10px]">petugas</span>{{end}}</a>{{end}}
+        {{range $d.Attachments}}<a href="/app/tickets/attachments/{{.ID}}" target="_blank" rel="noopener" class="relative"><img src="/app/tickets/attachments/{{.ID}}" alt="Foto lampiran" class="aspect-square w-full rounded-lg object-cover" loading="lazy">{{if eq .UploadedBy "USER"}}<span class="absolute bottom-1 left-1 rounded bg-card/90 px-1 text-[10px]">petugas</span>{{end}}</a>{{end}}
       </div>
       {{else}}<p class="muted">Belum ada foto.</p>{{end}}
       {{if $a.Photo}}
       <form method="post" action="/app/tickets/{{$t.ID}}/photos" enctype="multipart/form-data" class="mt-4 space-y-3" novalidate>
         {{template "csrf" $csrf}}
-        <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}" aria-label="Pilih foto">
+        <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-tema file:px-4 file:font-bold file:text-aksen" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}" aria-label="Pilih foto">
         <div class="grid grid-cols-4 gap-2" data-photo-preview></div>
         {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}
         <div class="flex flex-wrap items-center gap-3">
@@ -265,17 +265,17 @@
       <h2 id="histori" class="mb-3 section-title">Histori</h2>
       <ol class="space-y-3">
         {{range $d.Histories}}
-        <li class="border-l-2 border-brand-200 pl-3">
-          <div class="text-sm font-medium">
+        <li class="border-l-2 border-tema-garis pl-3">
+          <div class="text-sm font-bold">
             {{label "ticket_event" .EventType}}
             oleh {{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}
             {{if .ToStatus.Valid}}<span class="badge badge-{{tone "ticket_status" .ToStatus.String}} ml-1">{{label "ticket_status" .ToStatus.String}}</span>{{end}}
           </div>
           {{if .ToPrio.Valid}}<div class="text-sm">{{label "priority" .FromPrio.String}} → <strong>{{label "priority" .ToPrio.String}}</strong></div>{{end}}
           {{with .MetaValue "pending_reason"}}<div class="text-sm">Alasan: {{.}}</div>{{end}}
-          {{with .MetaValue "priority_rule"}}<div class="text-xs text-slate-500">Prioritas otomatis: {{.}}</div>{{end}}
-          {{if .Note.Valid}}<div class="text-sm text-slate-700">"{{.Note.String}}"</div>{{end}}
-          <div class="text-xs text-slate-500">{{wita .CreatedAt}} WITA</div>
+          {{with .MetaValue "priority_rule"}}<div class="text-xs text-muted-foreground">Prioritas otomatis: {{.}}</div>{{end}}
+          {{if .Note.Valid}}<div class="text-sm text-foreground">"{{.Note.String}}"</div>{{end}}
+          <div class="text-xs text-muted-foreground">{{wita .CreatedAt}} WITA</div>
         </li>
         {{end}}
       </ol>
@@ -290,14 +290,14 @@
       <ul class="space-y-2">
         {{range $d.Members}}
         <li class="flex items-center justify-between gap-2">
-          <span><strong>{{.Name}}</strong> <span class="text-xs text-slate-500">{{if eq .Role "PRIMARY"}}penanggung jawab{{else}}pendukung{{end}}</span></span>
+          <span><strong>{{.Name}}</strong> <span class="text-xs text-muted-foreground">{{if eq .Role "PRIMARY"}}penanggung jawab{{else}}pendukung{{end}}</span></span>
           {{if and $a.Support (eq .Role "SUPPORT")}}
-          <form method="post" action="/app/tickets/{{$t.ID}}/support/{{.UserID}}/remove" data-confirm="Lepas {{.Name}} dari tim?">{{template "csrf" $csrf}}<button type="submit" class="btn btn-ghost btn-sm text-red-700">Lepas</button></form>
+          <form method="post" action="/app/tickets/{{$t.ID}}/support/{{.UserID}}/remove" data-confirm="Lepas {{.Name}} dari tim?">{{template "csrf" $csrf}}<button type="submit" class="btn btn-ghost btn-sm text-bad">Lepas</button></form>
           {{end}}
         </li>
         {{end}}
       </ul>
-      {{else}}<p class="text-slate-600">Belum ada penanggung jawab.</p>{{end}}
+      {{else}}<p class="text-muted-foreground">Belum ada penanggung jawab.</p>{{end}}
       {{if $a.Support}}
       <form method="post" action="/app/tickets/{{$t.ID}}/support" class="mt-3 flex gap-2">
         {{template "csrf" $csrf}}
@@ -310,30 +310,30 @@
     </section>
     <section class="card card-body text-sm">
       <h2 class="mb-2 section-title">Lokasi</h2>
-      <div class="font-medium">{{$t.Location}}</div>
-      {{if $t.RoomLocation.Valid}}<div class="text-slate-600">{{$t.RoomLocation.String}}</div>{{end}}
-      {{if $t.AssetID.Valid}}<div class="mt-2">Perangkat: <a class="font-semibold text-brand-700 hover:underline" href="/app/assets/{{$t.AssetID.Int64}}">{{$t.AssetName.String}} ({{$t.AssetCode.String}})</a></div>{{end}}
+      <div class="font-bold">{{$t.Location}}</div>
+      {{if $t.RoomLocation.Valid}}<div class="text-muted-foreground">{{$t.RoomLocation.String}}</div>{{end}}
+      {{if $t.AssetID.Valid}}<div class="mt-2">Perangkat: <a class="font-bold text-aksen hover:underline" href="/app/assets/{{$t.AssetID.Int64}}">{{$t.AssetName.String}} ({{$t.AssetCode.String}})</a></div>{{end}}
     </section>
     <section class="card card-body text-sm">
       <h2 class="mb-2 section-title">Pelapor</h2>
-      <div class="font-medium">{{$t.ReporterName}}</div>
-      {{if $t.ReporterDeptName.Valid}}<div class="text-slate-600">{{$t.ReporterDeptName.String}}</div>{{end}}
-      {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-semibold text-brand-700" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
-      {{if $t.CreatedByName.Valid}}<div class="mt-2 text-xs text-slate-500">Dicatat oleh {{$t.CreatedByName.String}}</div>{{end}}
+      <div class="font-bold">{{$t.ReporterName}}</div>
+      {{if $t.ReporterDeptName.Valid}}<div class="text-muted-foreground">{{$t.ReporterDeptName.String}}</div>{{end}}
+      {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-bold text-aksen" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
+      {{if $t.CreatedByName.Valid}}<div class="mt-2 text-xs text-muted-foreground">Dicatat oleh {{$t.CreatedByName.String}}</div>{{end}}
       {{if $t.ReporterFeedback.Valid}}<div class="mt-2 text-xs">Konfirmasi pelapor: <strong>{{if eq $t.ReporterFeedback.String "OK"}}sudah beres{{else}}belum beres{{end}}</strong></div>{{end}}
     </section>
     <section class="card card-body text-sm">
       <h2 class="mb-2 section-title">Waktu</h2>
       <dl class="space-y-1">
-        <div class="flex justify-between gap-2"><dt class="text-slate-500">Masuk</dt><dd>{{wita $t.CreatedAt}}</dd></div>
-        <div class="flex justify-between gap-2"><dt class="text-slate-500">Diterima</dt><dd>{{wita $t.FirstResponseAt}}</dd></div>
-        <div class="flex justify-between gap-2"><dt class="text-slate-500">Mulai dikerjakan</dt><dd>{{wita $t.WorkStartedAt}}</dd></div>
-        {{if $t.PendingSince.Valid}}<div class="flex justify-between gap-2"><dt class="text-slate-500">Tertunda sejak</dt><dd>{{wita $t.PendingSince}}</dd></div>{{end}}
-        <div class="flex justify-between gap-2"><dt class="text-slate-500">Selesai</dt><dd>{{wita $t.ResolvedAt}}</dd></div>
-        <div class="flex justify-between gap-2"><dt class="text-slate-500">Ditutup</dt><dd>{{wita $t.ClosedAt}}</dd></div>
-        {{if gt $t.SLACycle 1}}<div class="flex justify-between gap-2"><dt class="text-slate-500">Dibuka ulang</dt><dd>{{add $t.SLACycle -1}}×</dd></div>{{end}}
+        <div class="flex justify-between gap-2"><dt class="text-muted-foreground">Masuk</dt><dd>{{wita $t.CreatedAt}}</dd></div>
+        <div class="flex justify-between gap-2"><dt class="text-muted-foreground">Diterima</dt><dd>{{wita $t.FirstResponseAt}}</dd></div>
+        <div class="flex justify-between gap-2"><dt class="text-muted-foreground">Mulai dikerjakan</dt><dd>{{wita $t.WorkStartedAt}}</dd></div>
+        {{if $t.PendingSince.Valid}}<div class="flex justify-between gap-2"><dt class="text-muted-foreground">Tertunda sejak</dt><dd>{{wita $t.PendingSince}}</dd></div>{{end}}
+        <div class="flex justify-between gap-2"><dt class="text-muted-foreground">Selesai</dt><dd>{{wita $t.ResolvedAt}}</dd></div>
+        <div class="flex justify-between gap-2"><dt class="text-muted-foreground">Ditutup</dt><dd>{{wita $t.ClosedAt}}</dd></div>
+        {{if gt $t.SLACycle 1}}<div class="flex justify-between gap-2"><dt class="text-muted-foreground">Dibuka ulang</dt><dd>{{add $t.SLACycle -1}}×</dd></div>{{end}}
       </dl>
-      {{if $t.CancelReason.Valid}}<p class="mt-2 text-red-700">Dibatalkan: {{$t.CancelReason.String}}</p>{{end}}
+      {{if $t.CancelReason.Valid}}<p class="mt-2 text-bad">Dibatalkan: {{$t.CancelReason.String}}</p>{{end}}
     </section>
   </aside>
 </div>
@@ -341,10 +341,10 @@
 
 {{define "reason-form"}}
 <details class="card" {{if eq .D.Open .Name}}open{{end}}>
-  <summary class="card-body cursor-pointer font-semibold {{.Tone}}">{{.Title}}</summary>
-  <form method="post" action="/app/tickets/{{.T.ID}}/{{.Name}}" class="space-y-3 border-t border-slate-100 p-4" novalidate>
+  <summary class="card-body cursor-pointer font-bold {{.Tone}}">{{.Title}}</summary>
+  <form method="post" action="/app/tickets/{{.T.ID}}/{{.Name}}" class="space-y-3 border-t border-border p-4" novalidate>
     {{template "csrf" .CSRF}}
-    <label class="label" for="reason-{{.Name}}">{{.Label}} <span class="text-red-600" aria-hidden="true">*</span></label>
+    <label class="label" for="reason-{{.Name}}">{{.Label}} <span class="text-bad" aria-hidden="true">*</span></label>
     <input class="input {{if and (eq .D.Open .Name) (.P.Err "reason")}}input-error{{end}}" id="reason-{{.Name}}" name="reason" maxlength="255" value="{{if eq .D.Open .Name}}{{index .D.Form "reason"}}{{end}}">
     {{if eq .D.Open .Name}}{{with .P.Err "reason"}}<p class="error-text">{{.}}</p>{{end}}{{end}}
     <button type="submit" class="btn btn-secondary" data-busy-text="Menyimpan…">{{.Button}}</button>

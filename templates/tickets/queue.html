@@ -9,7 +9,7 @@
   {{if $d.CanCreate}}<a href="/app/tickets/new" class="btn btn-primary"><span class="icon h-4 w-4">{{template "icon" "plus"}}</span>Catat tiket</a>{{end}}
 </div>
 
-<nav class="mt-5 flex gap-5 overflow-x-auto border-b border-line" aria-label="Tampilan tiket">
+<nav class="mt-5 flex h-12 gap-5 overflow-x-auto overflow-y-hidden border-b" aria-label="Tampilan tiket">
   {{template "queue-tab" (dict "Href" "/app/tickets" "Label" "Antrean" "On" (eq $d.Mode "available"))}}
   {{if $d.CanClaim}}{{template "queue-tab" (dict "Href" "/app/tickets?mode=mine" "Label" "Tiket saya" "On" (eq $d.Mode "mine"))}}{{end}}
   {{template "queue-tab" (dict "Href" "/app/tickets?mode=active" "Label" "Semua aktif" "On" (eq $d.Mode "active"))}}
@@ -30,8 +30,8 @@
   {{end}}
   <button class="btn btn-secondary" type="submit" data-no-busy>Terapkan</button>
 </form>
-{{if $d.Filter.OnlyCoordinated}}<p class="mt-2 text-xs text-slate-500">Menampilkan tiket bidang yang Anda koordinasi: {{range $i, $n := $d.CoordinatedFields}}{{if $i}}, {{end}}{{$n}}{{end}}.</p>
-{{else if $d.Filter.OnlyCompetency}}<p class="mt-2 text-xs text-slate-500">Menampilkan tiket sesuai bidang kompetensi Anda.</p>{{end}}
+{{if $d.Filter.OnlyCoordinated}}<p class="mt-2 text-xs text-muted-foreground">Menampilkan tiket bidang yang Anda koordinasi: {{range $i, $n := $d.CoordinatedFields}}{{if $i}}, {{end}}{{$n}}{{end}}.</p>
+{{else if $d.Filter.OnlyCompetency}}<p class="mt-2 text-xs text-muted-foreground">Menampilkan tiket sesuai bidang kompetensi Anda.</p>{{end}}
 
 <div class="mt-4 grid items-start gap-6 lg:grid-cols-[1fr_17rem]">
   <div id="queue-list" hx-get="{{$d.SelfURL}}" hx-trigger="every 30s" hx-select="#queue-list" hx-swap="outerHTML" hx-disinherit="*" class="min-w-0">
@@ -49,13 +49,13 @@
 
   <aside class="card lg:sticky lg:top-8" aria-labelledby="beban-kerja">
     <div class="card-header"><h2 id="beban-kerja" class="card-title">Beban kerja petugas</h2></div>
-    <ul class="divide-y divide-slate-100">
+    <ul class="divide-y divide-border">
       {{range $d.Workload}}
       <li class="flex items-center justify-between gap-2 px-4 py-2.5 text-sm sm:px-5">
         <span class="min-w-0 truncate">{{.Name}}</span>
-        <span class="shrink-0 text-xs text-slate-500"><strong class="text-sm font-semibold tabular-nums text-slate-900">{{.Primary}}</strong> tiket{{if .Support}} · bantu {{.Support}}{{end}}</span>
+        <span class="shrink-0 text-xs text-muted-foreground"><strong class="text-sm font-bold tabular-nums text-foreground">{{.Primary}}</strong> tiket{{if .Support}} · bantu {{.Support}}{{end}}</span>
       </li>
-      {{else}}<li class="px-4 py-3 text-sm text-slate-500 sm:px-5">Belum ada petugas.</li>{{end}}
+      {{else}}<li class="px-4 py-3 text-sm text-muted-foreground sm:px-5">Belum ada petugas.</li>{{end}}
     </ul>
   </aside>
 </div>
@@ -70,16 +70,16 @@
   <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
     <a href="/app/tickets/{{$t.ID}}" class="min-w-0 flex-1">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span class="font-mono text-xs text-slate-500">{{$t.TicketNo}}</span>
+        <span class="font-bold text-xs text-muted-foreground">{{$t.TicketNo}}</span>
         <span class="badge badge-{{tone "priority" $t.Priority}}">{{label "priority" $t.Priority}}</span>
         <span class="badge badge-{{tone "ticket_status" $t.Status}}">{{label "ticket_status" $t.Status}}</span>
-        {{if ne $t.Channel "QR"}}<span class="badge badge-gray">{{label "channel" $t.Channel}}</span>{{end}}
-        {{if $t.IsTriage}}<span class="badge badge-amber">Perlu dipilah</span>{{end}}
+        {{if ne $t.Channel "QR"}}<span class="badge badge-muted">{{label "channel" $t.Channel}}</span>{{end}}
+        {{if $t.IsTriage}}<span class="badge badge-warn">Perlu dipilah</span>{{end}}
         {{template "sla-chip" $t.SLA}}
       </div>
-      <div class="mt-1.5 font-medium text-slate-900 group-hover:text-brand-800">{{$t.CategoryName}} <span class="font-normal text-slate-500">· {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</span></div>
-      <p class="mt-0.5 line-clamp-2 text-sm text-slate-600">{{truncate 160 $t.Description}}</p>
-      <div class="mt-1.5 text-xs text-slate-500"><span title="Masuk {{wita $t.CreatedAt}}">{{since $t.CreatedAt}} lalu</span> · {{$t.ITCategoryName}}{{if $t.AssigneeName.Valid}} · Ditangani {{$t.AssigneeName.String}}{{end}}</div>
+      <div class="mt-1.5 font-bold text-foreground group-hover:text-aksen">{{$t.CategoryName}} <span class="font-normal text-muted-foreground">· {{$t.Location}}{{if $t.AssetCode.Valid}} · {{$t.AssetCode.String}}{{end}}</span></div>
+      <p class="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{{truncate 160 $t.Description}}</p>
+      <div class="mt-1.5 text-xs text-muted-foreground"><span title="Masuk {{wita $t.CreatedAt}}">{{since $t.CreatedAt}} lalu</span> · {{$t.ITCategoryName}}{{if $t.AssigneeName.Valid}} · Ditangani {{$t.AssigneeName.String}}{{end}}</div>
     </a>
     {{if not .Result}}{{if and .CanClaim (eq $t.Status "NEW")}}
     <form method="post" action="/app/tickets/{{$t.ID}}/claim" class="sm:shrink-0"
@@ -91,7 +91,7 @@
   </div>
   {{with .Result}}
     {{if .OK}}
-    <div class="flash flash-success mt-3" role="status"><span>Tiket berhasil diambil. <a class="font-semibold underline" href="/app/tickets/{{$t.ID}}">Buka tiket</a></span></div>
+    <div class="flash flash-success mt-3" role="status"><span>Tiket berhasil diambil. <a class="font-bold underline" href="/app/tickets/{{$t.ID}}">Buka tiket</a></span></div>
     {{else}}
     <div class="flash flash-error mt-3" role="alert"><span>{{if .ClaimedBy}}Tiket ini sudah diambil oleh {{.ClaimedBy}}{{with .ClaimedAt}}{{if .Valid}} pukul {{wita .}}{{end}}{{end}}.{{else}}Tiket ini sudah tidak tersedia di antrean.{{end}}</span></div>
     {{end}}
@@ -99,4 +99,4 @@
 </article>
 {{end}}
 
-{{define "queue-tab"}}<a href="{{.Href}}" class="-mb-px whitespace-nowrap border-b-2 py-2.5 text-sm font-medium {{if .On}}border-brand-700 text-slate-900{{else}}border-transparent text-slate-500 hover:text-slate-900{{end}}" {{if .On}}aria-current="page"{{end}}>{{.Label}}</a>{{end}}
+{{define "queue-tab"}}<a href="{{.Href}}" class="relative flex h-12 flex-none items-center whitespace-nowrap px-0.5 text-sm no-underline after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary {{if .On}}font-bold text-foreground{{else}}text-muted-foreground after:opacity-0 hover:text-foreground{{end}}" {{if .On}}aria-current="page"{{end}}>{{.Label}}</a>{{end}}

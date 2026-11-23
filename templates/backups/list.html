@@ -3,7 +3,7 @@
 <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
   <div>
     <h1 class="page-title">Backup database</h1>
-    <p class="muted mt-1">{{if $d.Config.Enabled}}Backup otomatis setiap hari pukul {{printf "%02d" $d.Config.Hour}}.00 WITA, disimpan {{$d.Config.KeepDays}} hari di <code>{{$d.Config.Dir}}</code>.{{else}}Backup otomatis <strong class="font-medium text-amber-700">nonaktif</strong> (SIKAT_BACKUP_ENABLED=false).{{end}} Salin folder backup ke lokasi lain (off-site) secara berkala — lihat docs/DEPLOYMENT.md.</p>
+    <p class="muted mt-1">{{if $d.Config.Enabled}}Backup otomatis setiap hari pukul {{printf "%02d" $d.Config.Hour}}.00 WITA, disimpan {{$d.Config.KeepDays}} hari di <code>{{$d.Config.Dir}}</code>.{{else}}Backup otomatis <strong class="font-bold text-warn">nonaktif</strong> (SIKAT_BACKUP_ENABLED=false).{{end}} Salin folder backup ke lokasi lain (off-site) secara berkala, lihat docs/DEPLOYMENT.md.</p>
   </div>
   <div class="flex shrink-0 flex-wrap gap-2">
     <form method="post" action="/app/backups/restore-test" data-confirm="Uji restore memulihkan backup terbaru ke database sementara lalu menghapusnya. Lanjutkan?">
@@ -27,14 +27,14 @@
           <td class="whitespace-nowrap">{{wita .StartedAt}}</td>
           <td>{{if eq .Trigger "SCHEDULE"}}Terjadwal{{else if eq .Trigger "CLI"}}Perintah server{{else}}Manual{{end}}</td>
           <td><span class="badge badge-{{if eq .Status "SUCCESS"}}green{{else if eq .Status "FAILED"}}red{{else}}blue{{end}}">{{if eq .Status "SUCCESS"}}Berhasil{{else if eq .Status "FAILED"}}Gagal{{else}}Berjalan{{end}}</span>
-            {{with .Error.String}}<p class="mt-1 max-w-md text-xs text-red-700">{{.}}</p>{{end}}</td>
-          <td class="font-mono text-xs">{{.FileName.String}}{{with .SHA256.String}}<span class="block text-slate-400" title="SHA-256">{{printf "%.16s" .}}…</span>{{end}}</td>
+            {{with .Error.String}}<p class="mt-1 max-w-md text-xs text-bad">{{.}}</p>{{end}}</td>
+          <td class="font-bold text-xs">{{.FileName.String}}{{with .SHA256.String}}<span class="block text-tertiary" title="SHA-256">{{printf "%.16s" .}}…</span>{{end}}</td>
           <td class="whitespace-nowrap text-right tabular-nums">{{.SizeText}}</td>
           <td>{{if .RestoreStatus.Valid}}<span class="badge badge-{{if eq .RestoreStatus.String "SUCCESS"}}green{{else}}red{{end}}">{{if eq .RestoreStatus.String "SUCCESS"}}Berhasil{{else}}Gagal{{end}}</span>
-            <span class="block text-xs text-slate-500">{{wita .RestoreTestedAt}}</span>
-            {{with .RestoreMessage.String}}<p class="mt-1 max-w-md text-xs text-slate-600">{{.}}</p>{{end}}{{else}}<span class="text-slate-400">–</span>{{end}}</td>
+            <span class="block text-xs text-muted-foreground">{{wita .RestoreTestedAt}}</span>
+            {{with .RestoreMessage.String}}<p class="mt-1 max-w-md text-xs text-muted-foreground">{{.}}</p>{{end}}{{else}}<span class="text-tertiary">–</span>{{end}}</td>
         </tr>
-        {{else}}<tr><td colspan="6" class="py-8 text-center text-slate-500">Belum ada backup.</td></tr>{{end}}
+        {{else}}<tr><td colspan="6" class="py-8 text-center text-muted-foreground">Belum ada backup.</td></tr>{{end}}
       </tbody>
     </table>
   </div>

@@ -14,9 +14,9 @@
 <div class="mt-4 space-y-2 md:hidden">
   {{range .Data.Logs}}
   <div class="card card-body">
-    <div class="font-mono text-xs text-slate-700">{{.Action}}</div>
+    <div class="font-bold text-xs text-foreground">{{.Action}}</div>
     <div class="mt-1 text-sm">{{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}</div>
-    <div class="text-xs text-slate-500">{{wita .CreatedAt}}{{if .EntityType.Valid}} · {{.EntityType.String}}{{if .EntityID.Valid}} #{{.EntityID.Int64}}{{end}}{{end}}</div>
+    <div class="text-xs text-muted-foreground">{{wita .CreatedAt}}{{if .EntityType.Valid}} · {{.EntityType.String}}{{if .EntityID.Valid}} #{{.EntityID.Int64}}{{end}}{{end}}</div>
   </div>
   {{else}}{{template "empty" "Belum ada catatan."}}{{end}}
 </div>
@@ -29,15 +29,15 @@
       <tr>
         <td class="whitespace-nowrap">{{wita .CreatedAt}}</td>
         <td>{{if .ActorName.Valid}}{{.ActorName.String}}{{else}}{{label "actor_type" .ActorType}}{{end}}</td>
-        <td class="font-mono text-xs">{{.Action}}</td>
+        <td class="font-bold text-xs">{{.Action}}</td>
         <td class="whitespace-nowrap text-xs">{{if .EntityType.Valid}}{{.EntityType.String}}{{if .EntityID.Valid}} #{{.EntityID.Int64}}{{end}}{{else}}–{{end}}</td>
         <td class="max-w-md text-xs">
-          {{if .BeforeData.Valid}}<div class="truncate text-slate-500" title="{{.BeforeData.String}}">sebelum: {{.BeforeData.String}}</div>{{end}}
+          {{if .BeforeData.Valid}}<div class="truncate text-muted-foreground" title="{{.BeforeData.String}}">sebelum: {{.BeforeData.String}}</div>{{end}}
           {{if .AfterData.Valid}}<div class="truncate" title="{{.AfterData.String}}">sesudah: {{.AfterData.String}}</div>{{end}}
         </td>
         <td class="text-xs">{{nullStr .IPAddress}}</td>
       </tr>
-    {{else}}<tr><td colspan="6" class="text-center text-slate-500">Belum ada catatan.</td></tr>{{end}}
+    {{else}}<tr><td colspan="6" class="text-center text-muted-foreground">Belum ada catatan.</td></tr>{{end}}
     </tbody>
   </table>
 </div>

@@ -1,16 +1,16 @@
 {{template "base" .}}
 {{define "content"}}
 {{$d := .Data}}{{$p := .}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/users" class="hover:underline">Pengguna</a></nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/users" class="hover:underline">Pengguna</a></nav>
 <div class="mx-auto max-w-2xl">
   <h1 class="page-title">{{.Title}}</h1>
   <form method="post" action="/app/users{{if $d.ID}}/{{$d.ID}}{{end}}" class="card card-body mt-4 space-y-4" novalidate>
     {{template "csrf" .CSRFToken}}
     {{template "form-errors" .}}
     <div>
-      <label class="label" for="username">Username{{if not $d.ID}} <span class="text-red-600" aria-hidden="true">*</span>{{end}}</label>
+      <label class="label" for="username">Username{{if not $d.ID}} <span class="text-bad" aria-hidden="true">*</span>{{end}}</label>
       {{if $d.ID}}
-        <input class="input bg-slate-100" id="username" type="text" value="{{index $d.Form "username"}}" disabled>
+        <input class="input bg-accent" id="username" type="text" value="{{index $d.Form "username"}}" disabled>
         <p class="help">Username tidak dapat diubah.</p>
       {{else}}
         <input class="input {{if $p.Err "username"}}input-error{{end}}" id="username" name="username" type="text" value="{{index $d.Form "username"}}" maxlength="50" autocapitalize="none" spellcheck="false" required>
@@ -19,14 +19,14 @@
       {{end}}
     </div>
     <div>
-      <label class="label" for="full_name">Nama lengkap <span class="text-red-600" aria-hidden="true">*</span></label>
+      <label class="label" for="full_name">Nama lengkap <span class="text-bad" aria-hidden="true">*</span></label>
       <input class="input {{if $p.Err "full_name"}}input-error{{end}}" id="full_name" name="full_name" type="text" value="{{index $d.Form "full_name"}}" maxlength="150" required>
       {{with $p.Err "full_name"}}<p class="error-text">{{.}}</p>{{end}}
     </div>
     <div>
-      <label class="label" for="role_id">Role <span class="text-red-600" aria-hidden="true">*</span></label>
+      <label class="label" for="role_id">Role <span class="text-bad" aria-hidden="true">*</span></label>
       <select class="input {{if $p.Err "role_id"}}input-error{{end}}" id="role_id" name="role_id" data-role-select required {{if eq $d.ID $d.SelfID}}disabled{{end}}>
-        <option value="" data-code="">— Pilih —</option>
+        <option value="" data-code="">Pilih</option>
         {{range $d.Roles}}<option value="{{.ID}}" data-code="{{.Code}}" {{if eq (printf "%d" .ID) (index $d.Form "role_id")}}selected{{end}}>{{.Name}}</option>{{end}}
       </select>
       {{if eq $d.ID $d.SelfID}}{{if $d.ID}}<input type="hidden" name="role_id" value="{{index $d.Form "role_id"}}"><p class="help">Anda tidak dapat mengubah role akun sendiri.</p>{{end}}{{end}}
@@ -41,7 +41,7 @@
       <div>
         <label class="label" for="department_id">Unit kerja</label>
         <select class="input {{if $p.Err "department_id"}}input-error{{end}}" id="department_id" name="department_id">
-          <option value="">— Tidak ada —</option>
+          <option value="">Tidak ada</option>
           {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
         </select>
         {{with $p.Err "department_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -62,7 +62,7 @@
       <p class="help mb-2">Dipakai untuk menyaring antrean tiket sesuai kemampuan petugas.</p>
       <div class="grid gap-2 sm:grid-cols-2">
         {{range $d.Categories}}
-        <label class="flex min-h-11 items-center gap-3 rounded-lg border border-line px-3">
+        <label class="flex min-h-11 items-center gap-3 rounded-lg border border-border px-3">
           <input class="checkbox" type="checkbox" name="competencies" value="{{.ID}}" {{if index $d.Selected .ID}}checked{{end}}>
           <span class="text-sm">{{.Label}}</span>
         </label>

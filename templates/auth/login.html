@@ -1,23 +1,25 @@
 {{template "auth" .}}
 {{define "content"}}
-<h1 class="text-lg font-semibold tracking-tight text-slate-900">Masuk ke akun petugas</h1>
-<p class="mt-1 text-sm text-slate-500">Khusus petugas IT. Gunakan akun yang diberikan Admin IT.</p>
-<form method="post" action="/login" class="mt-6 space-y-4" novalidate>
+<div class="flex flex-col gap-1">
+  <h1 class="m-0 text-judul font-bold tracking-[-0.01em]">Masuk</h1>
+  <p class="m-0 text-base text-muted-foreground">Khusus petugas IT. Gunakan akun yang diberikan Admin IT.</p>
+</div>
+<form method="post" action="/login" class="flex flex-col gap-4" novalidate>
   {{template "csrf" .CSRFToken}}
   <div>
-    <label class="label" for="username">Username</label>
+    <label class="label" for="username">Nama pengguna</label>
     <input class="input" id="username" name="username" type="text" value="{{.Data.Username}}" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
   </div>
   <div>
-    <label class="label" for="password">Password</label>
+    <label class="label" for="password">Kata sandi</label>
     <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
   </div>
   <button type="submit" class="btn btn-primary btn-block" data-busy-text="Memeriksa…">Masuk</button>
 </form>
-<p class="mt-5 text-center text-xs text-slate-500">
-  Lupa password? Hubungi Admin IT{{with .ITContact}} ({{.}}){{end}}.
+<p class="m-0 text-sm text-muted-foreground">
+  Tidak bisa masuk? <span class="font-bold text-aksen">Hubungi Admin IT{{with .ITContact}} ({{.}}){{end}}</span>
 </p>
-<p class="mt-5 border-t border-line pt-5 text-center text-xs leading-relaxed text-slate-500">
-  Pegawai yang melaporkan gangguan tidak perlu masuk — cukup scan QR di ruangan atau perangkat.
+<p class="m-0 border-t pt-5 text-xs text-muted-foreground">
+  Pegawai yang melaporkan gangguan tidak perlu masuk. Cukup scan QR di ruangan atau perangkat.
 </p>
 {{end}}

@@ -1,8 +1,8 @@
 {{template "public" .}}
 {{define "content"}}
 {{$d := .Data}}{{$p := .}}{{$t := $d.Target}}
-<h1 class="text-xl font-semibold text-slate-900">Lapor gangguan IT</h1>
-<p class="mt-1 text-sm text-slate-600">Tidak perlu login. Isi singkat saja, petugas IT akan segera menindaklanjuti.</p>
+<h1 class="text-xl font-bold text-foreground">Lapor gangguan IT</h1>
+<p class="mt-1 text-sm text-muted-foreground">Tidak perlu login. Isi singkat saja, petugas IT akan segera menindaklanjuti.</p>
 
 <form method="post" action="/q/{{$d.Token}}" enctype="multipart/form-data" class="mt-4 space-y-5" novalidate data-report-form>
   {{template "csrf" .CSRFToken}}
@@ -10,22 +10,22 @@
   <div class="hp" aria-hidden="true"><label>Jangan diisi <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
   <section class="card card-body" aria-label="Lokasi terdeteksi">
-    <div class="text-xs font-semibold uppercase tracking-wide text-brand-700">Lokasi terdeteksi</div>
-    <div class="mt-1 font-semibold text-slate-900">{{if $t.DepartmentName.Valid}}{{$t.DepartmentName.String}}{{end}}{{if $t.RoomName.Valid}} · {{$t.RoomName.String}}{{end}}</div>
-    {{if $t.RoomLocation.Valid}}<div class="text-sm text-slate-600">{{$t.RoomLocation.String}}</div>{{end}}
-    {{if $t.AssetID.Valid}}<div class="mt-1 text-sm text-slate-700">{{$t.AssetName.String}} <span class="font-mono text-xs text-slate-500">({{$t.AssetCode.String}})</span>{{if $t.AssetBrandModel.Valid}} · {{$t.AssetBrandModel.String}}{{end}}</div>{{end}}
+    <div class="text-xs font-bold text-aksen">Lokasi terdeteksi</div>
+    <div class="mt-1 font-bold text-foreground">{{if $t.DepartmentName.Valid}}{{$t.DepartmentName.String}}{{end}}{{if $t.RoomName.Valid}} · {{$t.RoomName.String}}{{end}}</div>
+    {{if $t.RoomLocation.Valid}}<div class="text-sm text-muted-foreground">{{$t.RoomLocation.String}}</div>{{end}}
+    {{if $t.AssetID.Valid}}<div class="mt-1 text-sm text-foreground">{{$t.AssetName.String}} <span class="font-bold text-xs text-muted-foreground">({{$t.AssetCode.String}})</span>{{if $t.AssetBrandModel.Valid}} · {{$t.AssetBrandModel.String}}{{end}}</div>{{end}}
   </section>
 
   <div class="card card-body space-y-4">
     <div>
-      <label class="label" for="reporter_name">Nama Anda <span class="text-red-600" aria-hidden="true">*</span></label>
+      <label class="label" for="reporter_name">Nama Anda <span class="text-bad" aria-hidden="true">*</span></label>
       <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" type="text" maxlength="120" value="{{index $d.Form "reporter_name"}}" autocomplete="name" data-remember="sikat_reporter_name" required>
       {{with $p.Err "reporter_name"}}<p class="error-text">{{.}}</p>{{end}}
     </div>
     <div>
       <label class="label" for="reporter_department_id">Unit/bagian Anda</label>
       <select class="input {{if $p.Err "reporter_department_id"}}input-error{{end}}" id="reporter_department_id" name="reporter_department_id">
-        <option value="">— Sama dengan lokasi —</option>
+        <option value="">Sama dengan lokasi</option>
         {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "reporter_department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
       </select>
       {{with $p.Err "reporter_department_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -43,14 +43,14 @@
   </div>
 
   <fieldset class="card card-body">
-    <legend class="label text-base">Apa masalahnya? <span class="text-red-600" aria-hidden="true">*</span></legend>
-    <p class="-mt-0.5 mb-1 text-xs text-slate-500">Tidak ada yang cocok? Pilih <strong class="font-medium text-slate-700">Lainnya</strong> lalu ceritakan kendalanya — tim IT akan memilahnya.</p>
+    <legend class="label text-base">Apa masalahnya? <span class="text-bad" aria-hidden="true">*</span></legend>
+    <p class="-mt-0.5 mb-1 text-xs text-muted-foreground">Tidak ada yang cocok? Pilih <strong class="font-bold text-foreground">Lainnya</strong> lalu ceritakan kendalanya, tim IT akan memilahnya.</p>
     <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
       {{range $d.Categories}}
       <label class="choice">
         <input type="radio" name="ticket_category_id" value="{{.ID}}" class="sr-only" {{if eq (printf "%d" .ID) (index $d.Form "ticket_category_id")}}checked{{end}}>
-        <span class="block font-semibold text-slate-900">{{.Name}}</span>
-        {{if .HelpText.Valid}}<span class="block text-xs text-slate-600">{{.HelpText.String}}</span>{{end}}
+        <span class="block font-bold text-foreground">{{.Name}}</span>
+        {{if .HelpText.Valid}}<span class="block text-xs text-muted-foreground">{{.HelpText.String}}</span>{{end}}
       </label>
       {{end}}
     </div>
@@ -58,14 +58,14 @@
   </fieldset>
 
   <div class="card card-body">
-    <label class="label" for="description">Ceritakan kendalanya <span class="text-red-600" aria-hidden="true">*</span></label>
+    <label class="label" for="description">Ceritakan kendalanya <span class="text-bad" aria-hidden="true">*</span></label>
     <textarea class="input {{if $p.Err "description"}}input-error{{end}}" id="description" name="description" rows="4" maxlength="2000" placeholder="Contoh: komputer mati sejak tadi pagi, sudah dicoba dinyalakan ulang" required>{{index $d.Form "description"}}</textarea>
     <p class="help">Jangan menuliskan nama pasien, nomor rekam medis, atau diagnosis.</p>
     {{with $p.Err "description"}}<p class="error-text">{{.}}</p>{{end}}
   </div>
 
   <fieldset class="card card-body">
-    <legend class="label text-base">Apakah pelayanan terganggu? <span class="text-red-600" aria-hidden="true">*</span></legend>
+    <legend class="label text-base">Apakah pelayanan terganggu? <span class="text-bad" aria-hidden="true">*</span></legend>
     <div class="mt-1 grid gap-2">
       {{template "choice" (dict "Name" "impact_level" "Value" "0" "Label" "Tidak mengganggu" "Help" "Pelayanan tetap berjalan normal" "Cur" (index $d.Form "impact_level"))}}
       {{template "choice" (dict "Name" "impact_level" "Value" "1" "Label" "Sebagian terganggu" "Help" "Pelayanan berjalan tapi lebih lambat/terhambat" "Cur" (index $d.Form "impact_level"))}}
@@ -75,7 +75,7 @@
   </fieldset>
 
   <fieldset class="card card-body">
-    <legend class="label text-base">Siapa saja yang terdampak? <span class="text-red-600" aria-hidden="true">*</span></legend>
+    <legend class="label text-base">Siapa saja yang terdampak? <span class="text-bad" aria-hidden="true">*</span></legend>
     <div class="mt-1 grid grid-cols-2 gap-2">
       {{template "choice" (dict "Name" "affected_scope" "Value" "1" "Label" "Saya sendiri" "Cur" (index $d.Form "affected_scope"))}}
       {{template "choice" (dict "Name" "affected_scope" "Value" "2" "Label" "Beberapa orang" "Cur" (index $d.Form "affected_scope"))}}
@@ -104,9 +104,9 @@
 
   <div class="card card-body">
     <label class="label" for="photos">Foto (opsional, maks {{$d.MaxFiles}})</label>
-    <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
+    <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-tema file:px-4 file:font-bold file:text-aksen" id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{$d.MaxFiles}}">
     <div class="mt-2 grid grid-cols-3 gap-2" data-photo-preview></div>
-    <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">Jangan memotret layar atau kertas yang menampilkan data pasien.</p>
+    <p class="mt-2 rounded-md border border-warn-solid/30 bg-warn-bg px-3 py-2 text-xs font-bold text-warn">Jangan memotret layar atau kertas yang menampilkan data pasien.</p>
     {{with $p.Err "photos"}}<p class="error-text">{{.}}</p>{{end}}
   </div>
 
@@ -118,14 +118,14 @@
   </div>
 
   <button type="submit" class="btn btn-primary btn-block min-h-14 text-base" data-busy-text="Mengirim…">Kirim laporan</button>
-  <p class="text-center text-xs text-slate-500">Untuk keadaan darurat medis, tetap ikuti prosedur darurat rumah sakit.{{with .ITContact}} Kontak IT: {{.}}.{{end}}</p>
+  <p class="text-center text-xs text-muted-foreground">Untuk keadaan darurat medis, tetap ikuti prosedur darurat rumah sakit.{{with .ITContact}} Kontak IT: {{.}}.{{end}}</p>
 </form>
 {{end}}
 
 {{define "choice"}}
 <label class="choice">
   <input type="radio" name="{{.Name}}" value="{{.Value}}" class="sr-only" {{if eq .Value .Cur}}checked{{end}}>
-  <span class="block font-semibold text-slate-900">{{.Label}}</span>
-  {{with .Help}}<span class="block text-xs text-slate-600">{{.}}</span>{{end}}
+  <span class="block font-bold text-foreground">{{.Label}}</span>
+  {{with .Help}}<span class="block text-xs text-muted-foreground">{{.}}</span>{{end}}
 </label>
 {{end}}

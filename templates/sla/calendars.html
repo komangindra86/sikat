@@ -15,18 +15,18 @@
 {{if .Data}}
 <div class="list mt-6">
   {{range .Data}}
-  <a href="/app/sla/calendars/{{.ID}}" class="group flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+  <a href="/app/sla/calendars/{{.ID}}" class="group flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-accent sm:flex-row sm:items-center sm:justify-between sm:px-5">
     <div class="min-w-0">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-medium text-slate-900 group-hover:text-brand-800">{{.Name}}</span>
-        {{if .IsDefault}}<span class="badge badge-blue">Bawaan</span>{{end}}
-        {{if .Is24x7}}<span class="badge badge-gray">24 jam</span>{{end}}
+        <span class="font-bold text-foreground group-hover:text-aksen">{{.Name}}</span>
+        {{if .IsDefault}}<span class="badge badge-proses">Bawaan</span>{{end}}
+        {{if .Is24x7}}<span class="badge badge-muted">24 jam</span>{{end}}
       </div>
-      <div class="mt-0.5 text-sm text-slate-500">{{.Hours}}</div>
+      <div class="mt-0.5 text-sm text-muted-foreground">{{.Hours}}</div>
     </div>
-    <div class="flex shrink-0 gap-4 text-xs text-slate-500">
-      <span><strong class="text-sm font-semibold tabular-nums text-slate-900">{{.HolidayCount}}</strong> hari libur mendatang</span>
-      <span><strong class="text-sm font-semibold tabular-nums text-slate-900">{{.PolicyCount}}</strong> kebijakan</span>
+    <div class="flex shrink-0 gap-4 text-xs text-muted-foreground">
+      <span><strong class="text-sm font-bold tabular-nums text-foreground">{{.HolidayCount}}</strong> hari libur mendatang</span>
+      <span><strong class="text-sm font-bold tabular-nums text-foreground">{{.PolicyCount}}</strong> kebijakan</span>
     </div>
   </a>
   {{end}}

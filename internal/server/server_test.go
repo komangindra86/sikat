@@ -140,7 +140,7 @@ func TestLoginFlowAndRBAC(t *testing.T) {
 			t.Errorf("admin GET %s = %d", path, resp.StatusCode)
 		}
 	}
-	if _, body := admin.get("/app/priority/test?uji=1&ticket_category_id=1&impact=2&scope=3&replacement=NO"); !strings.Contains(body, "Satu unit atau lebih berhenti") || !strings.Contains(body, `badge-green">Cocok`) {
+	if _, body := admin.get("/app/priority/test?uji=1&ticket_category_id=1&impact=2&scope=3&replacement=NO"); !strings.Contains(body, "Satu unit atau lebih berhenti") || !strings.Contains(body, `badge-selesai">Cocok`) {
 		t.Error("uji aturan harus menunjukkan aturan yang cocok")
 	}
 	if resp, _ := admin.get("/app/qr/zip"); resp.StatusCode != 200 {

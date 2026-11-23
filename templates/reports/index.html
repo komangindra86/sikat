@@ -11,9 +11,9 @@
   <h2 class="section-title mb-2.5">{{.Name}}</h2>
   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     {{range .Defs}}
-    <a href="/app/reports/{{.Slug}}" class="card card-body transition-colors hover:border-brand-300 {{if eq .Slug "koordinator"}}border-brand-200 bg-brand-50/40{{end}}">
-      <div class="font-semibold text-slate-900">{{.Title}}</div>
-      <p class="mt-1 text-sm text-slate-600">{{.Description}}</p>
+    <a href="/app/reports/{{.Slug}}" class="card card-body transition-colors hover:border-tema-garis {{if eq .Slug "koordinator"}}border-tema-garis bg-selected{{end}}">
+      <div class="font-bold text-foreground">{{.Title}}</div>
+      <p class="mt-1 text-sm text-muted-foreground">{{.Description}}</p>
     </a>
     {{end}}
   </div>

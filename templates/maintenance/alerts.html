@@ -7,13 +7,13 @@
 <section class="mt-4 space-y-3" aria-labelledby="belum">
   <h2 id="belum" class="section-title">Menunggu keputusan ({{len $d.Open}})</h2>
   {{range $d.Open}}
-  <article class="card card-body {{if eq .Recommendation "CONSIDER_REPLACEMENT"}}border-red-300{{end}}">
+  <article class="card card-body {{if eq .Recommendation "CONSIDER_REPLACEMENT"}}border-bad-solid/30{{end}}">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <a href="/app/assets/{{.AssetID}}" class="font-semibold text-brand-800 hover:underline">{{.AssetName}}</a>
-        <div class="font-mono text-xs text-slate-500">{{.AssetCode}}{{if .DepartmentName.Valid}} · {{.DepartmentName.String}}{{end}}{{if .RoomName.Valid}} · {{.RoomName.String}}{{end}}</div>
-        <p class="mt-1 text-sm"><strong>{{.TicketCount}} gangguan</strong> dalam {{.WindowDays}} hari terakhir{{if .Reasons.Valid}} — {{.Reasons.String}}{{end}}.</p>
-        <p class="text-xs text-slate-500">Sejak {{wita .CreatedAt}} · diperbarui {{wita .UpdatedAt}}</p>
+        <a href="/app/assets/{{.AssetID}}" class="font-bold text-aksen hover:underline">{{.AssetName}}</a>
+        <div class="font-bold text-xs text-muted-foreground">{{.AssetCode}}{{if .DepartmentName.Valid}} · {{.DepartmentName.String}}{{end}}{{if .RoomName.Valid}} · {{.RoomName.String}}{{end}}</div>
+        <p class="mt-1 text-sm"><strong>{{.TicketCount}} gangguan</strong> dalam {{.WindowDays}} hari terakhir{{if .Reasons.Valid}}: {{.Reasons.String}}{{end}}.</p>
+        <p class="text-xs text-muted-foreground">Sejak {{wita .CreatedAt}} · diperbarui {{wita .UpdatedAt}}</p>
       </div>
       <span class="badge badge-{{tone "recommendation" .Recommendation}} shrink-0">{{label "recommendation" .Recommendation}}</span>
     </div>
@@ -33,11 +33,11 @@
 {{if $d.Closed}}
 <section class="mt-6" aria-labelledby="sudah">
   <h2 id="sudah" class="mb-3 section-title">Keputusan terakhir</h2>
-  <div class="card divide-y divide-slate-100">
+  <div class="card divide-y divide-border">
     {{range $d.Closed}}
     <div class="flex flex-col gap-1 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-      <div><a class="font-medium text-brand-800 hover:underline" href="/app/assets/{{.AssetID}}">{{.AssetName}}</a> · {{label "alert_decision" .Decision.String}}{{if .DecisionNote.Valid}} — <span class="text-slate-600">{{.DecisionNote.String}}</span>{{end}}</div>
-      <div class="text-xs text-slate-500">{{nullStr .DeciderName}} · {{wita .DecidedAt}}</div>
+      <div><a class="font-bold text-aksen hover:underline" href="/app/assets/{{.AssetID}}">{{.AssetName}}</a> · {{label "alert_decision" .Decision.String}}{{if .DecisionNote.Valid}}: <span class="text-muted-foreground">{{.DecisionNote.String}}</span>{{end}}</div>
+      <div class="text-xs text-muted-foreground">{{nullStr .DeciderName}} · {{wita .DecidedAt}}</div>
     </div>
     {{end}}
   </div>

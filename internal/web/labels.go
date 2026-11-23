@@ -120,45 +120,47 @@ var labelGroups = map[string][]Option{
 	},
 }
 
-// tones memetakan kode ke kelas warna badge yang konsisten di seluruh aplikasi.
+// tones memetakan kode ke jenis badge status Casemix (bentuk ikon membawa arti):
+// idle = belum dimulai, proses/lanjut = berjalan, final/selesai = beres, warn = perlu tindakan,
+// alert = mendesak, bad = gagal, muted = tidak aktif/menunggu sistem.
 var tones = map[string]map[string]string{
 	"asset_status": {
-		"ACTIVE": "green", "BROKEN": "red", "IN_REPAIR": "amber", "UNUSED": "gray", "DISPOSED": "gray",
+		"ACTIVE": "selesai", "BROKEN": "bad", "IN_REPAIR": "lanjut", "UNUSED": "muted", "DISPOSED": "muted",
 	},
 	"priority": {
-		"LOW": "gray", "MEDIUM": "blue", "HIGH": "orange", "CRITICAL": "red",
+		"LOW": "muted", "MEDIUM": "idle", "HIGH": "warn", "CRITICAL": "alert",
 	},
 	"ticket_status": {
-		"NEW": "blue", "CLAIMED": "indigo", "IN_PROGRESS": "amber", "PENDING": "orange",
-		"RESOLVED": "green", "CLOSED": "gray", "CANCELLED": "gray",
+		"NEW": "idle", "CLAIMED": "proses", "IN_PROGRESS": "lanjut", "PENDING": "warn",
+		"RESOLVED": "final", "CLOSED": "selesai", "CANCELLED": "muted",
 	},
 	"sla_state": {
-		"SAFE": "green", "WARNING": "amber", "LATE": "red", "PAUSED": "gray", "MET": "green", "MISSED": "red",
+		"SAFE": "proses", "WARNING": "warn", "LATE": "alert", "PAUSED": "muted", "MET": "selesai", "MISSED": "bad",
 	},
 	"sla_kind": {
-		"CRITICAL_IMMEDIATE": "red", "RESPONSE_WARNING": "amber", "RESPONSE_BREACH": "red",
-		"RESOLUTION_WARNING": "amber", "RESOLUTION_BREACH": "red",
+		"CRITICAL_IMMEDIATE": "alert", "RESPONSE_WARNING": "warn", "RESPONSE_BREACH": "alert",
+		"RESOLUTION_WARNING": "warn", "RESOLUTION_BREACH": "alert",
 	},
 	"notif_event": {
-		"TICKET_CREATED": "blue", "TICKET_CRITICAL": "red", "TICKET_CLAIMED": "indigo", "TICKET_STARTED": "amber",
-		"TICKET_PENDING": "orange", "TICKET_RESOLVED": "green", "TICKET_REOPENED": "orange", "TICKET_ASSIGNED": "indigo", "TICKET_TRANSFERRED": "indigo",
-		"SLA_WARNING": "amber", "SLA_BREACH": "red", "REPEAT_DAMAGE": "orange", "TEST": "gray",
+		"TICKET_CREATED": "idle", "TICKET_CRITICAL": "alert", "TICKET_CLAIMED": "proses", "TICKET_STARTED": "lanjut",
+		"TICKET_PENDING": "warn", "TICKET_RESOLVED": "selesai", "TICKET_REOPENED": "warn", "TICKET_ASSIGNED": "proses", "TICKET_TRANSFERRED": "proses",
+		"SLA_WARNING": "warn", "SLA_BREACH": "alert", "REPEAT_DAMAGE": "warn", "TEST": "muted",
 	},
 	"sync_action": {
-		"INSERT": "green", "UPDATE": "blue", "UNCHANGED": "gray", "LINK": "indigo", "CONFLICT": "amber",
-		"ERROR": "red", "DEACTIVATE": "orange", "MISSING": "orange",
+		"INSERT": "selesai", "UPDATE": "proses", "UNCHANGED": "muted", "LINK": "proses", "CONFLICT": "warn",
+		"ERROR": "bad", "DEACTIVATE": "warn", "MISSING": "warn",
 	},
 	"sync_status": {
-		"SUCCESS": "green", "PARTIAL": "amber", "FAILED": "red", "RUNNING": "blue",
+		"SUCCESS": "selesai", "PARTIAL": "warn", "FAILED": "bad", "RUNNING": "proses",
 	},
 	"notif_channel": {
-		"NONE": "gray", "INBOX": "blue", "PUSH": "green",
+		"NONE": "muted", "INBOX": "proses", "PUSH": "selesai",
 	},
 	"recommendation": {
-		"EVALUATE": "amber", "INSPECT": "orange", "CONSIDER_REPLACEMENT": "red",
+		"EVALUATE": "warn", "INSPECT": "warn", "CONSIDER_REPLACEMENT": "alert",
 	},
 	"activity_status": {
-		"PLANNED": "blue", "IN_PROGRESS": "amber", "DONE": "green", "CANCELLED": "gray",
+		"PLANNED": "idle", "IN_PROGRESS": "lanjut", "DONE": "selesai", "CANCELLED": "muted",
 	},
 }
 
@@ -177,12 +179,12 @@ func Labels(group string) []Option {
 	return labelGroups[group]
 }
 
-// Tone mengembalikan nama warna badge untuk kode.
+// Tone mengembalikan jenis badge untuk kode (kelas badge-<jenis>).
 func Tone(group, code string) string {
 	if t, ok := tones[group][code]; ok {
 		return t
 	}
-	return "gray"
+	return "muted"
 }
 
 // ValidLabel memeriksa apakah kode ada di grup.

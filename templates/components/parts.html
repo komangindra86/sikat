@@ -6,7 +6,7 @@
     {{range $i := seq 3}}
     <div class="grid grid-cols-[1fr_5rem] gap-2 sm:grid-cols-[1fr_6rem_9rem]">
       <select class="input" name="part_id" aria-label="Sparepart {{add $i 1}}">
-        <option value="">— Tidak ada —</option>
+        <option value="">Tidak ada</option>
         {{range $.Parts}}<option value="{{.ID}}">{{.Label}}{{if .Cost.Valid}} · {{money .Cost.String}}{{end}}</option>{{end}}
       </select>
       <input class="input" name="part_qty" inputmode="decimal" placeholder="Jml" value="1" aria-label="Jumlah sparepart {{add $i 1}}">

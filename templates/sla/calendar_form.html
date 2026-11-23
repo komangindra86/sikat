@@ -10,28 +10,28 @@
     <div class="card-body space-y-5">
       {{template "form-errors" .}}
       <div>
-        <label class="label" for="name">Nama kalender <span class="text-red-600" aria-hidden="true">*</span></label>
+        <label class="label" for="name">Nama kalender <span class="text-bad" aria-hidden="true">*</span></label>
         <input class="input {{if $p.Err "name"}}input-error{{end}}" id="name" name="name" type="text" value="{{$f.Name}}" maxlength="100" required>
         {{with $p.Err "name"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div class="flex flex-col gap-3 sm:flex-row sm:gap-6">
         <label class="flex items-start gap-2.5 text-sm"><input class="checkbox mt-0.5" type="checkbox" name="is_24x7" value="1" {{if $f.Is24x7}}checked{{end}}>
-          <span><span class="font-medium text-slate-900">24 jam setiap hari</span><span class="block text-xs text-slate-500">Jam kerja dan hari libur diabaikan.</span></span></label>
+          <span><span class="font-bold text-foreground">24 jam setiap hari</span><span class="block text-xs text-muted-foreground">Jam kerja dan hari libur diabaikan.</span></span></label>
         <label class="flex items-start gap-2.5 text-sm"><input class="checkbox mt-0.5" type="checkbox" name="is_default" value="1" {{if $f.IsDefault}}checked{{end}}>
-          <span><span class="font-medium text-slate-900">Kalender bawaan</span><span class="block text-xs text-slate-500">Dipilih pertama saat membuat kebijakan.</span></span></label>
+          <span><span class="font-bold text-foreground">Kalender bawaan</span><span class="block text-xs text-muted-foreground">Dipilih pertama saat membuat kebijakan.</span></span></label>
       </div>
 
       <fieldset>
         <legend class="label">Jam kerja (WITA)</legend>
         {{with $p.Err "days"}}<p class="error-text mb-2">{{.}}</p>{{end}}
-        <div class="divide-y divide-slate-100 rounded-md border border-line">
+        <div class="divide-y divide-border rounded-md border border-border">
           {{range $f.Days}}{{$wd := printf "%d" .Weekday}}{{$err := $p.Err (printf "day_%d" .Weekday)}}
           <div class="px-3 py-2.5">
             <div class="flex flex-wrap items-center gap-3">
-              <label class="flex w-28 items-center gap-2.5 text-sm font-medium text-slate-900"><input class="checkbox" type="checkbox" name="day_{{$wd}}" value="1" {{if .On}}checked{{end}}>{{label "weekday" $wd}}</label>
+              <label class="flex w-28 items-center gap-2.5 text-sm font-bold text-foreground"><input class="checkbox" type="checkbox" name="day_{{$wd}}" value="1" {{if .On}}checked{{end}}>{{label "weekday" $wd}}</label>
               <div class="flex items-center gap-2">
                 <input class="input w-24 text-center tabular-nums {{if $err}}input-error{{end}}" type="text" inputmode="numeric" maxlength="5" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="08:00" name="start_{{$wd}}" value="{{.Start}}" aria-label="Mulai {{label "weekday" $wd}}">
-                <span class="text-slate-400">–</span>
+                <span class="text-tertiary">–</span>
                 <input class="input w-24 text-center tabular-nums {{if $err}}input-error{{end}}" type="text" inputmode="numeric" maxlength="5" pattern="[0-2][0-9]:[0-5][0-9]" placeholder="16:00" name="end_{{$wd}}" value="{{.End}}" aria-label="Selesai {{label "weekday" $wd}}">
               </div>
             </div>
@@ -42,7 +42,7 @@
         <p class="help">Format 24 jam (JJ:MM), mis. 07:30 – 16:00. Hari yang tidak dicentang dianggap libur.</p>
       </fieldset>
     </div>
-    <div class="flex justify-end gap-2 border-t border-line px-4 py-3 sm:px-5">
+    <div class="flex justify-end gap-2 border-t border-border px-4 py-3 sm:px-5">
       <a href="/app/sla/calendars" class="btn btn-ghost">Batal</a>
       <button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Simpan</button>
     </div>
@@ -50,8 +50,8 @@
 
   {{if $f.ID}}
   <section id="libur" class="card" aria-labelledby="hari-libur">
-    <div class="card-header"><h2 id="hari-libur" class="card-title">Hari libur</h2><span class="text-xs text-slate-500">{{len $d.Holidays}} tanggal</span></div>
-    <form method="post" action="/app/sla/calendars/{{$f.ID}}/holidays" class="card-body space-y-3 border-b border-line" novalidate>
+    <div class="card-header"><h2 id="hari-libur" class="card-title">Hari libur</h2><span class="text-xs text-muted-foreground">{{len $d.Holidays}} tanggal</span></div>
+    <form method="post" action="/app/sla/calendars/{{$f.ID}}/holidays" class="card-body space-y-3 border-b border-border" novalidate>
       {{template "csrf" .CSRFToken}}
       <div>
         <label class="label" for="holiday_date">Tanggal</label>
@@ -66,18 +66,18 @@
       <button type="submit" class="btn btn-secondary w-full" data-busy-text="Menyimpan…">Tambah hari libur</button>
     </form>
     {{if $d.Holidays}}
-    <ul class="max-h-96 divide-y divide-slate-100 overflow-y-auto">
+    <ul class="max-h-96 divide-y divide-border overflow-y-auto">
       {{range $d.Holidays}}{{$past := lt (.Date.Format "2006-01-02") $d.Today}}
-      <li class="flex items-center justify-between gap-2 px-4 py-2 sm:px-5 {{if $past}}text-slate-400{{end}}">
-        <span class="min-w-0"><span class="block text-sm {{if not $past}}font-medium text-slate-900{{end}}">{{dateID .Date}}</span><span class="block truncate text-xs {{if not $past}}text-slate-500{{end}}">{{.Name}}</span></span>
+      <li class="flex items-center justify-between gap-2 px-4 py-2 sm:px-5 {{if $past}}text-tertiary{{end}}">
+        <span class="min-w-0"><span class="block text-sm {{if not $past}}font-bold text-foreground{{end}}">{{dateID .Date}}</span><span class="block truncate text-xs {{if not $past}}text-muted-foreground{{end}}">{{.Name}}</span></span>
         <form method="post" action="/app/sla/calendars/{{$f.ID}}/holidays/{{.ID}}/delete" data-confirm="Hapus hari libur {{.Name}}?">
           {{template "csrf" $p.CSRFToken}}
-          <button type="submit" class="btn btn-ghost btn-sm text-red-700" data-no-busy>Hapus</button>
+          <button type="submit" class="btn btn-ghost btn-sm text-bad" data-no-busy>Hapus</button>
         </form>
       </li>
       {{end}}
     </ul>
-    {{else}}<p class="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">Belum ada hari libur.</p>{{end}}
+    {{else}}<p class="px-4 py-6 text-center text-sm text-muted-foreground sm:px-5">Belum ada hari libur.</p>{{end}}
   </section>
   {{end}}
 </div>

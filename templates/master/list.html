@@ -1,7 +1,7 @@
 {{template "base" .}}
 {{define "content"}}
 {{$d := .Data}}{{$e := .Data.Entity}}{{$csrf := .CSRFToken}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/master" class="hover:underline">Master data</a> › {{$e.Title}}</nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/master" class="hover:underline">Master data</a> › {{$e.Title}}</nav>
 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
   <div>
     <h1 class="page-title">{{$e.Title}}</h1>
@@ -16,7 +16,7 @@
 <form method="get" class="filter-bar mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
   <input class="input sm:max-w-xs" type="search" name="q" value="{{$d.Search}}" placeholder="Cari…" aria-label="Cari">
   {{if $e.HasActive}}
-  <label class="flex min-h-11 items-center gap-2 text-sm text-slate-700">
+  <label class="flex min-h-11 items-center gap-2 text-sm text-foreground">
     <input class="checkbox" type="checkbox" name="inactive" value="1" {{if $d.Inactive}}checked{{end}}> Tampilkan yang nonaktif
   </label>
   {{end}}
@@ -33,14 +33,14 @@
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">
         {{range $i, $f := $e.ListFields}}{{if lt $i 2}}
-        <div class="{{if eq $i 0}}text-xs font-semibold uppercase text-slate-500{{else}}font-semibold text-slate-900{{end}}">{{$d.Cell $r $f}}</div>
+        <div class="{{if eq $i 0}}text-xs font-bold text-muted-foreground{{else}}font-bold text-foreground{{end}}">{{$d.Cell $r $f}}</div>
         {{end}}{{end}}
       </div>
-      {{if not $r.IsActive}}<span class="badge badge-gray">Nonaktif</span>{{end}}
+      {{if not $r.IsActive}}<span class="badge badge-muted">Nonaktif</span>{{end}}
     </div>
     <dl class="mt-2 space-y-1 text-sm">
       {{range $i, $f := $e.ListFields}}{{if ge $i 2}}
-      <div class="flex gap-2"><dt class="w-32 shrink-0 text-slate-500">{{$f.Label}}</dt><dd class="min-w-0">{{$d.Cell $r $f}}</dd></div>
+      <div class="flex gap-2"><dt class="w-32 shrink-0 text-muted-foreground">{{$f.Label}}</dt><dd class="min-w-0">{{$d.Cell $r $f}}</dd></div>
       {{end}}{{end}}
     </dl>
     <div class="mt-3 flex gap-2">
@@ -61,9 +61,9 @@
     </tr></thead>
     <tbody>
     {{range $r := $d.Records}}
-      <tr class="{{if not $r.IsActive}}bg-slate-50 text-slate-500{{end}}">
+      <tr class="{{if not $r.IsActive}}bg-muted text-muted-foreground{{end}}">
         {{range $e.ListFields}}<td>{{$d.Cell $r .}}</td>{{end}}
-        {{if $e.HasActive}}<td>{{if $r.IsActive}}<span class="badge badge-green">Aktif</span>{{else}}<span class="badge badge-gray">Nonaktif</span>{{end}}</td>{{end}}
+        {{if $e.HasActive}}<td>{{if $r.IsActive}}<span class="badge badge-selesai">Aktif</span>{{else}}<span class="badge badge-muted">Nonaktif</span>{{end}}</td>{{end}}
         <td class="whitespace-nowrap text-right">
           <div class="inline-flex gap-2">
             <a href="/app/master/{{$e.Slug}}/{{$r.ID}}/edit" class="btn btn-secondary btn-sm">Ubah</a>
@@ -90,6 +90,6 @@
 {{end}}
 <form method="post" action="/app/master/{{.E.Slug}}/{{.R.ID}}/delete" data-confirm="Hapus permanen? Hanya bisa untuk data yang belum pernah dipakai.">
   {{template "csrf" .CSRF}}
-  <button type="submit" class="btn btn-ghost btn-sm text-red-700">Hapus</button>
+  <button type="submit" class="btn btn-ghost btn-sm text-bad">Hapus</button>
 </form>
 {{end}}

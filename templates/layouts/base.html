@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"selfRequestsOnly":true}'>
 {{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
-<meta name="theme-color" content="#1b57a5">
+<meta name="theme-color" content="#00786F">
 <link rel="icon" href="{{static "icons/favicon-32.png"}}" type="image/png" sizes="32x32">
 <link rel="icon" href="{{static "icons/icon-192.png"}}" type="image/png" sizes="192x192">
 {{if .User}}<link rel="manifest" href="/manifest.webmanifest">
@@ -12,147 +12,188 @@
 <meta name="apple-mobile-web-app-title" content="SIKAT">
 <meta name="sikat-user" content="{{.User.ID}}">{{end}}
 <title>{{if .Title}}{{.Title}} · {{end}}SIKAT</title>
-<link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<script src="{{static "js/tema.js"}}"></script>
+<link rel="preload" href="/static/css/fonts/geist-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/css/fonts/geist-semibold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{static "css/app.css"}}">
 <script src="{{static "js/htmx.min.js"}}" defer></script>
 <script src="{{static "js/app.js"}}" defer></script>
+<script src="{{static "js/kontrol.js"}}" defer></script>
 {{if .User}}<script src="{{static "js/pwa.js"}}" defer></script>{{end}}
 {{end}}
 
-{{define "brand-mark"}}<img src="{{static "icons/logo-64.png"}}" alt="" width="32" height="32" class="h-8 w-8 shrink-0">{{end}}
+{{define "brand-mark"}}<img src="{{static "icons/logo-64.png"}}" alt="" width="32" height="32" class="size-8 shrink-0">{{end}}
 
 {{define "base"}}<!doctype html>
 <html lang="id">
 <head>{{template "head" .}}</head>
-<body class="min-h-screen">
-<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">Lompat ke konten</a>
+<body>
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-card focus:px-3 focus:py-2">Lompat ke konten</a>
 
-{{/* ===== Sidebar desktop (≥1024px) ===== */}}
-<aside class="no-print fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-white lg:flex" aria-label="Menu utama">
-  <a href="/app" class="flex h-14 items-center gap-2.5 px-4">
-    {{template "brand-mark"}}
-    <span class="min-w-0 leading-tight">
-      <span class="block text-sm font-semibold text-slate-900">SIKAT</span>
-      <span class="block truncate text-xs text-slate-500">{{.HospitalName}}</span>
-    </span>
-  </a>
-  <nav class="flex-1 overflow-y-auto px-2.5 pb-4">
-    {{template "nav-items" (dict "P" . "Link" "side-link" "Active" "side-link-active" "Group" "side-group")}}
-  </nav>
-  <div class="border-t border-line p-2.5">
-    <div class="flex items-center gap-2.5 px-1.5 py-1">
-      <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">{{.User.Initials}}</span>
-      <span class="min-w-0 flex-1 leading-tight">
-        <span class="block truncate text-sm font-medium text-slate-900">{{.User.FullName}}</span>
-        <span class="block truncate text-xs text-slate-500">{{.User.RoleName}}</span>
-      </span>
-      <form method="post" action="/logout">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <button type="submit" class="grid h-8 w-8 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" title="Keluar" aria-label="Keluar" data-no-busy>
-          <span class="icon h-[18px] w-[18px]">{{template "icon" "logout"}}</span>
-        </button>
-      </form>
-    </div>
-  </div>
-</aside>
-
-{{/* ===== Header HP & tablet ===== */}}
-<header class="no-print sticky top-0 z-30 border-b border-line bg-white lg:hidden">
-  <div class="flex h-14 items-center gap-3 px-4 sm:px-6">
-    <button type="button" class="btn btn-ghost -ml-2 px-2" data-menu-toggle aria-controls="mobile-menu" aria-expanded="false" aria-label="Buka menu">
-      <span class="icon h-6 w-6">{{template "icon" "menu"}}</span>
-    </button>
-    <a href="/app" class="flex min-w-0 items-center gap-2">
+<div class="kerangka flex h-dvh overflow-hidden bg-background">
+  {{/* ===== Sidebar: terbuka bawaan di layar kerja, bisa ditutup (diingat per browser); laci di HP ===== */}}
+  <aside id="sidebar" class="sidebar no-print flex w-64 flex-none flex-col gap-2 overflow-y-auto border-r bg-background p-2" aria-label="Menu utama">
+    <a class="flex items-center gap-2.5 rounded-md p-2 text-foreground no-underline hover:bg-accent" href="/app">
       {{template "brand-mark"}}
-      <span class="min-w-0 leading-tight">
-        <span class="block text-sm font-semibold text-slate-900">SIKAT</span>
-        <span class="block truncate text-xs text-slate-500">{{.HospitalName}}</span>
+      <span class="flex min-w-0 flex-col">
+        <strong class="text-base">SIKAT</strong>
+        <small class="truncate text-xs text-muted-foreground">{{.HospitalName}}</small>
       </span>
     </a>
-    <a href="/app/notifications" class="relative ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Notifikasi">
-      <span class="icon h-6 w-6">{{template "icon" "bell"}}</span>
-      <span class="bell-badge" data-unread {{if not .Unread}}hidden{{end}}>{{template "notif-count" .Unread}}</span>
-    </a>
-    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600" title="{{.User.FullName}} · {{.User.RoleName}}">{{.User.Initials}}</span>
-  </div>
-</header>
+    <nav class="flex flex-col gap-0.5 pb-1">
+      {{template "nav-items" .}}
+    </nav>
+    <div class="flex-1"></div>
+    <p class="m-0 px-2 pb-1 text-xs text-tertiary">Sistem Informasi Kelola Aduan &amp; Tindak Lanjut</p>
+  </aside>
+  <button type="button" class="laci-penutup no-print" data-laci-tutup aria-label="Tutup menu" tabindex="-1"></button>
 
-{{/* ===== Laci menu HP ===== */}}
-<div id="mobile-menu" class="no-print fixed inset-0 z-40 lg:hidden" hidden>
-  <div class="absolute inset-0 bg-slate-900/40" data-menu-toggle></div>
-  <nav class="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col overflow-y-auto bg-white shadow-xl" aria-label="Menu utama">
-    <div class="flex items-center gap-3 border-b border-slate-100 p-4">
-      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">{{.User.Initials}}</span>
-      <div class="min-w-0 leading-tight">
-        <div class="truncate font-semibold text-slate-900">{{.User.FullName}}</div>
-        <div class="truncate text-xs text-slate-500">{{.User.RoleName}}</div>
+  <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+    {{/* ===== Bilah atas 56 px ===== */}}
+    <header class="no-print flex h-14 flex-none items-center gap-2 border-b bg-halaman pl-4 pr-6 max-md:pl-2 max-md:pr-3">
+      <button type="button" class="btn btn-ghost btn-icon" data-sidebar-toggle aria-expanded="true" aria-controls="sidebar" aria-label="Menu" title="Buka atau tutup menu">
+        {{template "icon" "sidebar"}}
+      </button>
+      <span class="h-4 w-px bg-border" aria-hidden="true"></span>
+      <nav aria-label="Lokasi" class="flex min-w-0 flex-1 items-center gap-1.5 pl-1.5">
+        <a href="/app" class="text-muted-foreground no-underline hover:text-foreground max-md:hidden">SIKAT</a>
+        <span class="icon size-3.5 text-muted-foreground max-md:hidden">{{template "icon" "caret-right"}}</span>
+        <span class="truncate" aria-current="page">{{if .Title}}{{.Title}}{{else}}Beranda{{end}}</span>
+      </nav>
+
+      <a href="/app/notifications" class="btn btn-ghost btn-icon relative" aria-label="Notifikasi" title="Notifikasi">
+        {{template "icon" "bell"}}
+        <span class="bell-badge" data-unread {{if not .Unread}}hidden{{end}}>{{template "notif-count" .Unread}}</span>
+      </a>
+
+      {{/* Pemilih tema */}}
+      <div class="relative" data-popover>
+        <button type="button" class="btn btn-ghost btn-icon" data-popover-toggle aria-haspopup="dialog" aria-expanded="false" aria-controls="pop-tema" aria-label="Tampilan" title="Tampilan">
+          {{template "icon" "palette"}}
+        </button>
+        <div id="pop-tema" class="popover w-68 p-1" role="dialog" aria-label="Tampilan" hidden>
+          <div class="menu-label">Mode</div>
+          <div class="segmen mx-1 flex bg-accent" role="radiogroup" aria-label="Mode">
+            <button type="button" role="radio" aria-checked="false" data-pilih-mode="terang">Terang</button>
+            <button type="button" role="radio" aria-checked="false" data-pilih-mode="gelap">Gelap</button>
+            <button type="button" role="radio" aria-checked="false" data-pilih-mode="sistem">Sistem</button>
+          </div>
+          <div class="menu-garis"></div>
+          <div class="menu-label">Tema</div>
+          <div role="radiogroup" aria-label="Tema">
+            {{template "pilih-tema" (dict "Nama" "Daun" "Ket" "Putih · Teal")}}
+            {{template "pilih-tema" (dict "Nama" "Samudra" "Ket" "Putih · Biru laut")}}
+            {{template "pilih-tema" (dict "Nama" "Mawar" "Ket" "Taupe · Merah muda")}}
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="flex-1 px-3 pb-3">
-      {{template "nav-items" (dict "P" . "Link" "nav-link" "Active" "nav-link-active" "Group" "nav-group")}}
-    </div>
-    <form method="post" action="/logout" class="border-t border-slate-100 p-3">
-      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-      <button type="submit" class="nav-link w-full text-red-700" data-no-busy>{{template "icon" "logout"}}Keluar</button>
-    </form>
-  </nav>
+
+      {{/* Menu akun */}}
+      <div class="relative" data-popover>
+        <button type="button" class="flex max-w-60 items-center gap-2 rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-accent aria-expanded:bg-accent" data-popover-toggle aria-haspopup="menu" aria-expanded="false" aria-controls="pop-akun">
+          <span class="flex size-7 flex-none items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{{.User.Initials}}</span>
+          <span class="flex min-w-0 flex-col max-md:hidden">
+            <span class="truncate font-bold">{{.User.FullName}}</span>
+            <span class="truncate text-xs text-muted-foreground">{{.User.RoleName}}</span>
+          </span>
+          {{template "caret"}}
+        </button>
+        <div id="pop-akun" class="popover w-[300px] max-w-[calc(100vw-24px)] p-1" role="menu" aria-label="Akun" hidden>
+          <div class="flex flex-col px-2 pb-1.5 pt-2 md:hidden">
+            <span class="truncate font-bold">{{.User.FullName}}</span>
+            <span class="truncate text-xs text-muted-foreground">{{.User.RoleName}}</span>
+          </div>
+          <a class="menu-item" role="menuitem" href="/app/password">{{template "icon-4" "key"}}Ganti password</a>
+          <div class="menu-garis"></div>
+          <div class="flex items-center justify-between gap-2 px-2 py-1">
+            <span class="text-sm">Kepadatan</span>
+            <div class="segmen w-36" role="radiogroup" aria-label="Kepadatan">
+              <button type="button" role="radio" aria-checked="false" data-pilih-kepadatan="biasa">Biasa</button>
+              <button type="button" role="radio" aria-checked="false" data-pilih-kepadatan="padat">Padat</button>
+            </div>
+          </div>
+          <div class="menu-garis"></div>
+          <form method="post" action="/logout">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <button type="submit" class="menu-item menu-item-bahaya" role="menuitem" data-no-busy>{{template "icon-4" "logout"}}Keluar</button>
+          </form>
+          <p class="m-0 px-2 pb-1.5 pt-2 text-xs text-tertiary">Setiap perubahan data tercatat di jejak audit. {{.HospitalName}}.</p>
+        </div>
+      </div>
+    </header>
+
+    {{/* ===== Isi halaman ===== */}}
+    <main id="main" class="min-h-0 flex-1 overflow-y-auto bg-halaman">
+      <div class="mx-auto w-full max-w-[1600px] p-4 pb-24 md:pb-6 min-[1440px]:p-6">
+        {{template "content" .}}
+      </div>
+    </main>
+
+    {{/* ===== Navigasi bawah HP ===== */}}
+    <nav class="no-print grid flex-none grid-cols-4 border-t bg-halaman md:hidden" aria-label="Navigasi cepat">
+      {{template "bottom-link" (dict "Href" "/app" "Icon" "home" "Label" "Beranda" "Active" (eq .Nav "home"))}}
+      {{template "bottom-link" (dict "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "Active" (eq .Nav "tickets"))}}
+      {{template "bottom-link" (dict "Href" "/app/assets" "Icon" "monitor" "Label" "Perangkat" "Active" (eq .Nav "assets"))}}
+      <button type="button" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs text-muted-foreground" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false">
+        <span class="icon size-5">{{template "icon" "menu"}}</span>Menu</button>
+    </nav>
+  </div>
 </div>
 
-{{/* ===== Konten ===== */}}
-<div class="lg:pl-60">
-  <main id="main" class="mx-auto w-full max-w-6xl px-4 pb-24 pt-5 sm:px-6 sm:pt-6 lg:px-10 lg:pb-12 lg:pt-8">
-    <div id="toasts" class="fixed inset-x-4 top-16 z-50 space-y-2 sm:left-auto sm:right-6 sm:w-96 lg:top-6 lg:right-8" aria-live="polite">
-      {{template "flash" .}}
-    </div>
-    {{template "content" .}}
-  </main>
+<div id="toasts" class="fixed bottom-4 right-4 z-50 flex w-96 max-w-[calc(100vw-24px)] flex-col gap-2 max-md:bottom-18 max-md:right-3" aria-live="polite">
+  {{template "flash" .}}
 </div>
-
-{{/* ===== Navigasi bawah HP ===== */}}
-<nav class="no-print fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-white lg:hidden" aria-label="Navigasi cepat">
-  {{template "bottom-link" (dict "Href" "/app" "Icon" "home" "Label" "Beranda" "Active" (eq .Nav "home"))}}
-  {{template "bottom-link" (dict "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "Active" (eq .Nav "tickets"))}}
-  {{template "bottom-link" (dict "Href" "/app/assets" "Icon" "monitor" "Label" "Perangkat" "Active" (eq .Nav "assets"))}}
-  <button type="button" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-slate-500" data-menu-toggle aria-controls="mobile-menu" aria-expanded="false">
-    <span class="icon h-6 w-6">{{template "icon" "menu"}}</span>Menu</button>
-</nav>
 </body>
 </html>
 {{end}}
 
-{{define "bottom-link"}}
-<a href="{{.Href}}" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium {{if .Active}}text-brand-700{{else}}text-slate-500{{end}}">
-  <span class="icon h-6 w-6">{{template "icon" .Icon}}</span>{{.Label}}</a>
+{{define "pilih-tema"}}
+<button type="button" class="menu-item gap-2.5" role="radio" aria-checked="false" data-pilih-tema="{{.Nama}}">
+  <span class="flex min-w-0 flex-1 flex-col">
+    <span class="font-bold">{{.Nama}}</span>
+    <span class="text-xs text-muted-foreground">{{.Ket}}</span>
+  </span>
+  <span class="flex gap-1" data-tema="{{.Nama}}" aria-hidden="true">
+    <span class="titik-tema border bg-tema-kuat"></span><span class="titik-tema bg-chart-2"></span><span class="titik-tema bg-primary"></span>
+  </span>
+  <span class="icon invisible size-4 text-aksen" data-centang>{{template "icon" "check"}}</span>
+</button>
 {{end}}
 
-{{/* nav-items: daftar menu sesuai hak akses. Data: P (Page), Link/Active/Group (kelas CSS). */}}
-{{define "nav-items"}}{{$p := .P}}{{$u := .P.User}}
-<div class="{{.Group}}">Utama</div>
-{{template "nav-link" (dict "C" . "Href" "/app" "Icon" "home" "Label" "Beranda" "On" (eq $p.Nav "home"))}}
-<a href="/app/notifications" class="{{.Link}} {{if eq $p.Nav "notifications"}}{{.Active}}{{end}}" {{if eq $p.Nav "notifications"}}aria-current="page"{{end}}>{{template "icon" "bell"}}<span>Notifikasi</span><span class="count-badge" data-unread {{if not $p.Unread}}hidden{{end}}>{{template "notif-count" $p.Unread}}</span></a>
-{{if $u.Can "ticket.view_queue"}}{{template "nav-link" (dict "C" . "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "On" (eq $p.Nav "tickets"))}}{{end}}
-{{if $u.Can "activity.create"}}{{template "nav-link" (dict "C" . "Href" "/app/activities" "Icon" "activity" "Label" "Kegiatan" "On" (eq $p.Nav "activities"))}}{{end}}
-{{if or ($u.Can "report.view_all") ($u.Can "report.view_own")}}{{template "nav-link" (dict "C" . "Href" "/app/reports" "Icon" "chart" "Label" "Laporan" "On" (eq $p.Nav "reports"))}}{{end}}
-{{if $u.Can "sla.view"}}{{template "nav-link" (dict "C" . "Href" "/app/sla" "Icon" "clock" "Label" "SLA" "On" (eq $p.Nav "sla"))}}{{end}}
+{{define "caret"}}<svg class="flex-none text-muted-foreground" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
+
+{{define "icon-4"}}<span class="icon size-4 text-muted-foreground">{{template "icon" .}}</span>{{end}}
+
+{{define "bottom-link"}}
+<a href="{{.Href}}" class="flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs no-underline {{if .Active}}font-bold text-aksen{{else}}text-muted-foreground{{end}}" {{if .Active}}aria-current="page"{{end}}>
+  <span class="icon size-5">{{template "icon" .Icon}}</span>{{.Label}}</a>
+{{end}}
+
+{{/* nav-items: menu sesuai hak akses. Notifikasi dan ganti password ada di bilah atas. */}}
+{{define "nav-items"}}{{$p := .}}{{$u := .User}}
+<p class="grup-menu">Menu</p>
+{{template "nav-link" (dict "Href" "/app" "Icon" "home" "Label" "Beranda" "On" (eq $p.Nav "home"))}}
+{{if $u.Can "ticket.view_queue"}}{{template "nav-link" (dict "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "On" (eq $p.Nav "tickets"))}}{{end}}
+{{if $u.Can "activity.create"}}{{template "nav-link" (dict "Href" "/app/activities" "Icon" "activity" "Label" "Kegiatan" "On" (eq $p.Nav "activities"))}}{{end}}
+{{if or ($u.Can "report.view_all") ($u.Can "report.view_own")}}{{template "nav-link" (dict "Href" "/app/reports" "Icon" "chart" "Label" "Laporan" "On" (eq $p.Nav "reports"))}}{{end}}
+{{if $u.Can "sla.view"}}{{template "nav-link" (dict "Href" "/app/sla" "Icon" "clock" "Label" "SLA" "On" (eq $p.Nav "sla"))}}{{end}}
 {{if $u.Can "asset.view"}}
-<div class="{{.Group}}">Perangkat</div>
-{{template "nav-link" (dict "C" . "Href" "/app/assets" "Icon" "monitor" "Label" "Daftar Perangkat" "On" (eq $p.Nav "assets"))}}
-{{if $u.Can "maintenance.review"}}{{template "nav-link" (dict "C" . "Href" "/app/maintenance/alerts" "Icon" "alert" "Label" "Sering Rusak" "On" (eq $p.Nav "alerts"))}}{{end}}
+<p class="grup-menu">Perangkat</p>
+{{template "nav-link" (dict "Href" "/app/assets" "Icon" "monitor" "Label" "Daftar perangkat" "On" (eq $p.Nav "assets"))}}
+{{if $u.Can "maintenance.review"}}{{template "nav-link" (dict "Href" "/app/maintenance/alerts" "Icon" "alert" "Label" "Sering rusak" "On" (eq $p.Nav "alerts"))}}{{end}}
 {{end}}
 {{if or ($u.Can "master.manage") ($u.Can "user.manage") ($u.Can "config.manage") ($u.Can "audit.view")}}
-<div class="{{.Group}}">Administrasi</div>
-{{if $u.Can "master.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/master" "Icon" "grid" "Label" "Master Data" "On" (eq $p.Nav "master"))}}{{end}}
-{{if $u.Can "user.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/users" "Icon" "users" "Label" "Pengguna" "On" (eq $p.Nav "users"))}}{{end}}
+<p class="grup-menu">Administrasi</p>
+{{if $u.Can "master.manage"}}{{template "nav-link" (dict "Href" "/app/master" "Icon" "grid" "Label" "Master data" "On" (eq $p.Nav "master"))}}{{end}}
+{{if $u.Can "user.manage"}}{{template "nav-link" (dict "Href" "/app/users" "Icon" "users" "Label" "Pengguna" "On" (eq $p.Nav "users"))}}{{end}}
 {{/* Menu Integrasi disembunyikan (18/11/2026): integrasi direncanakan lewat API SIMRS.
      Halaman /app/integrations tetap ada untuk Admin bila dibutuhkan. */}}
-{{if $u.Can "config.manage"}}{{template "nav-link" (dict "C" . "Href" "/app/settings" "Icon" "sliders" "Label" "Pengaturan" "On" (eq $p.Nav "settings"))}}
-{{template "nav-link" (dict "C" . "Href" "/app/backups" "Icon" "database" "Label" "Backup" "On" (eq $p.Nav "backups"))}}{{end}}
-{{if $u.Can "audit.view"}}{{template "nav-link" (dict "C" . "Href" "/app/audit" "Icon" "document" "Label" "Jejak Audit" "On" (eq $p.Nav "audit"))}}{{end}}
+{{if $u.Can "config.manage"}}{{template "nav-link" (dict "Href" "/app/settings" "Icon" "sliders" "Label" "Pengaturan" "On" (eq $p.Nav "settings"))}}
+{{template "nav-link" (dict "Href" "/app/backups" "Icon" "database" "Label" "Backup" "On" (eq $p.Nav "backups"))}}{{end}}
+{{if $u.Can "audit.view"}}{{template "nav-link" (dict "Href" "/app/audit" "Icon" "document" "Label" "Jejak audit" "On" (eq $p.Nav "audit"))}}{{end}}
 {{end}}
-<div class="{{.Group}}">Akun</div>
-{{template "nav-link" (dict "C" . "Href" "/app/password" "Icon" "key" "Label" "Ganti Password" "On" (eq $p.Nav "password"))}}
 {{end}}
 
-{{define "nav-link"}}<a href="{{.Href}}" class="{{.C.Link}} {{if .On}}{{.C.Active}}{{end}}" {{if .On}}aria-current="page"{{end}}>{{template "icon" .Icon}}<span>{{.Label}}</span></a>{{end}}
+{{define "nav-link"}}<a href="{{.Href}}" class="item-menu" {{if .On}}aria-current="page"{{end}}>{{template "icon" .Icon}}<span>{{.Label}}</span></a>{{end}}
 
 {{define "notif-count"}}{{if gt . 99}}99+{{else}}{{.}}{{end}}{{end}}

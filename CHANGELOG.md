@@ -5,6 +5,15 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ## Belum dirilis
 
 ### Diubah
+- **Tampilan standar Casemix** (`tampilan/tampilan-casemix`):
+  - Token warna dengan tiga tema (Daun, Samudra, Mawar), mode gelap, dan kepadatan Biasa/Padat, dipilih per browser lewat bilah atas.
+  - Font Geist dan ikon Phosphor.
+  - Badge status berupa pil dengan ikon berbentuk.
+  - Halaman masuk dua kolom.
+  - Sidebar tetap di kiri dan terbuka bawaan. Bisa ditutup (diingat per browser); di HP menjadi laci.
+- **Kontrol form gaya shadcn**: select, tanggal/bulan/tanggal-jam (kalender), pilih file, centang, dan radio tidak lagi memakai tampilan bawaan browser.
+  - Elemen asli tetap dikirim bersama form (`static/js/kontrol.js`).
+  - `confirm()`/`alert()` diganti dialog dan notifikasi.
 - **Kode otomatis**: kode Unit (`UNT-001`), Ruangan (`RNG-0001`), Bidang (`BDG-01`),
   Kategori Perangkat (`KAT-01`), Alasan Tunda (`ALS-01`), Sparepart (`SPR-0001`), dan
   kode inventaris Perangkat (`PRK-<tahun>-0001`, urutan diulang tiap tahun) kini dibuat

@@ -43,7 +43,7 @@ func TestPager(t *testing.T) {
 }
 
 func TestLabels(t *testing.T) {
-	if Label("asset_status", "IN_REPAIR") != "Dalam perbaikan" || Tone("priority", "CRITICAL") != "red" {
+	if Label("asset_status", "IN_REPAIR") != "Dalam perbaikan" || Tone("priority", "CRITICAL") != "alert" {
 		t.Fatal("label/tone tidak sesuai")
 	}
 	if Label("asset_status", "X") != "X" || !ValidLabel("priority", "LOW") || ValidLabel("priority", "X") {

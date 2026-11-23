@@ -1,0 +1,293 @@
+/* Token tampilan Casemix RSUD Bali Mandara, salinan dari desain/tokens.css rilis v12.5.2 (23 Nov 2026).
+   Jangan diubah di proyek tim. Perubahan warna diminta ke tim Casemix supaya semua aplikasi tetap sama. */
+/* Daun · Terang (bawaan) */
+:root,
+[data-tema="Daun"] {
+  --bg-shell: #FFFFFF;
+  --bg-panel: #FFFFFF;
+  --bg-subtle: #FAFAFA;
+  --bg-control: #FFFFFF;
+  --bg-hover: #F5F5F5;
+  --bg-pressed: #E5E5E5;
+  --bg-well: #F5F5F5;
+  --bg-skeleton: #F5F5F5;
+  --bg-selected: #F2F8F8;
+  --bg-selected-strong: #E0EFEE;
+  --border-subtle: #E5E5E5;
+  --border-control: #D4D4D4;
+  --border-strong: #A1A1A1;
+  --border-selected: #A6D0CD;
+  --text-primary: #0A0A0A;
+  --text-secondary: #404040;
+  --text-tertiary: #525252;
+  --accent-solid: #00786F;
+  --accent-solid-hover: #005F5A;
+  --accent-text: #00786F;
+  --accent-on-solid: #F0FDFA;
+  --accent-focus: #00BBA7;
+  --ok-solid: #00786F;
+  --ok-text: #00786F;
+  --warn-solid: #BB4D00;
+  --warn-text: #BB4D00;
+  --warn-bg: #FEF3C6;
+  --bad-solid: #C10007;
+  --bad-text: #C10007;
+  --idle-solid: #A1A1A1;
+  --bg-halaman: #FFFFFF;
+  --bg-tema: #F0F7F6;
+  --bg-tema-kuat: #E0EFEE;
+  --border-tema: #A6D0CD;
+  --chart-1: #46ECD5;
+  --chart-2: #00BBA7;
+  --chart-3: #009689;
+  --chart-4: #00786F;
+  --chart-5: #005F5A;
+}
+/* Daun · Gelap */
+[data-semantik="Gelap"] {
+  --bg-shell: #0A0A0A;
+  --bg-panel: #171717;
+  --bg-subtle: #262626;
+  --bg-control: #0A0A0A;
+  --bg-hover: #262626;
+  --bg-pressed: #404040;
+  --bg-well: #0A0A0A;
+  --bg-skeleton: #262626;
+  --bg-selected: #152A28;
+  --bg-selected-strong: #133935;
+  --border-subtle: #2E2E2E;
+  --border-control: #3C3C3C;
+  --border-strong: #525252;
+  --border-selected: #005F5A;
+  --text-primary: #FAFAFA;
+  --text-secondary: #D4D4D4;
+  --text-tertiary: #A1A1A1;
+  --accent-solid: #00786F;
+  --accent-solid-hover: #005F5A;
+  --accent-text: #00D5BE;
+  --accent-on-solid: #F0FDFA;
+  --accent-focus: #00BBA7;
+  --ok-solid: #00BBA7;
+  --ok-text: #00D5BE;
+  --warn-solid: #FE9A00;
+  --warn-text: #FFB900;
+  --warn-bg: #461901;
+  --bad-solid: #FB2C36;
+  --bad-text: #FF6467;
+  --idle-solid: #737373;
+  --bg-halaman: #0A0A0A;
+  --bg-tema: #152624;
+  --bg-tema-kuat: #133532;
+  --border-tema: #105049;
+  --chart-1: #46ECD5;
+  --chart-2: #00BBA7;
+  --chart-3: #009689;
+  --chart-4: #00786F;
+  --chart-5: #005F5A;
+}
+/* Samudra · Terang */
+[data-tema="Samudra"] {
+  --bg-shell: #FFFFFF;
+  --bg-panel: #FFFFFF;
+  --bg-subtle: #FAFAFA;
+  --bg-control: #FFFFFF;
+  --bg-hover: #F5F5F5;
+  --bg-pressed: #E5E5E5;
+  --bg-well: #F5F5F5;
+  --bg-skeleton: #F5F5F5;
+  --bg-selected: #F2F8FB;
+  --bg-selected-strong: #E0EDF5;
+  --border-subtle: #E5E5E5;
+  --border-control: #D4D4D4;
+  --border-strong: #A1A1A1;
+  --border-selected: #A6CAE1;
+  --text-primary: #0A0A0A;
+  --text-secondary: #404040;
+  --text-tertiary: #525252;
+  --accent-solid: #0069A8;
+  --accent-solid-hover: #00598A;
+  --accent-text: #0069A8;
+  --accent-on-solid: #F0F9FF;
+  --accent-focus: #00A6F4;
+  --ok-solid: #0069A8;
+  --ok-text: #0069A8;
+  --warn-solid: #BB4D00;
+  --warn-text: #BB4D00;
+  --warn-bg: #FEF3C6;
+  --bad-solid: #C10007;
+  --bad-text: #C10007;
+  --idle-solid: #A1A1A1;
+  --bg-halaman: #FFFFFF;
+  --bg-tema: #F0F6FA;
+  --bg-tema-kuat: #E0EDF5;
+  --border-tema: #A6CAE1;
+  --chart-1: #74D4FF;
+  --chart-2: #00A6F4;
+  --chart-3: #0084D1;
+  --chart-4: #0069A8;
+  --chart-5: #00598A;
+}
+/* Samudra · Gelap */
+[data-tema="Samudra"][data-semantik="Gelap"] {
+  --bg-shell: #0A0A0A;
+  --bg-panel: #171717;
+  --bg-subtle: #262626;
+  --bg-control: #0A0A0A;
+  --bg-hover: #262626;
+  --bg-pressed: #404040;
+  --bg-well: #0A0A0A;
+  --bg-skeleton: #262626;
+  --bg-selected: #15282E;
+  --bg-selected-strong: #133541;
+  --border-subtle: #2E2E2E;
+  --border-control: #3C3C3C;
+  --border-strong: #525252;
+  --border-selected: #00598A;
+  --text-primary: #FAFAFA;
+  --text-secondary: #D4D4D4;
+  --text-tertiary: #A1A1A1;
+  --accent-solid: #0069A8;
+  --accent-solid-hover: #00598A;
+  --accent-text: #00BCFF;
+  --accent-on-solid: #F0F9FF;
+  --accent-focus: #00A6F4;
+  --ok-solid: #00A6F4;
+  --ok-text: #00BCFF;
+  --warn-solid: #FE9A00;
+  --warn-text: #FFB900;
+  --warn-bg: #461901;
+  --bad-solid: #FB2C36;
+  --bad-text: #FF6467;
+  --idle-solid: #737373;
+  --bg-halaman: #0A0A0A;
+  --bg-tema: #15242A;
+  --bg-tema-kuat: #13313C;
+  --border-tema: #10485D;
+  --chart-1: #74D4FF;
+  --chart-2: #00A6F4;
+  --chart-3: #0084D1;
+  --chart-4: #0069A8;
+  --chart-5: #00598A;
+}
+/* Mawar · Terang */
+[data-tema="Mawar"] {
+  --bg-shell: #FFFFFF;
+  --bg-panel: #FFFFFF;
+  --bg-subtle: #FBFAF9;
+  --bg-control: #FFFFFF;
+  --bg-hover: #F3F1F1;
+  --bg-pressed: #E8E4E3;
+  --bg-well: #F3F1F1;
+  --bg-skeleton: #F3F1F1;
+  --bg-selected: #FCF2F7;
+  --bg-selected-strong: #F8E0EB;
+  --border-subtle: #E8E4E3;
+  --border-control: #D8D2D0;
+  --border-strong: #ABA09C;
+  --border-selected: #EBA6C6;
+  --text-primary: #0C0A09;
+  --text-secondary: #473C39;
+  --text-tertiary: #5B4F4B;
+  --accent-solid: #C6005C;
+  --accent-solid-hover: #A3004C;
+  --accent-text: #C6005C;
+  --accent-on-solid: #FDF2F8;
+  --accent-focus: #F6339A;
+  --ok-solid: #C6005C;
+  --ok-text: #C6005C;
+  --warn-solid: #BB4D00;
+  --warn-text: #BB4D00;
+  --warn-bg: #FEF3C6;
+  --bad-solid: #C10007;
+  --bad-text: #C10007;
+  --idle-solid: #ABA09C;
+  --bg-halaman: #F3F1F1;
+  --bg-tema: #FCF0F5;
+  --bg-tema-kuat: #F8E0EB;
+  --border-tema: #EBA6C6;
+  --chart-1: #FDA5D5;
+  --chart-2: #F6339A;
+  --chart-3: #E60076;
+  --chart-4: #C6005C;
+  --chart-5: #A3004C;
+}
+/* Mawar · Gelap */
+[data-tema="Mawar"][data-semantik="Gelap"] {
+  --bg-shell: #0C0A09;
+  --bg-panel: #1D1816;
+  --bg-subtle: #2B2422;
+  --bg-control: #0C0A09;
+  --bg-hover: #2B2422;
+  --bg-pressed: #473C39;
+  --bg-well: #0C0A09;
+  --bg-skeleton: #2B2422;
+  --bg-selected: #332026;
+  --bg-selected-strong: #452633;
+  --border-subtle: #342F2D;
+  --border-control: #413D3B;
+  --border-strong: #5B4F4B;
+  --border-selected: #A3004C;
+  --text-primary: #FBFAF9;
+  --text-secondary: #D8D2D0;
+  --text-tertiary: #ABA09C;
+  --accent-solid: #C6005C;
+  --accent-solid-hover: #A3004C;
+  --accent-text: #FB64B6;
+  --accent-on-solid: #FDF2F8;
+  --accent-focus: #F6339A;
+  --ok-solid: #F6339A;
+  --ok-text: #FB64B6;
+  --warn-solid: #FE9A00;
+  --warn-text: #FFB900;
+  --warn-bg: #461901;
+  --bad-solid: #FB2C36;
+  --bad-text: #FF6467;
+  --idle-solid: #7C6D67;
+  --bg-halaman: #0C0A09;
+  --bg-tema: #2F1E23;
+  --bg-tema-kuat: #412430;
+  --border-tema: #602F46;
+  --chart-1: #FDA5D5;
+  --chart-2: #F6339A;
+  --chart-3: #E60076;
+  --chart-4: #C6005C;
+  --chart-5: #A3004C;
+}
+/* Ukuran · Nilai */
+:root {
+  --ruang-1: 4px;
+  --ruang-2: 8px;
+  --ruang-3: 12px;
+  --ruang-4: 16px;
+  --ruang-5: 20px;
+  --ruang-6: 24px;
+  --ruang-8: 32px;
+  --ruang-10: 40px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+}
+/* Kepadatan · Biasa */
+:root {
+  --baris-tabel: 56px;
+  --bilah-pasien: 60px;
+  --kepala-panel: 44px;
+  --pita-bagian: 48px;
+  --kaki-panel: 56px;
+  --isi-atas: 16px;
+  --isi-bawah: 20px;
+  --isi-jarak: 14px;
+}
+/* Kepadatan · Padat */
+[data-kepadatan="Padat"] {
+  --baris-tabel: 36px;
+  --bilah-pasien: 48px;
+  --kepala-panel: 36px;
+  --pita-bagian: 32px;
+  --kaki-panel: 48px;
+  --isi-atas: 12px;
+  --isi-bawah: 14px;
+  --isi-jarak: 10px;
+}

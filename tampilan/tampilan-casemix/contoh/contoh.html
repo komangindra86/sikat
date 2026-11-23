@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Contoh tampilan Casemix</title>
+<script>
+  // Skrip awal: pilihan tampilan dipasang sebelum halaman tergambar.
+  (function () {
+    try {
+      var akar = document.documentElement;
+      var mode = localStorage.getItem('contoh.mode');
+      var gelap = mode === 'gelap' || (mode === 'sistem' && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (gelap) akar.dataset.semantik = 'Gelap';
+      akar.style.colorScheme = gelap ? 'dark' : 'light';
+      var tema = localStorage.getItem('contoh.tema');
+      if (tema === 'Samudra' || tema === 'Mawar') akar.dataset.tema = tema;
+      if (localStorage.getItem('contoh.kepadatan') === 'padat') akar.dataset.kepadatan = 'Padat';
+    } catch (e) {}
+  })();
+</script>
+<link rel="stylesheet" href="../aset/tokens.css" />
+<style>
+  @font-face { font-family: Geist; font-weight: 400; font-display: swap; src: url('../aset/fonts/geist-regular.woff2') format('woff2'); }
+  @font-face { font-family: Geist; font-weight: 600; font-display: swap; src: url('../aset/fonts/geist-semibold.woff2') format('woff2'); }
+  @font-face { font-family: Geist; font-weight: 700; font-display: swap; src: url('../aset/fonts/geist-bold.woff2') format('woff2'); }
+</style>
+<!-- Contoh ini memakai Tailwind versi browser supaya bisa dibuka tanpa build. Proyek memakai aset/tema.css. -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:is([data-semantik='Gelap'] *));
+  @custom-variant padat (&:where([data-kepadatan='Padat'] *));
+  @custom-variant data-active (&:where([data-state='active']));
+
+  :root {
+    --radius: 10px;
+    --bayangan-kartu: 0 1px 2px rgb(0 0 0 / 0.04);
+    --bayangan-melayang: 0 8px 24px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.06);
+  }
+
+  @theme inline {
+    --color-*: initial;
+    --color-transparent: transparent;
+    --color-background: var(--bg-shell);
+    --color-foreground: var(--text-primary);
+    --color-card: var(--bg-panel);
+    --color-popover: var(--bg-panel);
+    --color-primary: var(--accent-solid);
+    --color-primary-hover: var(--accent-solid-hover);
+    --color-primary-foreground: var(--accent-on-solid);
+    --color-secondary: var(--bg-subtle);
+    --color-muted: var(--bg-subtle);
+    --color-muted-foreground: var(--text-secondary);
+    --color-accent: var(--bg-hover);
+    --color-destructive: var(--bad-solid);
+    --color-border: var(--border-subtle);
+    --color-input: var(--border-control);
+    --color-ring: var(--accent-solid);
+    --color-control: var(--bg-control);
+    --color-strong: var(--border-strong);
+    --color-tertiary: var(--text-tertiary);
+    --color-skeleton: var(--bg-skeleton);
+    --color-pressed: var(--bg-pressed);
+    --color-selected: var(--bg-selected);
+    --color-well: var(--bg-well);
+    --color-halaman: var(--bg-halaman);
+    --color-tema: var(--bg-tema);
+    --color-tema-kuat: var(--bg-tema-kuat);
+    --color-tema-garis: var(--border-tema);
+    --color-aksen: var(--accent-text);
+    --color-ok: var(--ok-text);
+    --color-ok-solid: var(--ok-solid);
+    --color-warn: var(--warn-text);
+    --color-warn-solid: var(--warn-solid);
+    --color-warn-bg: var(--warn-bg);
+    --color-bad: var(--bad-text);
+    --color-bad-solid: var(--bad-solid);
+    --color-idle-solid: var(--idle-solid);
+    --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
+    --font-weight-bold: 600;
+    --font-weight-extrabold: 700;
+    --text-xs: 12px; --text-xs--line-height: 16px;
+    --text-sm: 13px; --text-sm--line-height: 18px;
+    --text-base: 14px; --text-base--line-height: 20px;
+    --text-lg: 16px; --text-lg--line-height: 22px;
+    --text-xl: 20px; --text-xl--line-height: 26px;
+    --text-angka: 22px; --text-angka--line-height: 28px;
+    --text-judul: 24px; --text-judul--line-height: 30px;
+    --text-kbd: 11px; --text-kbd--line-height: 14px;
+    --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px;
+    --shadow-xs: var(--bayangan-kartu);
+    --shadow-md: var(--bayangan-melayang);
+  }
+
+  @layer base {
+    * { border-color: var(--color-border); }
+    body {
+      background: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans);
+      font-size: var(--text-sm); line-height: var(--text-sm--line-height); font-variant-numeric: tabular-nums; margin: 0;
+    }
+  }
+
+  @utility tombol {
+    @apply inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-transparent px-3 text-base whitespace-nowrap outline-none select-none;
+    transition: color 100ms ease-out, background-color 100ms ease-out, border-color 100ms ease-out, scale 100ms ease-out;
+    &:active { scale: 0.97; }
+    &:focus-visible { @apply border-ring ring-3 ring-ring/50; }
+    &:disabled { @apply pointer-events-none opacity-50; }
+  }
+  @utility tombol-utama { @apply tombol bg-primary text-primary-foreground hover:bg-primary-hover font-bold; }
+  @utility tombol-garis { @apply tombol border-input bg-control shadow-xs hover:border-strong hover:bg-accent; }
+  @utility tombol-hantu { @apply tombol text-muted-foreground hover:bg-accent hover:text-foreground; }
+  @utility tombol-ikon { @apply tombol-hantu size-8 px-0 text-base; }
+  @utility kbd { @apply bg-muted text-muted-foreground border-input text-kbd inline-flex h-5 min-w-5 items-center justify-center rounded-xs border px-1 font-bold; }
+  @utility kepala { @apply bg-tema-kuat text-foreground border-tema-garis sticky top-0 z-10 h-10 border-b px-2 text-left text-xs font-bold whitespace-nowrap first:pl-4 last:pr-4; }
+  @utility sel { @apply h-(--baris-tabel) overflow-hidden border-b px-2 py-0 align-middle whitespace-nowrap first:pl-4 last:pr-4; }
+  @utility pil { @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold; }
+  @utility kartu { @apply bg-card rounded-xl border shadow-xs; }
+  @utility isian { @apply border-input bg-control h-9 w-full min-w-0 rounded-lg border px-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20; transition: border-color 100ms, box-shadow 100ms; }
+
+  /* Sidebar 3D stack */
+  .tumpukan { perspective: 1800px; --geser: calc(var(--spacing) * 64 + 72px); --gerak: 250ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .sidebar { opacity: 0; translate: -16px 0; transition: opacity var(--gerak), translate var(--gerak); }
+  .halaman, .lapisan { transform-origin: left center; transition: transform var(--gerak), opacity var(--gerak), border-radius var(--gerak), box-shadow var(--gerak); }
+  .lapisan { opacity: 0; }
+  [data-sidebar='buka'] .sidebar { opacity: 1; translate: 0 0; }
+  [data-sidebar='buka'] .halaman { transform: translateX(var(--geser)) scale(0.9) rotateY(-6deg); border-radius: var(--radius-xl); box-shadow: var(--bayangan-melayang), 0 24px 48px rgb(0 0 0 / 0.18); }
+  [data-sidebar='buka'] .lapisan-1 { opacity: 1; transform: translateX(calc(var(--geser) - 28px)) scale(0.86) rotateY(-6deg); border-radius: var(--radius-xl); }
+  [data-sidebar='buka'] .lapisan-2 { opacity: 0.8; transform: translateX(calc(var(--geser) - 56px)) scale(0.82) rotateY(-6deg); border-radius: var(--radius-xl); }
+  .item-menu { display: flex; align-items: center; gap: 8px; height: 32px; padding-inline: 8px; border-radius: var(--radius-md); color: var(--color-foreground); font-size: var(--text-base); text-decoration: none; transition: background-color 100ms ease-out; }
+  .item-menu:hover { background: var(--color-accent); }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar, .halaman, .lapisan { transition: opacity var(--gerak); }
+    .sidebar { translate: 0 0; }
+    [data-sidebar='buka'] .halaman { transform: translateX(var(--geser)); }
+    [data-sidebar='buka'] .lapisan-1, [data-sidebar='buka'] .lapisan-2 { opacity: 0; }
+    .tombol:active { scale: 1; }
+  }
+</style>
+</head>
+<body>
+<div id="tumpukan" class="tumpukan bg-background relative h-screen overflow-hidden" data-sidebar="tutup">
+  <aside id="sidebar" class="sidebar absolute inset-y-0 left-0 flex w-64 flex-col gap-2 p-2" aria-label="Menu utama" inert>
+    <a class="text-foreground hover:bg-accent flex items-center gap-2.5 rounded-md p-2 no-underline" href="#">
+      <span class="bg-primary text-primary-foreground flex size-8 flex-none items-center justify-center rounded-md"><i class="ph ph-clipboard-text text-[18px]"></i></span>
+      <span class="flex min-w-0 flex-col"><strong class="text-base">Nama aplikasi</strong><small class="text-muted-foreground text-xs">RSUD Bali Mandara</small></span>
+    </a>
+    <nav class="flex flex-col gap-0.5 py-1">
+      <p class="text-muted-foreground m-0 flex h-7 items-center px-2 text-xs font-bold">Menu</p>
+      <a id="menu-pertama" class="item-menu bg-accent font-bold" href="#" aria-current="page"><i class="ph ph-clipboard-text text-aksen"></i>Antrean</a>
+      <a class="item-menu" href="#"><i class="ph ph-gauge"></i>Pantau beban</a>
+      <a class="item-menu" href="#"><i class="ph ph-gear"></i>Pengaturan</a>
+    </nav>
+    <div class="flex-1"></div>
+    <div class="bg-card flex flex-col gap-1.5 rounded-lg border p-3">
+      <span class="flex items-center gap-1.5 font-bold"><i class="ph ph-keyboard text-aksen text-base"></i>Pintasan keyboard</span>
+      <span class="text-muted-foreground text-xs">Tekan <span class="kbd">?</span> untuk melihat semua pintasan.</span>
+    </div>
+  </aside>
+
+  <div class="lapisan lapisan-2 bg-pressed absolute inset-0 border" aria-hidden="true"></div>
+  <div class="lapisan lapisan-1 bg-accent absolute inset-0 border" aria-hidden="true"></div>
+
+  <div id="halaman" class="halaman bg-background absolute inset-0 flex flex-col overflow-hidden">
+    <header class="bg-halaman flex h-14 flex-none items-center gap-2 border-b pr-6 pl-4 max-md:pr-3 max-md:pl-2">
+      <button id="buka-sidebar" type="button" class="tombol-ikon" aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar"><i class="ph ph-sidebar-simple"></i></button>
+      <span class="bg-border h-4 w-px" aria-hidden="true"></span>
+      <nav aria-label="Lokasi" class="flex min-w-0 flex-1 items-center gap-1.5 pl-1.5">
+        <a href="#" class="text-muted-foreground hover:text-foreground no-underline max-md:hidden">Nama aplikasi</a>
+        <i class="ph ph-caret-right text-muted-foreground text-[14px] max-md:hidden"></i>
+        <span class="truncate" aria-current="page">Antrean</span>
+      </nav>
+      <div class="flex items-center gap-1 max-md:hidden" role="radiogroup" aria-label="Tema">
+        <button type="button" class="tombol-hantu h-7 px-2 text-xs" data-pilih-tema="">Daun</button>
+        <button type="button" class="tombol-hantu h-7 px-2 text-xs" data-pilih-tema="Samudra">Samudra</button>
+        <button type="button" class="tombol-hantu h-7 px-2 text-xs" data-pilih-tema="Mawar">Mawar</button>
+      </div>
+      <span class="bg-border h-4 w-px max-md:hidden" aria-hidden="true"></span>
+      <button id="ganti-mode" type="button" class="tombol-ikon" aria-label="Ganti mode gelap"><i class="ph ph-moon"></i></button>
+      <button id="ganti-padat" type="button" class="tombol-ikon" aria-label="Ganti kepadatan"><i class="ph ph-rows"></i></button>
+      <button type="button" class="hover:bg-accent flex items-center gap-2 rounded-lg px-1 py-0.5 text-left">
+        <span class="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-full text-xs font-bold">PU</span>
+        <span class="flex min-w-0 flex-col max-md:hidden"><strong class="truncate">Petugas Uji</strong><small class="text-muted-foreground text-xs">koder</small></span>
+        <svg class="text-muted-foreground flex-none" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+    </header>
+
+    <main class="bg-halaman flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 max-md:gap-3 max-md:p-3 min-[1440px]:gap-5 min-[1440px]:p-6">
+      <div class="flex flex-none flex-wrap items-end gap-3">
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h1 class="text-judul m-0 font-bold tracking-[-0.01em]">Antrean klaim</h1>
+          <p class="text-muted-foreground m-0 text-base max-md:hidden">Klaim per kunjungan: koding, grouping, kirim, lalu verifikasi berkas.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="tombol-garis bg-card"><i class="ph ph-eye-slash"></i>Ringkasan</button>
+          <button type="button" class="tombol-utama"><i class="ph ph-download-simple"></i>Unduh berkas Benar</button>
+        </div>
+      </div>
+
+      <div class="bg-tema border-tema-garis flex flex-none flex-wrap items-center gap-2 rounded-xl border p-3 shadow-xs">
+        <button type="button" class="tombol-garis"><i class="ph ph-calendar-blank"></i><b class="font-bold">Tanggal masuk</b>
+          <svg class="text-muted-foreground" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+        <button type="button" class="tombol-garis"><i class="ph ph-calendar-blank"></i><b class="font-bold">1–22 Nov 2026</b>
+          <svg class="text-muted-foreground" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+        <span class="bg-border mx-1 h-5 w-px flex-none max-md:hidden" aria-hidden="true"></span>
+        <span class="text-muted-foreground whitespace-nowrap">Status</span>
+        <button type="button" class="tombol-garis"><b class="font-bold">Semua</b>
+          <svg class="text-muted-foreground" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+        <div class="bg-tema-kuat ml-auto inline-flex h-8 items-center gap-0.5 rounded-lg p-0.5" role="tablist" aria-label="Jenis rawat">
+          <button type="button" role="tab" data-state="active" class="text-muted-foreground hover:text-foreground data-active:bg-card data-active:text-foreground data-active:font-bold data-active:shadow-xs inline-flex h-7 items-center gap-1.5 rounded-md px-2.5">Rawat jalan <small class="text-aksen text-xs font-bold">512</small></button>
+          <button type="button" role="tab" class="text-muted-foreground hover:text-foreground data-active:bg-card data-active:text-foreground data-active:font-bold data-active:shadow-xs inline-flex h-7 items-center gap-1.5 rounded-md px-2.5">Rawat inap <small class="text-aksen text-xs font-bold">38</small></button>
+        </div>
+      </div>
+
+      <div class="grid flex-none grid-cols-4 gap-4 max-lg:grid-cols-2 max-md:gap-3">
+        <div class="kartu flex h-[104px] min-w-0 flex-col justify-between gap-2 p-4">
+          <span class="text-muted-foreground flex items-center justify-between gap-2 text-sm font-bold">Klaim terkirim<span class="bg-primary/10 text-aksen flex size-7 items-center justify-center rounded-md"><i class="ph ph-paper-plane-tilt text-[15px]"></i></span></span>
+          <span class="flex items-center gap-2"><b class="text-angka font-extrabold">74</b><span class="bg-bad-solid/10 text-bad rounded-full px-2 py-px text-xs font-bold">3 file klaim gagal</span></span>
+        </div>
+        <div class="kartu flex h-[104px] min-w-0 flex-col justify-between gap-2 p-4">
+          <span class="text-muted-foreground flex items-center justify-between gap-2 text-sm font-bold">Tarif RS<span class="bg-primary/10 text-aksen flex size-7 items-center justify-center rounded-md"><i class="ph ph-receipt text-[15px]"></i></span></span>
+          <b class="text-angka truncate font-extrabold">Rp 58.412.300</b>
+        </div>
+        <div class="kartu flex h-[104px] min-w-0 flex-col justify-between gap-2 p-4">
+          <span class="text-muted-foreground flex items-center justify-between gap-2 text-sm font-bold">Tarif INA-CBG<span class="bg-primary/10 text-aksen flex size-7 items-center justify-center rounded-md"><i class="ph ph-clipboard-text text-[15px]"></i></span></span>
+          <b class="text-angka truncate font-extrabold">Rp 44.906.500</b>
+        </div>
+        <div class="kartu flex h-[104px] min-w-0 flex-col justify-between gap-2 p-4">
+          <span class="text-muted-foreground flex items-center justify-between gap-2 text-sm font-bold">Selisih<span class="bg-bad-solid/10 text-bad flex size-7 items-center justify-center rounded-md"><i class="ph ph-trend-down text-[15px]"></i></span></span>
+          <b class="text-angka text-bad truncate font-extrabold">-Rp 13.505.800</b>
+        </div>
+      </div>
+
+      <div class="kartu flex min-h-[420px] flex-none flex-col overflow-hidden">
+        <div class="bg-tema border-tema-garis flex flex-none items-center border-b pr-4">
+          <div class="flex h-12 min-w-0 flex-1 gap-5 overflow-x-auto pl-4 [scrollbar-width:none]" role="tablist" aria-label="Status klaim">
+            <button type="button" role="tab" data-state="active" class="group/tab text-muted-foreground hover:text-foreground data-active:text-foreground data-active:font-bold after:bg-primary relative inline-flex h-12 flex-none items-center gap-1.5 px-0.5 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:opacity-0 data-active:after:opacity-100">Semua <small class="bg-card text-muted-foreground group-data-active/tab:bg-primary group-data-active/tab:text-primary-foreground rounded-full px-1.5 text-xs font-bold">512</small></button>
+            <button type="button" role="tab" class="group/tab text-muted-foreground hover:text-foreground data-active:text-foreground data-active:font-bold after:bg-primary relative inline-flex h-12 flex-none items-center gap-1.5 px-0.5 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:opacity-0 data-active:after:opacity-100">Menunggu verifikasi <small class="bg-card text-muted-foreground rounded-full px-1.5 text-xs font-bold">86</small></button>
+            <button type="button" role="tab" class="group/tab text-muted-foreground hover:text-foreground relative inline-flex h-12 flex-none items-center gap-1.5 px-0.5">Perlu perbaikan <small class="bg-card text-muted-foreground rounded-full px-1.5 text-xs font-bold">2</small></button>
+            <button type="button" role="tab" class="group/tab text-muted-foreground hover:text-foreground relative inline-flex h-12 flex-none items-center gap-1.5 px-0.5">Benar <small class="bg-card text-muted-foreground rounded-full px-1.5 text-xs font-bold">31</small></button>
+          </div>
+        </div>
+        <div class="relative min-h-0 flex-1 overflow-auto">
+          <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-sm">
+            <caption class="sr-only">Antrean klaim</caption>
+            <colgroup><col /><col class="w-[160px]" /><col class="w-[108px]" /><col class="w-[260px]" /><col class="w-[120px]" /><col class="w-[200px]" /></colgroup>
+            <thead><tr>
+              <th scope="col" class="kepala">Pasien</th><th scope="col" class="kepala">Ruangan</th><th scope="col" class="kepala">Dokumen</th>
+              <th scope="col" class="kepala">Diagnosa utama</th><th scope="col" class="kepala">INA-CBG</th><th scope="col" class="kepala">Status</th>
+            </tr></thead>
+            <tbody id="baris"></tbody>
+          </table>
+        </div>
+        <footer class="bg-tema border-tema-garis flex h-13 flex-none items-center justify-between gap-2 border-t px-4">
+          <span class="text-muted-foreground truncate" role="status">Menampilkan 1–7</span>
+          <span class="text-muted-foreground flex gap-3.5 text-xs max-lg:hidden">
+            <span class="flex items-center gap-1"><span class="kbd">A</span> <span class="kbd">S</span> pindah baris</span>
+            <span class="flex items-center gap-1"><span class="kbd">Q</span> cari</span>
+            <span class="flex items-center gap-1"><span class="kbd">?</span> semua pintasan</span>
+          </span>
+          <span class="flex flex-none items-center gap-1">
+            <button type="button" class="tombol-hantu" disabled>Sebelumnya</button>
+            <span class="text-muted-foreground">1 / 52</span>
+            <button type="button" class="tombol-hantu">Berikutnya</button>
+          </span>
+        </footer>
+      </div>
+
+      <div class="grid flex-none grid-cols-2 gap-4 max-lg:grid-cols-1">
+        <section class="kartu overflow-hidden" aria-label="Contoh bagian ruang kerja">
+          <div class="bg-tema-kuat border-tema-garis flex h-(--pita-bagian) items-center justify-between border-b px-5">
+            <h3 class="m-0 flex items-center gap-2.5 text-base font-bold"><span class="bg-primary text-primary-foreground flex size-5.5 items-center justify-center rounded-full text-xs">2</span>Pendaftaran</h3>
+            <span class="pil bg-warn-bg text-warn" data-status="Perbaikan">Perlu perbaikan</span>
+          </div>
+          <div class="flex flex-col gap-(--isi-jarak) px-5 pt-(--isi-atas) pb-(--isi-bawah)">
+            <div class="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-lg border">
+              <div class="bg-card flex min-w-0 flex-col gap-px px-3 py-2"><span class="text-muted-foreground text-xs">Kelas hak</span><span class="truncate font-bold">Kelas 1</span></div>
+              <div class="bg-card flex min-w-0 flex-col gap-px px-3 py-2"><span class="text-muted-foreground text-xs">Lama rawat</span><span class="truncate font-bold">4 hari</span></div>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-(--isi-jarak)">
+              <label class="flex flex-col gap-1.5"><span class="text-xs font-bold">Tanggal pulang</span><input class="isian" value="22 Nov 2026" /></label>
+              <label class="flex flex-col gap-1.5"><span class="text-xs font-bold">Berat lahir</span>
+                <span class="relative"><input class="isian pr-12 text-right" value="2.900" /><span class="text-tertiary pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs">gram</span></span></label>
+            </div>
+            <div class="flex items-center justify-between gap-3 border-t pt-3">
+              <span class="text-muted-foreground text-xs" role="status">Tersimpan 14.32</span>
+              <button type="button" class="tombol-utama h-9">Simpan &amp; klaim berikutnya <span class="kbd bg-primary-hover text-primary-foreground border-transparent">Ctrl</span><span class="kbd bg-primary-hover text-primary-foreground border-transparent">Enter</span></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="kartu flex flex-col gap-4 p-5" aria-label="Contoh keadaan">
+          <h3 class="m-0 text-base font-bold">Badge status</h3>
+          <div id="semua-status" class="flex flex-wrap gap-2"></div>
+          <h3 class="m-0 text-base font-bold">Memuat</h3>
+          <div class="flex flex-col gap-1.5"><span class="bg-skeleton block h-[11px] w-[200px] rounded-sm"></span><span class="bg-skeleton block h-[9px] w-[170px] rounded-sm"></span></div>
+          <div class="grid grid-cols-2 gap-4 border-t pt-4">
+            <div class="flex flex-col gap-1"><p class="m-0 text-base font-bold">Belum ada klaim</p><p class="text-muted-foreground m-0 text-sm">Tidak ada klaim rawat jalan untuk 1–22 Nov 2026. Ubah periode, atau lihat Rawat inap.</p></div>
+            <div class="flex flex-col items-start gap-3" role="alert"><div class="flex flex-col gap-1"><p class="text-bad m-0 text-base font-bold">Antrean gagal dimuat</p><p class="text-muted-foreground m-0 text-sm">Server tidak menjawab dalam 5 detik.</p></div><button type="button" class="tombol-garis h-9">Coba lagi</button></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <button id="penutup" type="button" class="halaman absolute inset-0 hidden cursor-pointer rounded-xl bg-transparent" aria-label="Tutup menu"></button>
+</div>
+
+<script>
+  // Data fiktif.
+  var IKON = {
+    Belum: '<circle cx="7" cy="7" r="6" fill="none" stroke="var(--idle-solid)" stroke-width="1.5" stroke-dasharray="2.4 2.4"/>',
+    Proses: '<circle cx="7" cy="7" r="6" fill="none" stroke="var(--accent-solid)" stroke-width="1.5"/><path d="M7 3A4 4 0 0 1 11 7L7 7Z" fill="var(--accent-solid)"/>',
+    Grouping: '<circle cx="7" cy="7" r="6" fill="none" stroke="var(--accent-solid)" stroke-width="1.5"/><path d="M7 3A4 4 0 0 1 7 11Z" fill="var(--accent-solid)"/>',
+    Final: '<circle cx="7" cy="7" r="6" fill="none" stroke="var(--accent-solid)" stroke-width="1.5"/><path d="M4.3 7.2L6.2 9.1L9.8 5.2" fill="none" stroke="var(--accent-solid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    Terkirim: '<circle cx="7" cy="7" r="6" fill="var(--ok-solid)" stroke="var(--ok-solid)" stroke-width="1.5"/><path d="M4.3 7.2L6.2 9.1L9.8 5.2" fill="none" stroke="var(--accent-on-solid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    Benar: '<circle cx="7" cy="7" r="6" fill="currentColor" stroke="currentColor" stroke-width="1.5"/><path d="M4.3 7.2L6.2 9.1L9.8 5.2" fill="none" stroke="var(--accent-solid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    Perbaikan: '<circle cx="7" cy="7" r="6" fill="var(--warn-solid)" stroke="var(--warn-solid)" stroke-width="1.5"/><path d="M7 3.9L7 7.6M7 10.1L7 10.1" fill="none" stroke="var(--accent-on-solid)" stroke-width="1.5" stroke-linecap="round"/>',
+    Gagal: '<circle cx="7" cy="7" r="6" fill="var(--bad-solid)" stroke="var(--bad-solid)" stroke-width="1.5"/><path d="M5 5L9 9M9 5L5 9" fill="none" stroke="var(--accent-on-solid)" stroke-width="1.5" stroke-linecap="round"/>'
+  };
+  var PIL = {
+    Belum: 'border border-input bg-card text-foreground', Proses: 'bg-primary/12 text-aksen', Grouping: 'bg-primary/12 text-aksen',
+    Final: 'bg-primary/12 text-aksen', Terkirim: 'bg-primary/12 text-aksen', Benar: 'bg-primary text-primary-foreground',
+    Perbaikan: 'bg-warn-bg text-warn', Gagal: 'bg-bad-solid/10 text-bad'
+  };
+  function badge(jenis, label) {
+    return '<span class="pil ' + PIL[jenis] + '"><svg class="flex-none" width="12" height="12" viewBox="0 0 14 14" aria-hidden="true">' + IKON[jenis] + '</svg><span class="truncate">' + label + '</span></span>';
+  }
+  function kelengkapan(isi, total) {
+    var nada = isi >= total ? ['bg-primary', 'text-aksen'] : isi / total >= 0.5 ? ['bg-warn-solid', 'text-warn'] : ['bg-bad-solid', 'text-bad'];
+    return '<span class="inline-flex items-center gap-2 text-xs" title="' + isi + ' dari ' + total + ' dokumen"><span class="bg-accent flex h-1.5 w-12 overflow-hidden rounded-full"><span class="h-full rounded-full ' + nada[0] + '" style="width:' + Math.round(isi / total * 100) + '%"></span></span><span class="font-bold ' + nada[1] + '">' + isi + '/' + total + '</span></span>';
+  }
+  var DATA = [
+    ['Kadek Ayu Lestari', '00.00.01', 'IGD', [4, 14], null, null, 'Belum', 'Belum dikoding'],
+    ['Ni Luh Sekar Sari', '00.00.02', 'Hemodialisis', [9, 13], ['N18.5', 'Gagal ginjal kronik st. 5'], ['N-3-15-0', 'Rp 906.000'], 'Proses', 'Menunggu verifikasi'],
+    ['Gede Surya Pratama', '00.00.03', 'Poli Fisioterapi', [16, 16], ['M54.5', 'Nyeri punggung bawah'], ['M-3-16-0', 'Rp 140.500'], 'Benar', 'Benar'],
+    ['Komang Dewi Anggreni', '00.00.04', 'Poli Rehab Medik', [12, 18], ['M62.8', 'Kelemahan otot'], ['M-3-16-0', 'Rp 140.500'], 'Final', 'Final, belum dikirim'],
+    ['Wayan Bagus Mahendra', '00.00.05', 'Poli Interna', [11, 15], ['E11.9', 'DM tipe 2 tanpa komplikasi'], ['Q-5-44-0', 'Rp 212.400'], 'Perbaikan', 'Perlu perbaikan'],
+    ['Made Adi Saputra', '00.00.06', 'Poli Paru', [11, 15], ['J44.9', 'PPOK'], ['J-3-14-0', 'Rp 254.900'], 'Gagal', 'File klaim gagal'],
+    ['Ni Luh Putu Ayu Sri Wahyuningsih Dewi Anggreni', '00.00.07', 'Poli Bedah Onkologi', [12, 12], ['C50.9', 'Neoplasma ganas payudara, tidak spesifik'], ['C-3-10-0', 'Rp 910.300'], 'Terkirim', 'Terkirim']
+  ];
+  document.getElementById('baris').innerHTML = DATA.map(function (d, i) {
+    var diag = d[4] ? '<div class="padat:flex padat:items-baseline padat:gap-1 min-w-0"><strong class="block padat:flex-none">' + d[4][0] + '</strong><div class="text-muted-foreground truncate text-xs" title="' + d[4][1] + '">' + d[4][1] + '</div></div>' : '<span class="text-tertiary">Belum dikoding</span>';
+    var cbg = d[5] ? '<div class="truncate font-bold">' + d[5][0] + '</div><div class="text-muted-foreground padat:hidden text-xs">' + d[5][1] + '</div>' : '<span class="text-tertiary">Belum grouping</span>';
+    return '<tr class="hover:bg-accent data-[state=selected]:bg-selected cursor-default"' + (i === 1 ? ' data-state="selected" aria-current="true"' : '') + '>' +
+      '<td class="sel"><div class="padat:flex padat:items-baseline padat:gap-2 min-w-0"><div class="truncate font-bold padat:flex-1" title="' + d[0] + '">' + d[0] + '</div><div class="text-muted-foreground truncate text-xs whitespace-pre padat:flex-none">' + d[1] + '  ·  0000R0000000V00000' + i + '</div></div></td>' +
+      '<td class="sel"><span class="text-muted-foreground block truncate">' + d[2] + '</span></td>' +
+      '<td class="sel">' + kelengkapan(d[3][0], d[3][1]) + '</td>' +
+      '<td class="sel">' + diag + '</td><td class="sel">' + cbg + '</td><td class="sel">' + badge(d[6], d[7]) + '</td></tr>';
+  }).join('');
+  document.getElementById('semua-status').innerHTML = [
+    ['Belum', 'Belum dikoding'], ['Proses', 'Menunggu verifikasi'], ['Grouping', 'Sudah grouping'], ['Final', 'Final'],
+    ['Terkirim', 'Terkirim'], ['Benar', 'Benar'], ['Perbaikan', 'Perlu perbaikan'], ['Gagal', 'Gagal kirim']
+  ].map(function (s) { return badge(s[0], s[1]); }).join('');
+  document.querySelector('[data-status="Perbaikan"]').outerHTML = badge('Perbaikan', 'Perlu perbaikan');
+
+  // Pilihan tampilan.
+  var akar = document.documentElement;
+  function simpan(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} }
+  function tandaiTema() {
+    document.querySelectorAll('[data-pilih-tema]').forEach(function (b) {
+      var aktif = (akar.dataset.tema || '') === b.dataset.pilihTema;
+      b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', aktif);
+      b.classList.toggle('bg-accent', aktif); b.classList.toggle('text-foreground', aktif); b.classList.toggle('font-bold', aktif);
+    });
+  }
+  document.querySelectorAll('[data-pilih-tema]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.pilihTema) akar.dataset.tema = b.dataset.pilihTema; else delete akar.dataset.tema;
+      simpan('contoh.tema', b.dataset.pilihTema); tandaiTema();
+    });
+  });
+  tandaiTema();
+  document.getElementById('ganti-mode').addEventListener('click', function () {
+    var gelap = akar.dataset.semantik !== 'Gelap';
+    if (gelap) akar.dataset.semantik = 'Gelap'; else delete akar.dataset.semantik;
+    akar.style.colorScheme = gelap ? 'dark' : 'light';
+    simpan('contoh.mode', gelap ? 'gelap' : 'terang');
+  });
+  document.getElementById('ganti-padat').addEventListener('click', function () {
+    var padat = akar.dataset.kepadatan !== 'Padat';
+    if (padat) akar.dataset.kepadatan = 'Padat'; else delete akar.dataset.kepadatan;
+    simpan('contoh.kepadatan', padat ? 'padat' : '');
+  });
+
+  // Sidebar 3D stack.
+  var tumpukan = document.getElementById('tumpukan'), sidebar = document.getElementById('sidebar');
+  var halaman = document.getElementById('halaman'), penutup = document.getElementById('penutup'), tombol = document.getElementById('buka-sidebar');
+  function aturSidebar(buka) {
+    tumpukan.dataset.sidebar = buka ? 'buka' : 'tutup';
+    sidebar.inert = !buka; halaman.inert = buka; penutup.classList.toggle('hidden', !buka);
+    tombol.setAttribute('aria-expanded', buka);
+    requestAnimationFrame(function () { (buka ? document.getElementById('menu-pertama') : tombol).focus(); });
+  }
+  tombol.addEventListener('click', function () { aturSidebar(true); });
+  penutup.addEventListener('click', function () { aturSidebar(false); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && tumpukan.dataset.sidebar === 'buka') aturSidebar(false); });
+</script>
+</body>
+</html>

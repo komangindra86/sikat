@@ -1,12 +1,12 @@
 {{if .User}}{{template "base" .}}{{else}}{{template "public" .}}{{end}}
 {{define "content"}}
 <div class="card card-body mx-auto max-w-lg text-center">
-  <p class="text-sm font-semibold text-brand-700">Kode {{.Data.Status}}</p>
-  <h1 class="mt-1 text-xl font-semibold text-slate-900">{{.Data.Heading}}</h1>
-  <p class="mt-2 text-slate-600">{{.Data.Message}}</p>
+  <p class="text-sm font-bold text-aksen">Kode {{.Data.Status}}</p>
+  <h1 class="mt-1 text-xl font-bold text-foreground">{{.Data.Heading}}</h1>
+  <p class="mt-2 text-muted-foreground">{{.Data.Message}}</p>
   <div class="mt-5 flex justify-center gap-2">
     {{if .User}}<a href="/app" class="btn btn-primary">Ke beranda</a>{{else}}<a href="/login" class="btn btn-primary">Ke halaman masuk</a>{{end}}
   </div>
-  {{with .Data.RequestID}}<p class="mt-4 text-xs text-slate-400">ID permintaan: {{.}}</p>{{end}}
+  {{with .Data.RequestID}}<p class="mt-4 text-xs text-tertiary">ID permintaan: {{.}}</p>{{end}}
 </div>
 {{end}}

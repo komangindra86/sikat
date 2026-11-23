@@ -38,7 +38,7 @@
       <span class="label">Rentang tanggal</span>
       <div class="flex items-center gap-2">
         <input class="input {{if $p.Err "dari"}}input-error{{end}}" name="dari" type="date" value="{{$f.From}}" aria-label="Dari tanggal">
-        <span class="text-slate-400">–</span>
+        <span class="text-tertiary">–</span>
         <input class="input {{if $p.Err "dari"}}input-error{{end}}" name="sampai" type="date" value="{{$f.To}}" aria-label="Sampai tanggal">
       </div>
       {{with $p.Err "dari"}}<p class="error-text">{{.}}</p>{{end}}
@@ -90,7 +90,7 @@
 <div class="metrics mt-5 {{if ge (len $t.Metrics) 4}}sm:grid-cols-4{{else if eq (len $t.Metrics) 3}}sm:grid-cols-3{{else}}sm:grid-cols-2{{end}}">
   {{range $t.Metrics}}
   <div class="metric">
-    <span class="metric-label">{{if .Tone}}<span class="h-1.5 w-1.5 rounded-full {{if eq .Tone "green"}}bg-emerald-500{{else if eq .Tone "amber"}}bg-amber-500{{else if eq .Tone "red"}}bg-red-500{{else if eq .Tone "orange"}}bg-orange-500{{else}}bg-slate-400{{end}}"></span>{{end}}{{.Label}}</span>
+    <span class="metric-label">{{if .Tone}}<span class="h-1.5 w-1.5 rounded-full {{if eq .Tone "green"}}bg-ok-solid{{else if eq .Tone "amber"}}bg-warn-solid{{else if eq .Tone "red"}}bg-bad-solid{{else if eq .Tone "orange"}}bg-warn-solid{{else}}bg-idle-solid{{end}}"></span>{{end}}{{.Label}}</span>
     <span class="metric-value block truncate {{if gt (len .Value) 14}}text-lg{{end}}">{{.Value}}</span>
   </div>
   {{end}}
@@ -101,7 +101,7 @@
 <section class="card mt-5" aria-label="Grafik tiket">
   <div class="card-header">
     <h2 class="card-title">Tiket masuk</h2>
-    <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+    <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       {{range $i, $s := $ch.Series}}<li class="flex items-center gap-1.5"><span class="chart-key chart-key-{{$i}}" aria-hidden="true"></span>{{$s}}</li>{{end}}
     </ul>
   </div>
@@ -131,10 +131,10 @@
       <tbody>
         {{range $d.Rows}}
         <tr>{{range $i, $c := .}}{{$col := index $t.Columns $i}}
-          <td class="{{if $col.Numeric}}text-right tabular-nums whitespace-nowrap{{end}} {{if not $c.Valid}}text-slate-400{{end}}">{{if $c.Link}}<a href="{{$c.Link}}" class="font-medium text-brand-800 hover:underline">{{$c.Text}}</a>{{else}}{{$c.Text}}{{end}}</td>
+          <td class="{{if $col.Numeric}}text-right tabular-nums whitespace-nowrap{{end}} {{if not $c.Valid}}text-tertiary{{end}}">{{if $c.Link}}<a href="{{$c.Link}}" class="font-bold text-aksen hover:underline">{{$c.Text}}</a>{{else}}{{$c.Text}}{{end}}</td>
         {{end}}</tr>
         {{else}}
-        <tr><td colspan="{{len $t.Columns}}" class="py-10 text-center text-slate-500">Tidak ada data pada periode dan filter ini.</td></tr>
+        <tr><td colspan="{{len $t.Columns}}" class="py-10 text-center text-muted-foreground">Tidak ada data pada periode dan filter ini.</td></tr>
         {{end}}
       </tbody>
       {{if and $t.Totals $d.Rows}}
@@ -143,6 +143,6 @@
     </table>
   </div>
 </section>
-{{if $t.Truncated}}<p class="mt-3 text-sm text-amber-700">Menampilkan {{len $d.Rows}} dari {{len $t.Rows}} baris. Unduh Excel atau PDF untuk seluruh baris.</p>{{end}}
+{{if $t.Truncated}}<p class="mt-3 text-sm text-warn">Menampilkan {{len $d.Rows}} dari {{len $t.Rows}} baris. Unduh Excel atau PDF untuk seluruh baris.</p>{{end}}
 {{range $t.Notes}}<p class="help mt-2">{{.}}</p>{{end}}
 {{end}}

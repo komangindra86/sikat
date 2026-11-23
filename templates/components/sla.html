@@ -10,19 +10,19 @@
 {{define "sla-measure"}}{{$m := .M}}
 <div>
   <div class="flex items-center justify-between gap-2">
-    <span class="text-sm font-medium text-slate-900">{{.Label}}</span>
+    <span class="text-sm font-bold text-foreground">{{.Label}}</span>
     <span class="badge badge-{{tone "sla_state" $m.State}}">{{label "sla_state" $m.State}}</span>
   </div>
   <progress class="meter meter-{{tone "sla_state" $m.State}} mt-2" value="{{$m.BarPct}}" max="100" aria-label="{{.Label}}: {{$m.Pct}}% terpakai">{{$m.Pct}}%</progress>
-  <div class="mt-1.5 flex flex-wrap justify-between gap-x-3 text-xs text-slate-500">
+  <div class="mt-1.5 flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
     <span>{{dur $m.Used}} dari {{dur $m.Target}} ({{$m.Pct}}%)</span>
     {{if $m.Running}}
-      {{if $m.Late}}<span class="font-medium text-red-600">lewat {{dur $m.Over}}</span>
+      {{if $m.Late}}<span class="font-bold text-bad">lewat {{dur $m.Over}}</span>
       {{else if eq $m.State "PAUSED"}}<span>dijeda</span>
       {{else}}<span>sisa {{dur $m.Remaining}}</span>{{end}}
     {{end}}
   </div>
-  {{if and $m.Running (not $m.DueAt.IsZero)}}<div class="text-xs text-slate-500">Batas {{wita $m.DueAt}} WITA</div>{{end}}
+  {{if and $m.Running (not $m.DueAt.IsZero)}}<div class="text-xs text-muted-foreground">Batas {{wita $m.DueAt}} WITA</div>{{end}}
 </div>
 {{end}}
 
@@ -31,16 +31,16 @@
 <section class="card" aria-labelledby="sla-tiket">
   <div class="card-header">
     <h2 id="sla-tiket" class="card-title">SLA</h2>
-    {{with .}}<span class="truncate text-xs text-slate-500" title="Kebijakan {{.PolicyName.String}}">{{.CalendarName}}</span>{{end}}
+    {{with .}}<span class="truncate text-xs text-muted-foreground" title="Kebijakan {{.PolicyName.String}}">{{.CalendarName}}</span>{{end}}
   </div>
   <div class="card-body space-y-4">
     {{with .}}
       {{if .Resp.Defined}}{{template "sla-measure" (dict "Label" "Respons" "M" .Resp)}}{{end}}
       {{if .Reso.Defined}}{{template "sla-measure" (dict "Label" (printf "Penyelesaian%s" (cycleSuffix .Cycle)) "M" .Reso)}}{{end}}
-      {{if and (not .Resp.Defined) (not .Reso.Defined)}}<p class="text-sm text-slate-500">Tiket ini tidak dinilai SLA.</p>{{end}}
-      {{with .PolicyName}}{{if .Valid}}<p class="text-xs text-slate-400">Kebijakan: {{.String}}</p>{{end}}{{end}}
+      {{if and (not .Resp.Defined) (not .Reso.Defined)}}<p class="text-sm text-muted-foreground">Tiket ini tidak dinilai SLA.</p>{{end}}
+      {{with .PolicyName}}{{if .Valid}}<p class="text-xs text-tertiary">Kebijakan: {{.String}}</p>{{end}}{{end}}
     {{else}}
-      <p class="text-sm text-slate-500">Tidak ada kebijakan SLA yang berlaku untuk tiket ini.</p>
+      <p class="text-sm text-muted-foreground">Tidak ada kebijakan SLA yang berlaku untuk tiket ini.</p>
     {{end}}
   </div>
 </section>

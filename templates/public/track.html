@@ -2,25 +2,25 @@
 {{define "content"}}
 {{$d := .Data}}{{$t := $d.Ticket}}
 {{if $d.New}}
-<section class="card card-body mb-4 border-green-300 bg-green-50 text-center" aria-labelledby="terkirim">
-  <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" aria-hidden="true"><span class="icon h-6 w-6">{{template "icon" "check"}}</span></div>
-  <h1 id="terkirim" class="mt-2 text-xl font-semibold text-green-900">Laporan terkirim</h1>
-  <div class="mt-3 text-sm text-green-900">Nomor tiket</div>
-  <div class="font-mono text-2xl font-semibold tracking-wide text-slate-900">{{$t.TicketNo}}</div>
+<section class="card card-body mb-4 border-tema-garis bg-tema text-center" aria-labelledby="terkirim">
+  <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-tema text-ok ring-1 ring-tema-garis" aria-hidden="true"><span class="icon h-6 w-6">{{template "icon" "check"}}</span></div>
+  <h1 id="terkirim" class="mt-2 text-xl font-bold text-ok">Laporan terkirim</h1>
+  <div class="mt-3 text-sm text-ok">Nomor tiket</div>
+  <div class="font-bold text-2xl font-bold text-foreground">{{$t.TicketNo}}</div>
   <dl class="mt-3 space-y-1 text-left text-sm">
-    <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-600">Lokasi</dt><dd class="font-medium">{{$t.Location}}</dd></div>
-    <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-600">Masalah</dt><dd class="font-medium">{{$t.CategoryName}}</dd></div>
-    <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-600">Prioritas</dt><dd><span class="badge badge-{{tone "priority" $t.Priority}}">{{label "priority" $t.Priority}}</span></dd></div>
+    <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Lokasi</dt><dd class="font-bold">{{$t.Location}}</dd></div>
+    <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Masalah</dt><dd class="font-bold">{{$t.CategoryName}}</dd></div>
+    <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Prioritas</dt><dd><span class="badge badge-{{tone "priority" $t.Priority}}">{{label "priority" $t.Priority}}</span></dd></div>
   </dl>
-  <div class="mt-4 rounded-lg bg-white p-3 text-left">
-    <div class="text-xs font-semibold text-slate-600">Link pemantauan tiket</div>
-    <div id="track-url" class="mt-1 break-all font-mono text-xs text-slate-800">{{$d.TrackURL}}</div>
+  <div class="mt-4 rounded-lg bg-card p-3 text-left">
+    <div class="text-xs font-bold text-muted-foreground">Link pemantauan tiket</div>
+    <div id="track-url" class="mt-1 break-all font-bold text-xs text-foreground">{{$d.TrackURL}}</div>
     <div class="mt-2 flex gap-2">
       <button type="button" class="btn btn-secondary btn-sm" data-copy="#track-url">Salin link</button>
       <button type="button" class="btn btn-secondary btn-sm" data-share="#track-url" data-share-title="Tiket {{$t.TicketNo}}" hidden>Bagikan</button>
     </div>
   </div>
-  <p class="mt-3 text-xs text-green-900">Simpan link ini. Hanya pemegang link yang dapat melihat tiket.</p>
+  <p class="mt-3 text-xs text-ok">Simpan link ini. Hanya pemegang link yang dapat melihat tiket.</p>
 </section>
 {{end}}
 
@@ -28,23 +28,23 @@
   <section class="card card-body">
     <div class="flex items-start justify-between gap-2">
       <div>
-        <div class="font-mono text-sm font-semibold text-slate-500">{{$t.TicketNo}}</div>
-        <div class="font-semibold text-slate-900">{{$t.CategoryName}}</div>
-        <div class="text-sm text-slate-600">{{$t.Location}}</div>
+        <div class="font-bold text-sm font-bold text-muted-foreground">{{$t.TicketNo}}</div>
+        <div class="font-bold text-foreground">{{$t.CategoryName}}</div>
+        <div class="text-sm text-muted-foreground">{{$t.Location}}</div>
       </div>
       <span class="badge badge-{{tone "ticket_status" $t.Status}} shrink-0 text-sm">{{label "ticket_status" $t.Status}}</span>
     </div>
-    {{if $t.PendingReason.Valid}}<p class="mt-3 rounded-lg bg-orange-50 p-2 text-sm text-orange-900">Tertunda: {{$t.PendingReason.String}}</p>{{end}}
-    {{if $t.AssigneeName.Valid}}<p class="mt-3 text-sm">Ditangani oleh <strong>{{$t.AssigneeFirstName}}</strong> (tim IT)</p>{{else}}<p class="mt-3 text-sm text-slate-600">Menunggu diambil petugas IT.</p>{{end}}
+    {{if $t.PendingReason.Valid}}<p class="mt-3 rounded-lg bg-warn-bg p-2 text-sm text-warn">Tertunda: {{$t.PendingReason.String}}</p>{{end}}
+    {{if $t.AssigneeName.Valid}}<p class="mt-3 text-sm">Ditangani oleh <strong>{{$t.AssigneeFirstName}}</strong> (tim IT)</p>{{else}}<p class="mt-3 text-sm text-muted-foreground">Menunggu diambil petugas IT.</p>{{end}}
   </section>
 
   <section class="card card-body mt-4" aria-labelledby="perkembangan">
     <h2 id="perkembangan" class="section-title">Perkembangan</h2>
     <ol class="mt-3 space-y-3">
       {{range $d.Histories}}
-      <li class="border-l-2 border-brand-300 pl-3">
-        <div class="text-sm font-medium">{{if eq .EventType "CREATED"}}Laporan dibuat{{else if eq .EventType "CLAIMED"}}Diterima petugas {{.ActorFirstName}}{{else if eq .EventType "TAKEN_OVER"}}Ditangani petugas {{.ActorFirstName}}{{else if eq .EventType "PENDING"}}Ditunda{{with .MetaValue "pending_reason"}}: {{.}}{{end}}{{else if eq .EventType "REOPENED"}}Dibuka kembali{{else if eq .EventType "REPORTER_CONFIRMED"}}Anda mengonfirmasi masalah sudah beres{{else if eq .EventType "AUTO_CLOSED"}}Ditutup otomatis{{else if .ToStatus.Valid}}{{label "ticket_status" .ToStatus.String}}{{else}}{{label "ticket_event" .EventType}}{{end}}</div>
-        <div class="text-xs text-slate-500">{{wita .CreatedAt}} WITA</div>
+      <li class="border-l-2 border-tema-garis pl-3">
+        <div class="text-sm font-bold">{{if eq .EventType "CREATED"}}Laporan dibuat{{else if eq .EventType "CLAIMED"}}Diterima petugas {{.ActorFirstName}}{{else if eq .EventType "TAKEN_OVER"}}Ditangani petugas {{.ActorFirstName}}{{else if eq .EventType "PENDING"}}Ditunda{{with .MetaValue "pending_reason"}}: {{.}}{{end}}{{else if eq .EventType "REOPENED"}}Dibuka kembali{{else if eq .EventType "REPORTER_CONFIRMED"}}Anda mengonfirmasi masalah sudah beres{{else if eq .EventType "AUTO_CLOSED"}}Ditutup otomatis{{else if .ToStatus.Valid}}{{label "ticket_status" .ToStatus.String}}{{else}}{{label "ticket_event" .EventType}}{{end}}</div>
+        <div class="text-xs text-muted-foreground">{{wita .CreatedAt}} WITA</div>
       </li>
       {{end}}
     </ol>
@@ -52,9 +52,9 @@
 </div>
 
 {{if eq $t.Status "RESOLVED"}}
-<section class="card card-body mt-4 border-green-300" aria-labelledby="konfirmasi">
-  <h2 id="konfirmasi" class="text-base font-semibold text-slate-900">Apakah masalah sudah teratasi?</h2>
-  {{if $t.ResolutionAction.Valid}}<p class="mt-2 text-sm text-slate-700"><span class="font-semibold">Tindakan petugas:</span> {{$t.ResolutionAction.String}}</p>{{end}}
+<section class="card card-body mt-4 border-tema-garis" aria-labelledby="konfirmasi">
+  <h2 id="konfirmasi" class="text-base font-bold text-foreground">Apakah masalah sudah teratasi?</h2>
+  {{if $t.ResolutionAction.Valid}}<p class="mt-2 text-sm text-foreground"><span class="font-bold">Tindakan petugas:</span> {{$t.ResolutionAction.String}}</p>{{end}}
   <div class="mt-3 grid grid-cols-2 gap-2">
     <form method="post" action="/t/{{$d.Token}}/konfirmasi">
       {{template "csrf" .CSRFToken}}<input type="hidden" name="ok" value="1">
@@ -64,12 +64,12 @@
   </div>
   <form id="belum-beres" method="post" action="/t/{{$d.Token}}/konfirmasi" class="mt-3 space-y-2 {{if ne $d.Open "feedback"}}target-reveal{{end}}" novalidate>
     {{template "csrf" .CSRFToken}}<input type="hidden" name="ok" value="0">
-    <label class="label" for="feedback_note">Apa yang masih bermasalah? <span class="text-red-600" aria-hidden="true">*</span></label>
+    <label class="label" for="feedback_note">Apa yang masih bermasalah? <span class="text-bad" aria-hidden="true">*</span></label>
     <textarea class="input {{if .Err "feedback_note"}}input-error{{end}}" id="feedback_note" name="feedback_note" rows="3" maxlength="1000">{{index $d.Form "feedback_note"}}</textarea>
     {{with .Err "feedback_note"}}<p class="error-text">{{.}}</p>{{end}}
     <button type="submit" class="btn btn-secondary" data-busy-text="Mengirim…">Kirim &amp; buka kembali tiket</button>
   </form>
-  <p class="mt-3 text-xs text-slate-500">Bila tidak dikonfirmasi, tiket akan ditutup otomatis setelah beberapa hari.</p>
+  <p class="mt-3 text-xs text-muted-foreground">Bila tidak dikonfirmasi, tiket akan ditutup otomatis setelah beberapa hari.</p>
 </section>
 {{end}}
 
@@ -78,8 +78,8 @@
   <h2 id="catatan" class="section-title">Catatan</h2>
   <ul class="mt-3 space-y-2">
     {{range $d.Comments}}
-    <li class="rounded-lg p-3 text-sm {{if eq .AuthorType "REPORTER"}}bg-blue-50{{else}}bg-slate-50{{end}}">
-      <div class="text-xs text-slate-600"><span class="font-semibold text-slate-800">{{if eq .AuthorType "REPORTER"}}Anda{{else}}{{.AuthorFirstName}} (tim IT){{end}}</span> · {{wita .CreatedAt}}</div>
+    <li class="rounded-lg p-3 text-sm {{if eq .AuthorType "REPORTER"}}bg-tema{{else}}bg-muted{{end}}">
+      <div class="text-xs text-muted-foreground"><span class="font-bold text-foreground">{{if eq .AuthorType "REPORTER"}}Anda{{else}}{{.AuthorFirstName}} (tim IT){{end}}</span> · {{wita .CreatedAt}}</div>
       <p class="mt-1 whitespace-pre-line">{{.Body}}</p>
     </li>
     {{end}}
@@ -108,5 +108,5 @@
   </div>
 </section>
 {{end}}
-<p class="mt-4 text-center text-xs text-slate-500">Halaman ini diperbarui otomatis.</p>
+<p class="mt-4 text-center text-xs text-muted-foreground">Halaman ini diperbarui otomatis.</p>
 {{end}}

@@ -1,15 +1,15 @@
 {{template "base" .}}
 {{define "content"}}
 {{$a := .Data.A}}
-<nav class="mb-2 text-sm text-slate-500"><a href="/app/activities" class="hover:underline">Kegiatan</a> › {{$a.No}}</nav>
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/activities" class="hover:underline">Kegiatan</a> › {{$a.No}}</nav>
 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
   <div>
-    <div class="font-mono text-sm font-semibold text-slate-500">{{$a.No}}</div>
+    <div class="font-bold text-sm font-bold text-muted-foreground">{{$a.No}}</div>
     <h1 class="page-title">{{$a.Title}}</h1>
     <div class="mt-2 flex flex-wrap gap-1.5">
       <span class="badge badge-{{tone "activity_status" $a.Status}}">{{label "activity_status" $a.Status}}</span>
-      <span class="badge badge-gray">{{$a.TypeName}}</span>
-      <span class="badge badge-indigo">Kegiatan internal</span>
+      <span class="badge badge-muted">{{$a.TypeName}}</span>
+      <span class="badge badge-lanjut">Kegiatan internal</span>
     </div>
   </div>
   {{if .Data.CanEdit}}<a href="/app/activities/{{$a.ID}}/edit" class="btn btn-secondary">Ubah</a>{{end}}
@@ -19,17 +19,17 @@
   <div class="space-y-4">
     <section class="card card-body">
       <dl class="grid gap-3 text-sm sm:grid-cols-2">
-        <div><dt class="text-slate-500">Tanggal</dt><dd class="font-medium">{{witaDate $a.Date}}</dd></div>
-        <div><dt class="text-slate-500">Bidang</dt><dd class="font-medium">{{$a.ITCategoryName}}</dd></div>
-        <div><dt class="text-slate-500">Mulai</dt><dd class="font-medium">{{wita $a.StartedAt}}</dd></div>
-        <div><dt class="text-slate-500">Selesai</dt><dd class="font-medium">{{wita $a.EndedAt}}</dd></div>
-        <div><dt class="text-slate-500">Durasi</dt><dd class="font-medium">{{$a.DurationText}}</dd></div>
-        <div><dt class="text-slate-500">Unit / ruangan</dt><dd class="font-medium">{{if $a.DepartmentName.Valid}}{{$a.DepartmentName.String}}{{else}}–{{end}}{{if $a.RoomName.Valid}} · {{$a.RoomName.String}}{{end}}</dd></div>
-        {{if $a.AssetID.Valid}}<div><dt class="text-slate-500">Perangkat</dt><dd><a class="font-semibold text-brand-700 hover:underline" href="/app/assets/{{$a.AssetID.Int64}}">{{$a.AssetName.String}} ({{$a.AssetCode.String}})</a></dd></div>{{end}}
-        {{if $a.RelatedTicketID.Valid}}<div><dt class="text-slate-500">Tiket terkait</dt><dd><a class="font-semibold text-brand-700 hover:underline" href="/app/tickets/{{$a.RelatedTicketID.Int64}}">{{$a.RelatedTicketNo.String}}</a></dd></div>{{end}}
+        <div><dt class="text-muted-foreground">Tanggal</dt><dd class="font-bold">{{witaDate $a.Date}}</dd></div>
+        <div><dt class="text-muted-foreground">Bidang</dt><dd class="font-bold">{{$a.ITCategoryName}}</dd></div>
+        <div><dt class="text-muted-foreground">Mulai</dt><dd class="font-bold">{{wita $a.StartedAt}}</dd></div>
+        <div><dt class="text-muted-foreground">Selesai</dt><dd class="font-bold">{{wita $a.EndedAt}}</dd></div>
+        <div><dt class="text-muted-foreground">Durasi</dt><dd class="font-bold">{{$a.DurationText}}</dd></div>
+        <div><dt class="text-muted-foreground">Unit / ruangan</dt><dd class="font-bold">{{if $a.DepartmentName.Valid}}{{$a.DepartmentName.String}}{{else}}–{{end}}{{if $a.RoomName.Valid}} · {{$a.RoomName.String}}{{end}}</dd></div>
+        {{if $a.AssetID.Valid}}<div><dt class="text-muted-foreground">Perangkat</dt><dd><a class="font-bold text-aksen hover:underline" href="/app/assets/{{$a.AssetID.Int64}}">{{$a.AssetName.String}} ({{$a.AssetCode.String}})</a></dd></div>{{end}}
+        {{if $a.RelatedTicketID.Valid}}<div><dt class="text-muted-foreground">Tiket terkait</dt><dd><a class="font-bold text-aksen hover:underline" href="/app/tickets/{{$a.RelatedTicketID.Int64}}">{{$a.RelatedTicketNo.String}}</a></dd></div>{{end}}
       </dl>
-      {{if $a.Description.Valid}}<div class="mt-4"><div class="text-sm text-slate-500">Uraian</div><p class="whitespace-pre-line">{{$a.Description.String}}</p></div>{{end}}
-      {{if $a.Result.Valid}}<div class="mt-4 rounded-lg bg-green-50 p-3"><div class="text-sm font-semibold text-green-900">Hasil</div><p class="whitespace-pre-line text-sm">{{$a.Result.String}}</p></div>{{end}}
+      {{if $a.Description.Valid}}<div class="mt-4"><div class="text-sm text-muted-foreground">Uraian</div><p class="whitespace-pre-line">{{$a.Description.String}}</p></div>{{end}}
+      {{if $a.Result.Valid}}<div class="mt-4 rounded-lg bg-tema p-3"><div class="text-sm font-bold text-ok">Hasil</div><p class="whitespace-pre-line text-sm">{{$a.Result.String}}</p></div>{{end}}
     </section>
 
     <section class="card card-body" aria-labelledby="lampiran">
@@ -41,7 +41,7 @@
       {{else}}<p class="muted">Belum ada lampiran.</p>{{end}}
       <form method="post" action="/app/activities/{{$a.ID}}/photos" enctype="multipart/form-data" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center" novalidate>
         {{template "csrf" .CSRFToken}}
-        <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand-800" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{.Data.MaxFiles}}" aria-label="Pilih foto">
+        <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-tema file:px-4 file:font-bold file:text-aksen" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple data-photo-input data-max-files="{{.Data.MaxFiles}}" aria-label="Pilih foto">
         <button type="submit" class="btn btn-secondary shrink-0" data-busy-text="Mengunggah…">Unggah</button>
       </form>
     </section>
@@ -50,10 +50,10 @@
     <section class="card card-body text-sm">
       <h2 class="mb-2 section-title">Tim</h2>
       <ul class="space-y-1">
-        {{range $a.Members}}<li><strong>{{.Name}}</strong> <span class="text-xs text-slate-500">{{if eq .Role "LEAD"}}pelaksana{{else}}pendukung{{end}}</span></li>{{end}}
+        {{range $a.Members}}<li><strong>{{.Name}}</strong> <span class="text-xs text-muted-foreground">{{if eq .Role "LEAD"}}pelaksana{{else}}pendukung{{end}}</span></li>{{end}}
       </ul>
     </section>
-    <section class="card card-body text-xs text-slate-500">
+    <section class="card card-body text-xs text-muted-foreground">
       Dicatat oleh {{$a.CreatedByName}} pada {{wita $a.CreatedAt}}.<br>Terakhir diubah {{wita $a.UpdatedAt}}.
     </section>
   </aside>
