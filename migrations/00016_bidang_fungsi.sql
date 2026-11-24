@@ -81,6 +81,17 @@ INSERT INTO bidang_lama (jenis, it_category_id)
 SELECT 'baru', c.id FROM it_categories c
 WHERE c.created_at = @t AND c.name IN ('Pelayanan & Support', 'Administrasi & Inventaris', 'Mutu', 'ERM', 'System Developer', 'Keamanan Sistem');
 
+-- Bidang bernama sama yang sudah ada tetapi nonaktif (mis. tertinggal dari Down sebelumnya
+-- karena masih dirujuk data) diaktifkan lagi. Keadaan lamanya dicatat untuk Down.
+INSERT INTO bidang_lama (jenis, it_category_id, name, description, sort_order, is_active, coordinator_user_id)
+SELECT 'ubah', c.id, c.name, c.description, c.sort_order, c.is_active, c.coordinator_user_id
+FROM it_categories c JOIN tmp_bidang_baru nb ON nb.nama = c.name
+WHERE NOT c.is_active AND NOT EXISTS (SELECT 1 FROM bidang_lama l WHERE l.it_category_id = c.id);
+UPDATE it_categories c
+JOIN bidang_lama l ON l.jenis = 'ubah' AND l.it_category_id = c.id
+JOIN tmp_bidang_baru nb ON nb.nama = c.name
+SET c.is_active = TRUE, c.sort_order = nb.urut, c.updated_at = @t;
+
 INSERT INTO number_sequences (name, year, current_value)
 SELECT * FROM (
   SELECT 'BDG' AS name, 0 AS year, MAX(CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED)) AS v
@@ -153,7 +164,13 @@ SET @koordinator_pelayanan = (SELECT coordinator_user_id FROM it_categories WHER
 UPDATE it_categories c JOIN bidang_lama l ON l.jenis = 'triase' AND l.it_category_id = c.id
 SET c.coordinator_user_id = @koordinator_pelayanan;
 
--- 5. Jenis gangguan untuk pelapor di bidang baru.
+-- 5. Jenis gangguan untuk pelapor di bidang baru (yang tertinggal nonaktif diaktifkan lagi).
+INSERT INTO bidang_lama_relasi (table_name, row_key)
+SELECT 'jenis_gangguan_aktif', x.id FROM ticket_categories x
+WHERE NOT x.is_active AND x.name IN ('Permintaan perangkat baru', 'Pemindahan atau serah terima perangkat',
+  'Usulan sistem atau fitur baru', 'Penambahan atau perubahan form', 'Perbaikan sistem');
+UPDATE ticket_categories x JOIN bidang_lama_relasi r ON r.table_name = 'jenis_gangguan_aktif' AND r.row_key = x.id
+SET x.is_active = TRUE, x.updated_at = @t;
 INSERT INTO ticket_categories (it_category_id, name, help_text, default_priority, sort_order, created_at, updated_at)
 SELECT c.id, t.name, t.help, t.prio, t.urut, @t, @t
 FROM (
@@ -183,6 +200,15 @@ SET x.it_category_id = c.id, x.updated_at = @t WHERE x.name = 'Inventarisasi' AN
 UPDATE activity_types x JOIN it_categories c ON c.name = 'Mutu'
 SET x.it_category_id = c.id, x.updated_at = @t WHERE x.name = 'Audit dan evaluasi' AND x.it_category_id IS NULL;
 
+INSERT INTO bidang_lama_relasi (table_name, row_key)
+SELECT 'jenis_kegiatan_aktif', x.id FROM activity_types x
+WHERE NOT x.is_active AND x.name IN ('Pencatatan perangkat', 'Distribusi perangkat', 'Kajian kebutuhan perangkat',
+  'Rekap perangkat', 'Program kerja mutu', 'Penyusunan indikator mutu', 'Analisis dan laporan indikator mutu',
+  'Sosialisasi mutu', 'Penanganan penyimpangan SIMRS', 'Laporan kinerja bulanan', 'Pengembangan sistem',
+  'Penambahan form', 'Perbaikan sistem');
+UPDATE activity_types x JOIN bidang_lama_relasi r ON r.table_name = 'jenis_kegiatan_aktif' AND r.row_key = x.id
+SET x.is_active = TRUE, x.updated_at = @t;
+
 INSERT INTO activity_types (name, it_category_id, sort_order, created_at, updated_at)
 SELECT t.name, c.id, t.urut, @t, @t
 FROM (
@@ -211,14 +237,17 @@ WHERE x.created_at = @t AND x.name IN ('Pencatatan perangkat', 'Distribusi peran
 DROP TEMPORARY TABLE tmp_bidang_ubah, tmp_bidang_baru, tmp_bidang_gabung;
 
 -- +goose Down
--- Jenis gangguan & kegiatan baru: dihapus bila belum dipakai, dinonaktifkan bila sudah.
-UPDATE ticket_categories x JOIN bidang_lama_relasi r ON r.table_name = 'jenis_gangguan_baru' AND r.row_key = x.id SET x.is_active = FALSE;
+-- Jenis gangguan & kegiatan baru: dihapus bila belum dipakai, dinonaktifkan bila sudah dirujuk
+-- (tiket, jenis pilihan pelapor, riwayat pemeliharaan, aturan prioritas, SLA, template, kegiatan).
+UPDATE ticket_categories x JOIN bidang_lama_relasi r ON r.table_name IN ('jenis_gangguan_baru', 'jenis_gangguan_aktif') AND r.row_key = x.id SET x.is_active = FALSE;
 DELETE x FROM ticket_categories x JOIN bidang_lama_relasi r ON r.table_name = 'jenis_gangguan_baru' AND r.row_key = x.id
 WHERE NOT EXISTS (SELECT 1 FROM tickets t WHERE t.ticket_category_id = x.id)
+  AND NOT EXISTS (SELECT 1 FROM tickets t WHERE t.reported_ticket_category_id = x.id)
+  AND NOT EXISTS (SELECT 1 FROM asset_maintenance_histories h WHERE h.ticket_category_id = x.id)
   AND NOT EXISTS (SELECT 1 FROM priority_rules p WHERE p.ticket_category_id = x.id)
   AND NOT EXISTS (SELECT 1 FROM sla_policies s WHERE s.ticket_category_id = x.id)
   AND NOT EXISTS (SELECT 1 FROM action_templates a WHERE a.ticket_category_id = x.id);
-UPDATE activity_types x JOIN bidang_lama_relasi r ON r.table_name = 'jenis_kegiatan_baru' AND r.row_key = x.id SET x.is_active = FALSE;
+UPDATE activity_types x JOIN bidang_lama_relasi r ON r.table_name IN ('jenis_kegiatan_baru', 'jenis_kegiatan_aktif') AND r.row_key = x.id SET x.is_active = FALSE;
 DELETE x FROM activity_types x JOIN bidang_lama_relasi r ON r.table_name = 'jenis_kegiatan_baru' AND r.row_key = x.id
 WHERE NOT EXISTS (SELECT 1 FROM internal_activities a WHERE a.activity_type_id = x.id);
 

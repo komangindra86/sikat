@@ -323,4 +323,66 @@ func TestBidangFungsiMigration(t *testing.T) {
 	if _, err := m.Up(ctx); err != nil {
 		t.Fatalf("up 00016 kedua: %v", err)
 	}
+
+	// Jenis gangguan baru yang sudah dirujuk (jenis pilihan pelapor di tiket, riwayat pemeliharaan)
+	// tidak boleh menggagalkan Down: dibiarkan nonaktif, lalu Up berikutnya mengaktifkannya lagi.
+	catID := func(name string) int64 {
+		var id int64
+		if err := db.QueryRow(`SELECT id FROM ticket_categories WHERE name = ?`, name).Scan(&id); err != nil {
+			t.Fatalf("jenis %s: %v", name, err)
+		}
+		return id
+	}
+	now := time.Now().UTC()
+	if _, err := db.Exec(`INSERT INTO tickets (ticket_no, public_token_hash, reporter_name, ticket_category_id, reported_ticket_category_id,
+		it_category_id, description, impact_level, affected_scope, priority, created_at, updated_at)
+		SELECT 'TKT-UJI-1', UNHEX(SHA2('uji', 256)), 'Pelapor', ?, ?, it_category_id, 'uji', 1, 1, 'LOW', ?, ? FROM ticket_categories WHERE id = ?`,
+		catID("Komputer tidak menyala"), catID("Permintaan perangkat baru"), now, now, catID("Komputer tidak menyala")); err != nil {
+		t.Fatal(err)
+	}
+	res, err := db.Exec(`INSERT INTO asset_categories (code, name, created_at, updated_at) VALUES ('KAT-UJI', 'Uji', ?, ?)`, now, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	katID, _ := res.LastInsertId()
+	res, err = db.Exec(`INSERT INTO assets (asset_code, name, asset_category_id, created_at, updated_at) VALUES ('PRK-UJI', 'PC', ?, ?, ?)`, katID, now, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assetID, _ := res.LastInsertId()
+	if _, err := db.Exec(`INSERT INTO asset_maintenance_histories (asset_id, maintenance_type, source, ticket_category_id, action_taken, result, finished_at, created_at, updated_at)
+		VALUES (?, 'INSPECTION', 'MANUAL', ?, 'uji', 'DONE', ?, ?, ?)`, assetID, catID("Usulan sistem atau fitur baru"), now, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Down(ctx); err != nil {
+		t.Fatalf("down 00016 dengan jenis baru yang dirujuk: %v", err)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name IN ('Permintaan perangkat baru','Usulan sistem atau fitur baru') AND NOT is_active`); n != 2 {
+		t.Fatalf("jenis yang dirujuk harus tetap ada dan nonaktif, dapat %d", n)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name = 'Perbaikan sistem'`); n != 0 {
+		t.Fatal("jenis baru yang tidak dirujuk tetap dihapus")
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE name IN ('Administrasi & Inventaris','System Developer') AND NOT is_active`); n != 2 {
+		t.Fatalf("bidang yang masih dirujuk harus tetap ada dan nonaktif, dapat %d", n)
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00016 ketiga: %v", err)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories t JOIN it_categories c ON c.id = t.it_category_id
+		WHERE t.name IN ('Permintaan perangkat baru','Usulan sistem atau fitur baru','Perbaikan sistem') AND t.is_active AND c.is_active`); n != 3 {
+		t.Fatalf("setelah up lagi, jenis & bidangnya harus aktif kembali, dapat %d", n)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE is_active`); n != 7 {
+		t.Fatalf("bidang aktif setelah up lagi = %d, harus 7", n)
+	}
+	if _, err := m.Down(ctx); err != nil {
+		t.Fatalf("down 00016 keempat: %v", err)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE name IN ('Administrasi & Inventaris','System Developer') AND NOT is_active`); n != 2 {
+		t.Fatalf("down kembali menonaktifkan bidang yang diaktifkan ulang, dapat %d", n)
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00016 terakhir: %v", err)
+	}
 }
