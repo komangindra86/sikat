@@ -4,6 +4,12 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
 ## Belum dirilis
 
+### Ditambahkan
+- **Buat link pemantauan baru** di detail tiket (kartu Pelapor), untuk pelapor yang kehilangan link.
+  - Dapat dilakukan oleh penanggung jawab, petugas pendukung, petugas yang mencatat tiket, atau koordinator bidangnya.
+  - Link lama langsung tidak berlaku. Link baru ditampilkan sekali beserta tombol Salin dan Bagikan.
+  - Tercatat di histori tiket (pelapor melihat "Link pemantauan diperbarui") dan jejak audit (`ticket.link_renew`).
+
 ### Diubah
 - **Bidang mengikuti struktur 6 koordinator** (migrasi `00016_bidang_fungsi`):
   - Pelayanan & Support (dulu Hardware, Printer, Jaringan; juga memilah Triase), ERM (dulu Software & SIMRS), Keamanan Sistem (dulu Akun & Akses, Server & Infrastruktur).

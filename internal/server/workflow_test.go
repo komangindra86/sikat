@@ -75,6 +75,31 @@ func TestTicketWorkflowOverHTTP(t *testing.T) {
 	if resp, _ := sari.post(base+"/reopen", url.Values{"csrf_token": {stok}, "reason": {"x"}}); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("petugas tidak boleh membuka kembali tiket, dapat %d", resp.StatusCode)
 	}
+
+	// Link pemantauan baru: tombol hanya untuk yang berhak, link lama tidak berlaku.
+	if _, body := sari.get(base); strings.Contains(body, base+"/link") {
+		t.Fatal("petugas yang tidak terkait tidak boleh melihat tombol link baru")
+	}
+	if resp, _ := sari.post(base+"/link", url.Values{"csrf_token": {stok}}); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("petugas yang tidak terkait tidak boleh membuat link baru, dapat %d", resp.StatusCode)
+	}
+	if _, body := tech.get(base); !strings.Contains(body, base+"/link") {
+		t.Fatal("penanggung jawab harus melihat tombol link baru")
+	}
+	_, body = tech.post(base+"/link", url.Values{"csrf_token": {tok}})
+	m := regexp.MustCompile(`id="new-link"[^>]*>https?://[^/<]+(/t/[A-Za-z0-9_-]+)<`).FindStringSubmatch(body)
+	if !strings.Contains(body, "Link pemantauan baru dibuat") || m == nil {
+		t.Fatal("link baru harus ditampilkan sekali di detail tiket")
+	}
+	if _, body := tech.get(base); strings.Contains(body, `id="new-link"`) {
+		t.Fatal("link baru hanya ditampilkan sekali")
+	}
+	if resp, _ := pelapor.get(trackPath); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("link lama harus tidak berlaku, dapat %d", resp.StatusCode)
+	}
+	if resp, body := pelapor.get(m[1]); resp.StatusCode != 200 || !strings.Contains(body, "Link pemantauan diperbarui petugas") {
+		t.Fatalf("link baru harus membuka tiket: %d", resp.StatusCode)
+	}
 }
 
 func TestActivitiesOverHTTP(t *testing.T) {

@@ -54,6 +54,7 @@ var labelGroups = map[string][]Option{
 		{"TAKEN_OVER", "Diambil alih"}, {"SUPPORT_ADDED", "Anggota pendukung ditambahkan"},
 		{"SUPPORT_REMOVED", "Anggota pendukung dilepas"}, {"PRIORITY_CHANGED", "Prioritas diubah"}, {"PHOTO_ADDED", "Foto ditambahkan"},
 		{"CATEGORY_CHANGED", "Jenis gangguan dikoreksi"},
+		{"LINK_RENEWED", "Link pemantauan pelapor dibuat ulang"},
 	},
 	"maintenance_type": {
 		{"CORRECTIVE", "Perbaikan"}, {"PREVENTIVE", "Pemeliharaan preventif"}, {"INSPECTION", "Pemeriksaan"},

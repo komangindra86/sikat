@@ -25,7 +25,7 @@ const selectTicket = `
 	       t.reporter_name, t.reporter_phone, rd.name, tc.name, ic.name,
 	       t.ticket_category_id, t.it_category_id, ic.is_triage, rtc.name, t.description,
 	       t.impact_level, t.affected_scope, t.replacement_available, t.critical_service, t.incident_started_at,
-	       t.assignee_id, au.full_name, cu.full_name, t.first_response_at, t.created_at,
+	       t.assignee_id, au.full_name, t.created_by_user_id, cu.full_name, t.first_response_at, t.created_at,
 	       (SELECT COUNT(*) FROM attachments x WHERE x.ticket_id = t.id AND x.file_deleted_at IS NULL),
 	       t.work_started_at, t.pending_since, prs.label, t.resolved_at, t.closed_at, t.service_restored_at,
 	       t.resolution_action, t.resolution_result, t.resolution_note, t.reporter_feedback, t.cancel_reason, t.sla_cycle
@@ -49,7 +49,7 @@ func scanTicket(sc interface{ Scan(...any) error }) (Ticket, error) {
 		&t.ReporterName, &t.ReporterPhone, &t.ReporterDeptName, &t.CategoryName, &t.ITCategoryName,
 		&t.TicketCategoryID, &t.ITCategoryID, &t.IsTriage, &t.ReportedCategoryName, &t.Description,
 		&t.Impact, &t.Scope, &t.Replacement, &t.CriticalService, &t.IncidentStartedAt,
-		&t.AssigneeID, &t.AssigneeName, &t.CreatedByName, &t.FirstResponseAt, &t.CreatedAt, &t.AttachmentCount,
+		&t.AssigneeID, &t.AssigneeName, &t.CreatedByID, &t.CreatedByName, &t.FirstResponseAt, &t.CreatedAt, &t.AttachmentCount,
 		&t.WorkStartedAt, &t.PendingSince, &t.PendingReason, &t.ResolvedAt, &t.ClosedAt, &t.ServiceRestoredAt,
 		&t.ResolutionAction, &t.ResolutionResult, &t.ResolutionNote, &t.ReporterFeedback, &t.CancelReason, &t.SLACycle)
 	return t, err

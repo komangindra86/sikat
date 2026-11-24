@@ -6,9 +6,12 @@
 {{if $d.NewLink}}
 <div class="card card-body mb-4 border-tema-garis bg-tema">
   <div class="text-sm font-bold text-aksen">Link pemantauan untuk pelapor</div>
-  <p class="text-xs text-aksen">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali.</p>
+  <p class="text-xs text-aksen">Kirimkan ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali; bila hilang, buat link baru dari kartu Pelapor.</p>
   <div id="new-link" class="mt-2 break-all rounded bg-card p-2 font-bold text-xs">{{$d.NewLink}}</div>
-  <div class="mt-2"><button type="button" class="btn btn-secondary btn-sm" data-copy="#new-link">Salin link</button></div>
+  <div class="mt-2 flex gap-2">
+    <button type="button" class="btn btn-secondary btn-sm" data-copy="#new-link">Salin link</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-share="#new-link" data-share-title="Tiket {{$t.TicketNo}}" hidden>Bagikan</button>
+  </div>
 </div>
 {{end}}
 
@@ -321,6 +324,13 @@
       {{if $t.ReporterPhone.Valid}}<div class="mt-1"><a class="font-bold text-aksen" href="tel:{{$t.ReporterPhone.String}}">{{$t.ReporterPhone.String}}</a></div>{{end}}
       {{if $t.CreatedByName.Valid}}<div class="mt-2 text-xs text-muted-foreground">Dicatat oleh {{$t.CreatedByName.String}}</div>{{end}}
       {{if $t.ReporterFeedback.Valid}}<div class="mt-2 text-xs">Konfirmasi pelapor: <strong>{{if eq $t.ReporterFeedback.String "OK"}}sudah beres{{else}}belum beres{{end}}</strong></div>{{end}}
+      {{if $a.RenewLink}}
+      <form method="post" action="/app/tickets/{{$t.ID}}/link" class="mt-3 border-t border-border pt-3" data-confirm="Buat link pemantauan baru? Link lama yang dipegang pelapor tidak berlaku lagi.">
+        {{template "csrf" $csrf}}
+        <button type="submit" class="btn btn-secondary btn-sm w-full" data-busy-text="Membuat…"><span class="icon h-4 w-4" aria-hidden="true">{{template "icon" "sync"}}</span>Buat link pemantauan baru</button>
+        <p class="help mt-1">Untuk pelapor yang kehilangan link. Link lama otomatis tidak berlaku.</p>
+      </form>
+      {{end}}
     </section>
     <section class="card card-body text-sm">
       <h2 class="mb-2 section-title">Waktu</h2>

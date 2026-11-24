@@ -21,6 +21,8 @@ type Actions struct {
 	TakeOver, Priority, Support, Comment, Photo                         bool
 	// Recategorize: koreksi jenis gangguan (PJ tiket, atau koordinator bidangnya).
 	Recategorize bool
+	// RenewLink: buat link pemantauan baru untuk pelapor (lihat canRenewLink).
+	RenewLink bool
 }
 
 // Any bernilai true bila ada aksi alur kerja yang tersedia.
@@ -57,6 +59,7 @@ func computeActions(t Ticket, u *rbac.User, members []Member, coordOK bool) Acti
 		Support:      (primary || coord) && teamStatus,
 		Comment:      !workflows.IsTerminal(t.Status) || u.Has(rbac.PermTicketTakeover),
 		Photo:        (primary || support || u.Has(rbac.PermTicketTakeover)) && t.Status != workflows.Cancelled,
+		RenewLink:    canRenewLink(primary, support, t.CreatedByID.Valid && t.CreatedByID.Int64 == u.ID, coord),
 	}
 }
 
@@ -277,6 +280,16 @@ func (h *Handler) removeSupport(w http.ResponseWriter, r *http.Request) {
 	h.act(w, r, "", "Anggota pendukung dilepas.", func(id int64, u *rbac.User) (map[string]string, error) {
 		uid, _ := strconv.ParseInt(chi.URLParam(r, "uid"), 10, 64)
 		return noErrs(h.Service.RemoveSupport(r.Context(), id, u, uid))
+	})
+}
+
+func (h *Handler) renewLink(w http.ResponseWriter, r *http.Request) {
+	h.act(w, r, "", "Link pemantauan baru dibuat. Link lama tidak berlaku lagi.", func(id int64, u *rbac.User) (map[string]string, error) {
+		token, err := h.Service.RenewLink(r.Context(), id, u)
+		if err == nil {
+			h.Sessions.Put(r.Context(), "ticket_link_"+strconv.FormatInt(id, 10), h.BaseURL+"/t/"+token)
+		}
+		return nil, err
 	})
 }
 

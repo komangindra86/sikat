@@ -306,3 +306,66 @@ func TestAutoCloseIdempotent(t *testing.T) {
 		t.Fatalf("histori AUTO_CLOSED harus tepat 1, dapat %d", c)
 	}
 }
+
+func TestRenewLink(t *testing.T) {
+	w := setupWF(t)
+	ctx := context.Background()
+	c, oldToken := w.newClaimed(t)
+
+	for name, u := range map[string]*rbac.User{"petugas lain": w.other, "admin": w.admin} {
+		if _, err := w.svc.RenewLink(ctx, c.ID, u); err != tickets.ErrForbidden {
+			t.Fatalf("%s tidak boleh membuat link baru, dapat %v", name, err)
+		}
+	}
+	token, err := w.svc.RenewLink(ctx, c.ID, w.tech)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if token == oldToken || !tickets.ValidTokenFormat(token) {
+		t.Fatalf("token baru tidak valid: %q", token)
+	}
+	if _, _, _, err := w.svc.GetPublic(ctx, oldToken); err != tickets.ErrNotFound {
+		t.Fatalf("link lama harus tidak berlaku, dapat %v", err)
+	}
+	if got, _, _, err := w.svc.GetPublic(ctx, token); err != nil || got.ID != c.ID {
+		t.Fatalf("link baru harus membuka tiket: %v", err)
+	}
+	// Koordinator bidang juga boleh; link sebelumnya ikut tidak berlaku.
+	coordToken, err := w.svc.RenewLink(ctx, c.ID, w.coord)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := w.svc.GetPublic(ctx, token); err != tickets.ErrNotFound {
+		t.Fatalf("link dari petugas harus tidak berlaku setelah dibuat ulang, dapat %v", err)
+	}
+	// Pelapor tetap bisa bertindak lewat link baru.
+	if errs, err := w.svc.AddReporterComment(ctx, coordToken, "Masih mati"); err != nil || len(errs) > 0 {
+		t.Fatalf("%v %v", errs, err)
+	}
+
+	var hist, audits int
+	_ = w.db.QueryRow(`SELECT COUNT(*) FROM ticket_histories WHERE ticket_id = ? AND event_type = 'LINK_RENEWED'`, c.ID).Scan(&hist)
+	_ = w.db.QueryRow(`SELECT COUNT(*) FROM audit_logs WHERE action = 'ticket.link_renew' AND entity_id = ?`, c.ID).Scan(&audits)
+	if hist != 2 || audits != 2 {
+		t.Fatalf("histori = %d, audit = %d, harus 2 dan 2", hist, audits)
+	}
+
+	// Petugas yang mencatat tiket (belum diambil) boleh; petugas lain tidak.
+	c2, errs, err := w.svc.Create(ctx, w.draft(func(d *tickets.Draft) {
+		d.Channel = tickets.ChannelPhone
+		d.RoomFromQR = false
+		d.CreatedBy = w.other.ID
+	}), nil)
+	if err != nil || len(errs) > 0 {
+		t.Fatalf("%v %v", errs, err)
+	}
+	if _, err := w.svc.RenewLink(ctx, c2.ID, w.other); err != nil {
+		t.Fatalf("pencatat tiket harus boleh: %v", err)
+	}
+	if _, err := w.svc.RenewLink(ctx, c2.ID, w.tech); err != tickets.ErrForbidden {
+		t.Fatalf("petugas yang tidak terkait tidak boleh, dapat %v", err)
+	}
+	if _, err := w.svc.RenewLink(ctx, 999999, w.tech); err != tickets.ErrNotFound {
+		t.Fatalf("tiket tidak ada, dapat %v", err)
+	}
+}

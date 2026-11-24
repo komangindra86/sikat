@@ -43,7 +43,7 @@
     <ol class="mt-3 space-y-3">
       {{range $d.Histories}}
       <li class="border-l-2 border-tema-garis pl-3">
-        <div class="text-sm font-bold">{{if eq .EventType "CREATED"}}Laporan dibuat{{else if eq .EventType "CLAIMED"}}Diterima petugas {{.ActorFirstName}}{{else if eq .EventType "TAKEN_OVER"}}Ditangani petugas {{.ActorFirstName}}{{else if eq .EventType "PENDING"}}Ditunda{{with .MetaValue "pending_reason"}}: {{.}}{{end}}{{else if eq .EventType "REOPENED"}}Dibuka kembali{{else if eq .EventType "REPORTER_CONFIRMED"}}Anda mengonfirmasi masalah sudah beres{{else if eq .EventType "AUTO_CLOSED"}}Ditutup otomatis{{else if .ToStatus.Valid}}{{label "ticket_status" .ToStatus.String}}{{else}}{{label "ticket_event" .EventType}}{{end}}</div>
+        <div class="text-sm font-bold">{{if eq .EventType "CREATED"}}Laporan dibuat{{else if eq .EventType "CLAIMED"}}Diterima petugas {{.ActorFirstName}}{{else if eq .EventType "TAKEN_OVER"}}Ditangani petugas {{.ActorFirstName}}{{else if eq .EventType "PENDING"}}Ditunda{{with .MetaValue "pending_reason"}}: {{.}}{{end}}{{else if eq .EventType "REOPENED"}}Dibuka kembali{{else if eq .EventType "REPORTER_CONFIRMED"}}Anda mengonfirmasi masalah sudah beres{{else if eq .EventType "AUTO_CLOSED"}}Ditutup otomatis{{else if eq .EventType "LINK_RENEWED"}}Link pemantauan diperbarui petugas {{.ActorFirstName}}{{else if .ToStatus.Valid}}{{label "ticket_status" .ToStatus.String}}{{else}}{{label "ticket_event" .EventType}}{{end}}</div>
         <div class="text-xs text-muted-foreground">{{wita .CreatedAt}} WITA</div>
       </li>
       {{end}}

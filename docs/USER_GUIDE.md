@@ -81,6 +81,13 @@ Menu Tiket → **Catat tiket**. Pilih sumber laporan, lokasi, perangkat, dan nam
 pelapor (ketik untuk memilih dari direktori pegawai). Anda dapat langsung
 mengambil tiket tersebut dan membagikan link pemantauan ke pelapor.
 
+### Pelapor kehilangan link pemantauan
+
+Buka detail tiket → kartu **Pelapor** → **Buat link pemantauan baru**. Salin atau
+bagikan link yang muncul ke pelapor (mis. lewat WA). Link hanya ditampilkan sekali
+dan link lama langsung tidak berlaku. Tombol ini tersedia untuk penanggung jawab,
+petugas pendukung, petugas yang mencatat tiket, dan koordinator bidangnya.
+
 ### Kegiatan internal
 
 Menu **Kegiatan**: catat pekerjaan di luar tiket (pemeliharaan rutin, instalasi,
@@ -133,6 +140,6 @@ Semua kemampuan petugas, ditambah:
 |---|---|
 | Lupa password | Hubungi Admin IT untuk reset (password sementara, wajib diganti). |
 | Akun terkunci | Terlalu banyak gagal login; tunggu beberapa menit atau hubungi Admin IT. |
-| Link pemantauan hilang | Hubungi IT dengan menyebut nomor tiket; petugas dapat membagikan ulang dari detail tiket bila tersedia. |
+| Link pemantauan hilang | Hubungi IT dengan menyebut nomor tiket. Petugas yang menangani (atau koordinator bidangnya) membuat link baru dan mengirimkannya; link lama tidak berlaku lagi. |
 | Notifikasi tidak muncul di HP | Pastikan diaktifkan di Notifikasi › Pengaturan, izin notifikasi browser tidak diblokir, dan (iPhone) SIKAT dibuka dari Layar Utama. Notifikasi tetap tersedia di inbox. |
 | Salah memilih jenis gangguan | Tidak masalah — petugas/koordinator akan mengoreksinya. |

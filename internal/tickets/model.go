@@ -70,6 +70,7 @@ type Ticket struct {
 	IncidentStartedAt    sql.NullTime
 	AssigneeID           sql.NullInt64
 	AssigneeName         sql.NullString
+	CreatedByID          sql.NullInt64 // petugas yang mencatat tiket (kosong = pelapor publik)
 	CreatedByName        sql.NullString
 	FirstResponseAt      sql.NullTime
 	CreatedAt            time.Time

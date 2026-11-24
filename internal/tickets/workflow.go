@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"sikat/internal/audit"
 	"sikat/internal/clock"
 	"sikat/internal/database"
 	"sikat/internal/priority"
@@ -41,6 +42,7 @@ const (
 	EventPriorityChanged = "PRIORITY_CHANGED"
 	EventPhotoAdded      = "PHOTO_ADDED"
 	EventCategoryChanged = "CATEGORY_CHANGED"
+	EventLinkRenewed     = "LINK_RENEWED"
 )
 
 // Hasil penyelesaian.
@@ -765,6 +767,66 @@ func (s *Service) ChangePriority(ctx context.Context, id int64, u *rbac.User, p,
 		return errs, err
 	}
 	return nil, nil
+}
+
+// canRenewLink: PJ tiket, petugas pendukung, petugas yang mencatat tiket, atau
+// koordinator bidangnya boleh membuat link pemantauan baru untuk pelapor.
+func canRenewLink(primary, support, creator, coord bool) bool {
+	return primary || support || creator || coord
+}
+
+// RenewLink membuat link pemantauan baru untuk pelapor yang kehilangan link.
+// Token lama langsung tidak berlaku; yang disimpan tetap hanya hash token.
+// Token baru dikembalikan sekali untuk ditampilkan ke petugas.
+func (s *Service) RenewLink(ctx context.Context, id int64, u *rbac.User) (string, error) {
+	if u == nil {
+		return "", ErrForbidden
+	}
+	token, err := NewToken()
+	if err != nil {
+		return "", err
+	}
+	now := s.clock.Now()
+	err = database.WithTxRetry(ctx, s.db, 3, func(tx *sql.Tx) error {
+		t, err := lockTicket(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		var createdBy sql.NullInt64
+		if err := tx.QueryRowContext(ctx, `SELECT created_by_user_id FROM tickets WHERE id = ?`, id).Scan(&createdBy); err != nil {
+			return err
+		}
+		support, err := isSupport(ctx, tx, id, u.ID)
+		if err != nil {
+			return err
+		}
+		coord := false
+		if u.Has(rbac.PermTicketTakeover) {
+			fc, err := fieldCoordinator(ctx, tx, t.ITCategoryID)
+			if err != nil {
+				return err
+			}
+			coord = fc.CanCoordinate(u)
+		}
+		creator := createdBy.Valid && createdBy.Int64 == u.ID
+		if !canRenewLink(t.isPrimary(u), support, creator, coord) {
+			return ErrForbidden
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE tickets SET public_token_hash = ?, updated_at = ? WHERE id = ?`,
+			hashToken(token), now, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO ticket_histories (ticket_id, event_type, actor_type, actor_user_id, created_at)
+			VALUES (?, ?, 'USER', ?, ?)`, id, EventLinkRenewed, u.ID, now); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tx, now, audit.Entry{Action: "ticket.link_renew", EntityType: "tickets", EntityID: id, ActorUserID: u.ID})
+	})
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // Comment adalah catatan pada tiket.

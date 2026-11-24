@@ -52,6 +52,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/{id}/category", h.changeCategory)
 	r.Post("/{id}/support", h.addSupport)
 	r.Post("/{id}/support/{uid}/remove", h.removeSupport)
+	r.Post("/{id}/link", h.renewLink)
 	r.Post("/{id}/comments", h.addComment)
 	r.Post("/{id}/photos", h.addPhotos)
 }
