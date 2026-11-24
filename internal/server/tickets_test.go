@@ -174,6 +174,91 @@ func testutilCreate(t *testing.T, db *sql.DB, username string) {
 	testutil.CreateUser(t, db, username, "TECHNICIAN", "password-"+username+"-123", false)
 }
 
+func TestPublicReportGlobalQR(t *testing.T) {
+	_, newClient, db := newAppDB(t, server.Deps{})
+	seedLocation(t, db)
+	var dept, room string
+	_ = db.QueryRow(`SELECT department_id, id FROM rooms WHERE code = 'LAB1'`).Scan(&dept, &room)
+
+	// Admin membuat QR global dari halaman QR; QR global kedua ditolak.
+	admin := newClient()
+	admin.login("admin", "password-admin-123")
+	_, body := admin.get("/app/qr")
+	if !strings.Contains(body, "Buat QR global") {
+		t.Fatal("halaman QR harus menawarkan pembuatan QR global")
+	}
+	atok := admin.token("/app/qr")
+	_, body = admin.post("/app/qr/generate", url.Values{"csrf_token": {atok}, "type": {"GLOBAL"}, "target_id": {"0"}})
+	if !strings.Contains(body, "QR berhasil dibuat") || !strings.Contains(body, "Semua lokasi") {
+		t.Fatal("QR global harus berhasil dibuat")
+	}
+	_, body = admin.post("/app/qr/generate", url.Values{"csrf_token": {atok}, "type": {"GLOBAL"}, "target_id": {"0"}})
+	if !strings.Contains(body, "QR global aktif sudah ada") {
+		t.Fatal("QR global aktif kedua harus ditolak dengan pesan")
+	}
+	var qrID, token string
+	if err := db.QueryRow(`SELECT id, token FROM qr_codes WHERE type = 'GLOBAL' AND is_active`).Scan(&qrID, &token); err != nil {
+		t.Fatal(err)
+	}
+	if resp, body := admin.get("/app/qr/" + qrID + "/poster"); resp.StatusCode != 200 || !strings.Contains(body, "Ada gangguan IT?") {
+		t.Fatalf("poster QR global harus tersedia: %d", resp.StatusCode)
+	}
+
+	// Pelapor memilih lokasi sendiri dan memilih masalah per bidang.
+	pelapor := newClient()
+	resp, body := pelapor.get("/q/" + token)
+	for _, want := range []string{"Di mana gangguannya?", `name="department_id"`, "Pelayanan &amp; Support", "Komputer, laptop, monitor", "Lainnya / tidak yakin"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("form QR global harus memuat %q (%d)", want, resp.StatusCode)
+		}
+	}
+	if strings.Contains(body, "Lokasi terdeteksi") {
+		t.Fatal("QR global tidak punya lokasi terdeteksi")
+	}
+	if _, body := pelapor.get("/q/" + token + "/ruangan?department_id=" + dept); !strings.Contains(body, `value="`+room+`"`) || !strings.Contains(body, "Ruang Sampel") {
+		t.Fatal("pilihan ruangan harus dimuat untuk unit terpilih")
+	}
+	if resp, _ := pelapor.get("/q/" + seedOtherRoomQR(t, db) + "/ruangan?department_id=" + dept); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("daftar ruangan hanya untuk QR global, dapat %d", resp.StatusCode)
+	}
+	tok := pelapor.token("/q/" + token)
+	fields := map[string]string{
+		"csrf_token": tok, "reporter_name": "Ani", "ticket_category_id": categoryID(t, db),
+		"description": "Printer tidak mau mencetak", "impact_level": "1", "affected_scope": "1",
+	}
+	resp, body = pelapor.postMultipart("/q/"+token, fields, false)
+	if resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(body, "Pilih unit tempat gangguan terjadi") {
+		t.Fatalf("unit wajib dipilih di QR global: %d", resp.StatusCode)
+	}
+	fields["department_id"], fields["room_id"] = dept, room
+	resp, body = pelapor.postMultipart("/q/"+token, fields, false)
+	if !strings.HasPrefix(resp.Request.URL.Path, "/t/") || !strings.Contains(body, "Laboratorium · Ruang Sampel") {
+		t.Fatalf("laporan QR global harus tercatat dengan lokasi pilihan pelapor: %d %s", resp.StatusCode, resp.Request.URL)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM tickets WHERE qr_code_id = ? AND channel = 'QR' AND room_id = ?`, qrID, room); n != 1 {
+		t.Fatalf("tiket harus terhubung ke QR global, dapat %d", n)
+	}
+}
+
+// seedOtherRoomQR membuat ruangan lain beserta QR ruangannya; mengembalikan token QR.
+func seedOtherRoomQR(t *testing.T, db *sql.DB) string {
+	t.Helper()
+	now := time.Now().UTC()
+	res, err := db.Exec(`INSERT INTO rooms (department_id, code, name, created_at, updated_at)
+		SELECT department_id, 'LAB2', 'Ruang Analis', ?, ? FROM rooms WHERE code = 'LAB1'`, now, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	room, _ := res.LastInsertId()
+	qs := qrcodes.NewService(db, clock.Real{}, "http://localhost")
+	id, err := qs.Generate(t.Context(), 0, qrcodes.TypeRoom, room)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, _ := qs.Get(t.Context(), id)
+	return q.Token
+}
+
 func TestPublicRateLimitPerQR(t *testing.T) {
 	_, newClient, db := newAppDB(t, server.Deps{QRRate: 2})
 	token := seedLocation(t, db)

@@ -13,7 +13,29 @@
   </div>
 </div>
 
-<div class="mt-4 grid gap-3 md:grid-cols-2">
+<section class="card card-body mt-4 border-tema-garis bg-tema" aria-labelledby="qr-global">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+    {{if $d.HasGlobal}}<img src="/app/qr/{{$d.Global.ID}}/png" alt="QR global pelapor" class="h-24 w-24 shrink-0 rounded border border-tema-garis bg-card" width="96" height="96">{{end}}
+    <div class="min-w-0 flex-1">
+      <h2 id="qr-global" class="font-bold">QR global pelapor</h2>
+      <p class="muted">Satu QR untuk seluruh rumah sakit, misalnya di lobi, lift, atau grup WA. Pelapor memilih unit dan ruangannya sendiri. Untuk lokasi tetap, QR ruangan lebih cepat karena lokasi terisi otomatis.</p>
+      {{if $d.HasGlobal}}<p class="mt-1 text-xs text-muted-foreground">Dipindai {{$d.Global.ScanCount}}×</p>{{end}}
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {{if $d.HasGlobal}}
+      <a class="btn btn-primary" href="/app/qr/{{$d.Global.ID}}/poster" target="_blank" rel="noopener">Cetak poster</a>
+      <a class="btn btn-secondary" href="/app/qr/{{$d.Global.ID}}">Detail</a>
+      {{else}}
+      <form method="post" action="/app/qr/generate">
+        {{template "csrf" $csrf}}<input type="hidden" name="type" value="GLOBAL"><input type="hidden" name="target_id" value="0">
+        <button class="btn btn-primary" type="submit">Buat QR global</button>
+      </form>
+      {{end}}
+    </div>
+  </div>
+</section>
+
+<div class="mt-3 grid gap-3 md:grid-cols-2">
   <div class="card card-body">
     <div class="font-bold">QR ruangan</div>
     <p class="muted">{{$d.MissingRooms}} ruangan aktif belum punya QR.</p>
@@ -62,7 +84,7 @@
       <div class="flex flex-wrap gap-1"><span class="badge badge-lanjut">{{label "qr_type" .Type}}</span>{{if not .IsActive}}<span class="badge badge-muted">Nonaktif</span>{{end}}</div>
       <div class="mt-1 font-bold text-xs text-muted-foreground">{{.TargetCode}}</div>
       <div class="truncate font-bold">{{.TargetName}}</div>
-      <div class="truncate text-xs text-muted-foreground">{{nullStr .DepartmentName}}{{if and (eq .Type "ASSET") .RoomName.Valid}} · {{.RoomName.String}}{{end}}</div>
+      <div class="truncate text-xs text-muted-foreground">{{if eq .Type "GLOBAL"}}Semua lokasi{{end}}{{nullStr .DepartmentName}}{{if and (eq .Type "ASSET") .RoomName.Valid}} · {{.RoomName.String}}{{end}}</div>
       <div class="text-xs text-muted-foreground">Dipindai {{.ScanCount}}×</div>
     </div>
   </a>

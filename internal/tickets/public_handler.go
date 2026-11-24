@@ -31,6 +31,7 @@ type PublicHandler struct {
 func (h *PublicHandler) Routes(r chi.Router) {
 	r.Get("/q/{token}", h.form)
 	r.Post("/q/{token}", h.submit)
+	r.Get("/q/{token}/ruangan", h.rooms)
 	r.Get("/t/{token}", h.track)
 	r.Get("/t/{token}/foto/{id}", h.photo)
 	r.Post("/t/{token}/konfirmasi", h.feedback)
@@ -40,8 +41,10 @@ func (h *PublicHandler) Routes(r chi.Router) {
 type reportData struct {
 	Token       string
 	Target      qrcodes.Target
-	Categories  []Category
+	Groups      []CategoryGroup // jenis gangguan per bidang, Triase terakhir
+	OpenField   int64           // bidang yang terbuka saat form tampil
 	Departments []Option
+	Rooms       []Option // QR global: ruangan unit lokasi terpilih
 	Assets      []Option
 	Form        map[string]string
 	MaxFiles    int
@@ -87,10 +90,21 @@ func (h *PublicHandler) target(w http.ResponseWriter, r *http.Request) (qrcodes.
 
 func (h *PublicHandler) renderForm(w http.ResponseWriter, r *http.Request, status int, t qrcodes.Target, token string, form, errs map[string]string) {
 	ctx := r.Context()
-	cats, err := h.Service.Categories(ctx, t.AssetITCategoryID.Int64)
+	cats, err := h.Service.Categories(ctx, 0)
 	if err != nil {
 		h.Renderer.ServerError(w, r, err)
 		return
+	}
+	if form == nil {
+		form = map[string]string{}
+	}
+	open := t.AssetITCategoryID.Int64 // QR perangkat: bidang perangkat terbuka lebih dulu
+	if sel, _ := strconv.ParseInt(form["ticket_category_id"], 10, 64); sel != 0 {
+		for _, c := range cats {
+			if c.ID == sel {
+				open = c.ITCategoryID
+			}
+		}
 	}
 	depts, err := h.Service.Departments(ctx)
 	if err != nil {
@@ -104,8 +118,13 @@ func (h *PublicHandler) renderForm(w http.ResponseWriter, r *http.Request, statu
 			return
 		}
 	}
-	if form == nil {
-		form = map[string]string{}
+	var rooms []Option
+	if t.Type == qrcodes.TypeGlobal {
+		dept, _ := strconv.ParseInt(form["department_id"], 10, 64)
+		if rooms, err = h.Service.DepartmentRooms(ctx, dept); err != nil {
+			h.Renderer.ServerError(w, r, err)
+			return
+		}
 	}
 	if _, ok := form["reporter_department_id"]; !ok && t.DepartmentID.Valid {
 		form["reporter_department_id"] = strconv.FormatInt(t.DepartmentID.Int64, 10)
@@ -113,7 +132,7 @@ func (h *PublicHandler) renderForm(w http.ResponseWriter, r *http.Request, statu
 	h.Renderer.Render(w, r, status, "public/report", web.Page{
 		Title: "Lapor Gangguan IT", Errors: errs,
 		Data: reportData{
-			Token: token, Target: t, Categories: cats, Departments: depts, Assets: assets, Form: form,
+			Token: token, Target: t, Groups: groupCategories(cats), OpenField: open, Departments: depts, Rooms: rooms, Assets: assets, Form: form,
 			MaxFiles: h.Settings.Int(ctx, settings.KeyUploadMaxFiles), MaxMB: h.Settings.Int(ctx, settings.KeyUploadMaxMB),
 			Incident: IncidentOptions,
 		},
@@ -139,7 +158,11 @@ func (h *PublicHandler) submit(w http.ResponseWriter, r *http.Request) {
 		h.Renderer.Error(w, r, http.StatusTooManyRequests, "")
 		return
 	}
-	if !h.QRLimiter.Allow("qr:" + token) {
+	limitKey := "qr:" + token
+	if t.Type == qrcodes.TypeGlobal {
+		limitKey += ":" + reqctx.InfoFrom(ctx).IP // QR global dipakai seluruh rumah sakit
+	}
+	if !h.QRLimiter.Allow(limitKey) {
 		h.Renderer.Error(w, r, http.StatusTooManyRequests,
 			"Sudah banyak laporan dari lokasi ini dalam beberapa menit terakhir. Petugas IT sudah menerima laporan tersebut; mohon tunggu sebentar.")
 		return
@@ -155,9 +178,12 @@ func (h *PublicHandler) submit(w http.ResponseWriter, r *http.Request) {
 	d.QRCodeID = t.QRID
 	d.DepartmentID = t.DepartmentID.Int64
 	d.RoomID = t.RoomID.Int64
-	if t.Type == qrcodes.TypeAsset {
+	switch t.Type {
+	case qrcodes.TypeAsset:
 		d.AssetID = t.AssetID.Int64 // perangkat dari QR, bukan dari form
-	} else {
+	case qrcodes.TypeGlobal:
+		parseReporterLocation(r.PostFormValue, &d, form, errs) // pelapor memilih lokasi sendiri
+	default:
 		d.RoomFromQR = true
 	}
 
@@ -185,6 +211,27 @@ func (h *PublicHandler) submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/t/"+created.Token+"?baru=1", http.StatusSeeOther)
+}
+
+// rooms mengembalikan <option> ruangan untuk unit terpilih di form QR global (HTMX).
+func (h *PublicHandler) rooms(w http.ResponseWriter, r *http.Request) {
+	t, _, ok := h.target(w, r)
+	if !ok {
+		return
+	}
+	if t.Type != qrcodes.TypeGlobal {
+		h.Renderer.Error(w, r, http.StatusNotFound, "")
+		return
+	}
+	dept, _ := strconv.ParseInt(r.URL.Query().Get("department_id"), 10, 64)
+	rooms, err := h.Service.DepartmentRooms(r.Context(), dept)
+	if err != nil {
+		h.Renderer.ServerError(w, r, err)
+		return
+	}
+	h.Renderer.Fragment(w, r, http.StatusOK, "public/report", "room-options", web.Page{
+		Data: reportData{Rooms: rooms, Form: map[string]string{}},
+	})
 }
 
 func (h *PublicHandler) renderTrack(w http.ResponseWriter, r *http.Request, status int, open string, form, errs map[string]string) {

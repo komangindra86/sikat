@@ -237,8 +237,7 @@ func (h *Handler) renderNew(w http.ResponseWriter, r *http.Request, status int, 
 	dept, room := atoi(form["department_id"]), atoi(form["room_id"])
 	var rooms []Option
 	if dept != 0 {
-		if rooms, err = h.Service.repo.options(ctx, h.Service.db,
-			`SELECT id, name FROM rooms WHERE department_id = ? AND is_active = TRUE ORDER BY name`, dept); err != nil {
+		if rooms, err = h.Service.DepartmentRooms(ctx, dept); err != nil {
 			h.Renderer.ServerError(w, r, err)
 			return
 		}

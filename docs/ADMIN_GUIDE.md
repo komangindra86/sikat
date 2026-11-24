@@ -17,6 +17,9 @@ Instalasi server: DEPLOYMENT.md.
    diganti saat login pertama), centang **kompetensi** (bidang) petugas.
 4. **QR Code** → *Buat semua QR ruangan* / QR perangkat → cetak → tempel.
    Pastikan alamat aplikasi (`SIKAT_BASE_URL`) sudah final sebelum mencetak.
+   Untuk area umum (lobi, lift, grup WA), buat **QR global** → *Cetak poster*:
+   pelapor memilih unit dan ruangan sendiri. Hanya satu QR global yang aktif;
+   *Buat ulang* bila poster lama perlu diganti (misalnya disalahgunakan).
 5. **Backup** → *Backup sekarang* lalu *Uji restore*; pastikan salinan off-site berjalan.
 
 ## 2. Pengguna & hak akses
@@ -37,7 +40,8 @@ Instalasi server: DEPLOYMENT.md.
 
 | Menu | Isi |
 |---|---|
-| Master Data › Jenis Gangguan | Pilihan bahasa awam untuk pelapor + bidang + prioritas bawaan. "Lainnya" menuju bidang **Triase**. |
+| Master Data › Bidang | **Penjelasan untuk pelapor**: contoh masalah dengan bahasa sehari-hari, tampil di form lapor saat pelapor memilih bagian. |
+| Master Data › Jenis Gangguan | Pilihan bahasa awam untuk pelapor + bidang + prioritas bawaan. Pelapor memilih bidang dulu, lalu jenis gangguannya. "Lainnya (bidang)" untuk masalah di luar daftar per bidang; "Lainnya" menuju bidang **Triase**. |
 | Master Data › Aturan Prioritas | Aturan berurutan (dampak, cakupan, perangkat pengganti, layanan kritis). Uji di *Uji aturan*. |
 | Master Data › Alasan Tunda | Termasuk tanda "Menghentikan SLA" |
 | Master Data › Template Tindakan | Teks tindakan siap pakai petugas |

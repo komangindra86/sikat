@@ -243,6 +243,8 @@ type Category struct {
 	ITCategoryID   int64
 	ITCategoryName string
 	IsTriage       bool
+	// ITCategoryHelp: penjelasan bidang dengan bahasa awam untuk pelapor.
+	ITCategoryHelp sql.NullString
 }
 
 // Option adalah pilihan select umum.

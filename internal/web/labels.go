@@ -39,7 +39,7 @@ var labelGroups = map[string][]Option{
 		{"YES", "Ada"}, {"NO", "Tidak ada"}, {"UNKNOWN", "Tidak tahu"},
 	},
 	"qr_type": {
-		{"ROOM", "Ruangan"}, {"ASSET", "Perangkat"},
+		{"ROOM", "Ruangan"}, {"ASSET", "Perangkat"}, {"GLOBAL", "Global"},
 	},
 	"resolution_result": {
 		{"FIXED", "Berfungsi normal"}, {"WORKAROUND", "Solusi sementara"}, {"REPLACED", "Perangkat diganti"},

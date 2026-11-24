@@ -1,6 +1,7 @@
 package tickets
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"sort"
@@ -336,7 +337,9 @@ func PartLinesFrom(r *http.Request) []PartLine {
 
 // CategoryGroup adalah jenis gangguan per bidang (pilihan koreksi), Triase terakhir.
 type CategoryGroup struct {
+	FieldID  int64
 	Field    string
+	Help     sql.NullString // penjelasan bidang untuk pelapor
 	IsTriage bool
 	Items    []Category
 }
@@ -349,7 +352,7 @@ func groupCategories(cats []Category) []CategoryGroup {
 		if !ok {
 			i = len(out)
 			idx[c.ITCategoryID] = i
-			out = append(out, CategoryGroup{Field: c.ITCategoryName, IsTriage: c.IsTriage})
+			out = append(out, CategoryGroup{FieldID: c.ITCategoryID, Field: c.ITCategoryName, Help: c.ITCategoryHelp, IsTriage: c.IsTriage})
 		}
 		out[i].Items = append(out[i].Items, c)
 	}

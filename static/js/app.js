@@ -276,6 +276,31 @@
   });
   document.addEventListener("DOMContentLoaded", syncPeriod);
 
+  // Form pelapor: pilih bidang dulu, lalu jenis gangguan di bidang itu.
+  // Tanpa JS semua kelompok tampil berurutan dengan judul bidangnya.
+  function syncBidang(gulir) {
+    document.querySelectorAll("[data-pilih-bidang]").forEach(function (fs) {
+      var daftar = fs.querySelector("[data-bidang-daftar]");
+      if (!daftar) return;
+      daftar.removeAttribute("hidden");
+      fs.querySelectorAll("[data-ket-bidang]").forEach(function (el) { el.setAttribute("hidden", ""); });
+      fs.querySelectorAll("[data-awalan-bidang]").forEach(function (el) { el.removeAttribute("hidden"); });
+      var pilih = daftar.querySelector('input[name="bidang"]:checked');
+      fs.querySelectorAll("[data-jenis-bidang]").forEach(function (g) {
+        var on = !!pilih && g.getAttribute("data-jenis-bidang") === pilih.value;
+        if (on) g.removeAttribute("hidden"); else g.setAttribute("hidden", "");
+        var jenis = g.querySelectorAll('input[name="ticket_category_id"]');
+        if (!on) jenis.forEach(function (i) { i.checked = false; });
+        else if (jenis.length === 1) jenis[0].checked = true;
+        if (on && gulir && g.scrollIntoView) g.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+  }
+  document.addEventListener("change", function (e) {
+    if (e.target.matches('[data-bidang-daftar] input[name="bidang"]')) syncBidang(true);
+  });
+  document.addEventListener("DOMContentLoaded", function () { syncBidang(false); });
+
   // Pilihan yang mengisi select lain: <select data-sets-target="#id"><option data-set="5">
   document.addEventListener("change", function (e) {
     var sel = e.target;

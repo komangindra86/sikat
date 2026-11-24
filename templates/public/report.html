@@ -9,12 +9,37 @@
   {{template "form-errors" .}}
   <div class="hp" aria-hidden="true"><label>Jangan diisi <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
+  {{if eq $t.Type "GLOBAL"}}
+  <section class="card card-body space-y-4" aria-labelledby="lokasi-gangguan">
+    <div>
+      <h2 id="lokasi-gangguan" class="font-bold text-foreground">Di mana gangguannya?</h2>
+      <p class="help mt-0.5">Pilih unit dan ruangan tempat perangkat atau aplikasi bermasalah.</p>
+    </div>
+    <div>
+      <label class="label" for="department_id">Unit <span class="text-bad" aria-hidden="true">*</span></label>
+      <select class="input {{if $p.Err "department_id"}}input-error{{end}}" id="department_id" name="department_id" required
+              hx-get="/q/{{$d.Token}}/ruangan" hx-target="#room_id" hx-trigger="change" hx-include="this">
+        <option value="">Pilih unit</option>
+        {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
+      </select>
+      {{with $p.Err "department_id"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    <div>
+      <label class="label" for="room_id">Ruangan</label>
+      <select class="input {{if $p.Err "room_id"}}input-error{{end}}" id="room_id" name="room_id">
+        {{template "room-options" $p}}
+      </select>
+      {{with $p.Err "room_id"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+  </section>
+  {{else}}
   <section class="card card-body" aria-label="Lokasi terdeteksi">
     <div class="text-xs font-bold text-aksen">Lokasi terdeteksi</div>
     <div class="mt-1 font-bold text-foreground">{{if $t.DepartmentName.Valid}}{{$t.DepartmentName.String}}{{end}}{{if $t.RoomName.Valid}} · {{$t.RoomName.String}}{{end}}</div>
     {{if $t.RoomLocation.Valid}}<div class="text-sm text-muted-foreground">{{$t.RoomLocation.String}}</div>{{end}}
     {{if $t.AssetID.Valid}}<div class="mt-1 text-sm text-foreground">{{$t.AssetName.String}} <span class="font-bold text-xs text-muted-foreground">({{$t.AssetCode.String}})</span>{{if $t.AssetBrandModel.Valid}} · {{$t.AssetBrandModel.String}}{{end}}</div>{{end}}
   </section>
+  {{end}}
 
   <div class="card card-body space-y-4">
     <div>
@@ -25,7 +50,7 @@
     <div>
       <label class="label" for="reporter_department_id">Unit/bagian Anda</label>
       <select class="input {{if $p.Err "reporter_department_id"}}input-error{{end}}" id="reporter_department_id" name="reporter_department_id">
-        <option value="">Sama dengan lokasi</option>
+        <option value="">Sama dengan unit lokasi</option>
         {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "reporter_department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
       </select>
       {{with $p.Err "reporter_department_id"}}<p class="error-text">{{.}}</p>{{end}}
@@ -42,18 +67,33 @@
     {{end}}{{end}}
   </div>
 
-  <fieldset class="card card-body">
+  <fieldset class="card card-body" data-pilih-bidang>
     <legend class="label text-base">Apa masalahnya? <span class="text-bad" aria-hidden="true">*</span></legend>
-    <p class="-mt-0.5 mb-1 text-xs text-muted-foreground">Tidak ada yang cocok? Pilih <strong class="font-bold text-foreground">Lainnya</strong> lalu ceritakan kendalanya, tim IT akan memilahnya.</p>
-    <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {{range $d.Categories}}
-      <label class="choice">
-        <input type="radio" name="ticket_category_id" value="{{.ID}}" class="sr-only" {{if eq (printf "%d" .ID) (index $d.Form "ticket_category_id")}}checked{{end}}>
-        <span class="block font-bold text-foreground">{{.Name}}</span>
-        {{if .HelpText.Valid}}<span class="block text-xs text-muted-foreground">{{.HelpText.String}}</span>{{end}}
+    <p class="-mt-0.5 mb-1 text-xs text-muted-foreground">Pilih bagian yang paling sesuai, lalu pilih masalahnya. Tidak yakin? Pilih <strong class="font-bold text-foreground">Lainnya / tidak yakin</strong> di paling bawah.</p>
+    <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2" data-bidang-daftar hidden>
+      {{range $d.Groups}}
+      <label class="choice {{if .IsTriage}}sm:col-span-2{{end}}">
+        <input type="radio" name="bidang" value="{{.FieldID}}" class="sr-only" {{if eq .FieldID $d.OpenField}}checked{{end}}>
+        <span class="block font-bold text-foreground">{{if .IsTriage}}Lainnya / tidak yakin{{else}}{{.Field}}{{end}}</span>
+        {{with .Help}}{{if .Valid}}<span class="block text-xs text-muted-foreground">{{.String}}</span>{{end}}{{end}}
       </label>
       {{end}}
     </div>
+    {{range $d.Groups}}
+    <div class="mt-4" data-jenis-bidang="{{.FieldID}}">
+      <h3 class="text-sm font-bold text-foreground"><span data-awalan-bidang hidden>Pilih masalah di </span><span data-judul-bidang>{{if .IsTriage}}Lainnya / tidak yakin{{else}}{{.Field}}{{end}}</span></h3>
+      {{with .Help}}{{if .Valid}}<p class="help mt-0.5" data-ket-bidang>{{.String}}</p>{{end}}{{end}}
+      <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {{range .Items}}
+        <label class="choice">
+          <input type="radio" name="ticket_category_id" value="{{.ID}}" class="sr-only" {{if eq (printf "%d" .ID) (index $d.Form "ticket_category_id")}}checked{{end}}>
+          <span class="block font-bold text-foreground">{{.Name}}</span>
+          {{if .HelpText.Valid}}<span class="block text-xs text-muted-foreground">{{.HelpText.String}}</span>{{end}}
+        </label>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
     {{with $p.Err "ticket_category_id"}}<p class="error-text">{{.}}</p>{{end}}
   </fieldset>
 
@@ -120,6 +160,11 @@
   <button type="submit" class="btn btn-primary btn-block min-h-14 text-base" data-busy-text="Mengirim…">Kirim laporan</button>
   <p class="text-center text-xs text-muted-foreground">Untuk keadaan darurat medis, tetap ikuti prosedur darurat rumah sakit.{{with .ITContact}} Kontak IT: {{.}}.{{end}}</p>
 </form>
+{{end}}
+
+{{define "room-options"}}
+<option value="">Tidak tahu / tidak ada di daftar</option>
+{{range .Data.Rooms}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $.Data.Form "room_id")}}selected{{end}}>{{.Label}}</option>{{end}}
 {{end}}
 
 {{define "choice"}}

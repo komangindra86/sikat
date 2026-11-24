@@ -402,9 +402,9 @@ func (repository) options(ctx context.Context, db database.DBTX, q string, args 
 }
 
 func (repository) categories(ctx context.Context, db database.DBTX) ([]Category, error) {
-	rows, err := db.QueryContext(ctx, `SELECT tc.id, tc.name, tc.help_text, tc.it_category_id, ic.name, ic.is_triage
+	rows, err := db.QueryContext(ctx, `SELECT tc.id, tc.name, tc.help_text, tc.it_category_id, ic.name, ic.is_triage, ic.reporter_help
 		FROM ticket_categories tc JOIN it_categories ic ON ic.id = tc.it_category_id
-		WHERE tc.is_active = TRUE ORDER BY tc.sort_order, tc.name`)
+		WHERE tc.is_active = TRUE ORDER BY ic.is_triage, ic.sort_order, ic.name, tc.sort_order, tc.name`)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +412,7 @@ func (repository) categories(ctx context.Context, db database.DBTX) ([]Category,
 	var out []Category
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.Name, &c.HelpText, &c.ITCategoryID, &c.ITCategoryName, &c.IsTriage); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.HelpText, &c.ITCategoryID, &c.ITCategoryName, &c.IsTriage, &c.ITCategoryHelp); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

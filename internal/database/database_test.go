@@ -129,13 +129,13 @@ func TestUniformCodesMigration(t *testing.T) {
 		t.Fatalf("%d bidang belum berformat BDG-NN", n)
 	}
 
-	// Down 00016 lalu 00015 → nama dan kode lama kembali.
+	// Down 00017, 00016, lalu 00015 → nama dan kode lama kembali.
 	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
 	m, err := database.NewMigrator(db, mfs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []string{"00016", "00015"} {
+	for _, v := range []string{"00017", "00016", "00015"} {
 		if _, err := m.Down(ctx); err != nil {
 			t.Fatalf("down %s: %v", v, err)
 		}
@@ -276,7 +276,20 @@ func TestBidangFungsiMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Down(ctx); err != nil {
+	// down00016 membatalkan 00017 lebih dulu (migrasi terbaru) lalu 00016.
+	down00016 := func() error {
+		for _, want := range []string{"00017", "00016"} {
+			got, err := m.Down(ctx)
+			if err != nil {
+				return err
+			}
+			if !strings.HasPrefix(got, want) {
+				t.Fatalf("down %s, harus %s", got, want)
+			}
+		}
+		return nil
+	}
+	if err := down00016(); err != nil {
 		t.Fatalf("down 00016: %v", err)
 	}
 	if got := bidangJenis("Tidak bisa mencetak"); got != "Printer" {
@@ -314,7 +327,7 @@ func TestBidangFungsiMigration(t *testing.T) {
 	if got := komp(); got != "ERM,Pelayanan & Support" {
 		t.Fatalf("kompetensi setelah up = %s, harus ERM,Pelayanan & Support", got)
 	}
-	if _, err := m.Down(ctx); err != nil {
+	if err := down00016(); err != nil {
 		t.Fatalf("down 00016 kedua: %v", err)
 	}
 	if got := komp(); got != "Jaringan,Printer,Software & SIMRS" {
@@ -354,7 +367,7 @@ func TestBidangFungsiMigration(t *testing.T) {
 		VALUES (?, 'INSPECTION', 'MANUAL', ?, 'uji', 'DONE', ?, ?, ?)`, assetID, catID("Usulan sistem atau fitur baru"), now, now, now); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Down(ctx); err != nil {
+	if err := down00016(); err != nil {
 		t.Fatalf("down 00016 dengan jenis baru yang dirujuk: %v", err)
 	}
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name IN ('Permintaan perangkat baru','Usulan sistem atau fitur baru') AND NOT is_active`); n != 2 {
@@ -376,7 +389,7 @@ func TestBidangFungsiMigration(t *testing.T) {
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE is_active`); n != 7 {
 		t.Fatalf("bidang aktif setelah up lagi = %d, harus 7", n)
 	}
-	if _, err := m.Down(ctx); err != nil {
+	if err := down00016(); err != nil {
 		t.Fatalf("down 00016 keempat: %v", err)
 	}
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE name IN ('Administrasi & Inventaris','System Developer') AND NOT is_active`); n != 2 {
@@ -384,5 +397,82 @@ func TestBidangFungsiMigration(t *testing.T) {
 	}
 	if _, err := m.Up(ctx); err != nil {
 		t.Fatalf("up 00016 terakhir: %v", err)
+	}
+}
+
+func TestLaporPerBidangMigration(t *testing.T) {
+	db := testutil.DB(t) // sudah Up, termasuk 00017
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	// Tiap bidang aktif punya penjelasan untuk pelapor dan minimal satu jenis gangguan aktif.
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE is_active AND (reporter_help IS NULL OR reporter_help = '')`); n != 0 {
+		t.Fatalf("%d bidang aktif belum punya penjelasan untuk pelapor", n)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories c WHERE c.is_active
+		AND NOT EXISTS (SELECT 1 FROM ticket_categories t WHERE t.it_category_id = c.id AND t.is_active)`); n != 0 {
+		t.Fatalf("%d bidang aktif tanpa jenis gangguan", n)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories t JOIN it_categories c ON c.id = t.it_category_id
+		WHERE c.name = 'Mutu' AND t.is_active`); n != 3 {
+		t.Fatalf("jenis gangguan Mutu = %d, harus 3", n)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name LIKE 'Lainnya (%' AND is_active`); n != 6 {
+		t.Fatalf("jenis Lainnya per bidang = %d, harus 6", n)
+	}
+	var help string
+	if err := db.QueryRow(`SELECT help_text FROM ticket_categories WHERE name = 'Lainnya'`).Scan(&help); err != nil || strings.ContainsRune(help, '—') {
+		t.Fatalf("bantuan Lainnya = %q (%v)", help, err)
+	}
+
+	// Hanya satu QR global aktif.
+	if _, err := db.Exec(`INSERT INTO qr_codes (token, type, created_at, updated_at) VALUES ('GLOBAL0000000000000001', 'GLOBAL', ?, ?)`, now, now); err != nil {
+		t.Fatalf("QR global: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO qr_codes (token, type, created_at, updated_at) VALUES ('GLOBAL0000000000000002', 'GLOBAL', ?, ?)`, now, now); err == nil {
+		t.Fatal("QR global aktif kedua harus ditolak")
+	}
+	var qrID int64
+	_ = db.QueryRow(`SELECT id FROM qr_codes WHERE type = 'GLOBAL'`).Scan(&qrID)
+
+	// Tiket dari QR global dengan jenis baru tidak boleh menggagalkan Down.
+	if _, err := db.Exec(`INSERT INTO tickets (ticket_no, public_token_hash, qr_code_id, reporter_name, ticket_category_id,
+		it_category_id, description, impact_level, affected_scope, priority, created_at, updated_at)
+		SELECT 'TKT-UJI-17', UNHEX(SHA2('uji17', 256)), ?, 'Pelapor', id, it_category_id, 'uji', 1, 1, 'LOW', ?, ?
+		  FROM ticket_categories WHERE name = 'Lainnya (ERM)'`, qrID, now, now); err != nil {
+		t.Fatal(err)
+	}
+
+	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
+	m, err := database.NewMigrator(db, mfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, "00017") {
+		t.Fatalf("down 00017: %s %v", got, err)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM qr_codes WHERE token LIKE 'GLOBAL%'`); n != 0 {
+		t.Fatal("QR global harus terhapus setelah down")
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM tickets WHERE ticket_no = 'TKT-UJI-17' AND qr_code_id IS NULL`); n != 1 {
+		t.Fatal("tiket dari QR global tetap ada tanpa rujukan QR")
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name = 'Lainnya (ERM)' AND NOT is_active`); n != 1 {
+		t.Fatal("jenis yang dirujuk tiket harus tetap ada dan nonaktif")
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name = 'Lainnya (Mutu)'`); n != 0 {
+		t.Fatal("jenis baru yang tidak dirujuk harus terhapus")
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00017 lagi: %v", err)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name LIKE 'Lainnya (%' AND is_active`); n != 6 {
+		t.Fatalf("setelah up lagi, jenis Lainnya per bidang = %d, harus 6", n)
+	}
+	if _, err := m.Down(ctx); err != nil {
+		t.Fatalf("down 00017 kedua: %v", err)
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00017 terakhir: %v", err)
 	}
 }

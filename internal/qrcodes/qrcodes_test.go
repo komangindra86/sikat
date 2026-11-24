@@ -130,3 +130,42 @@ func TestQRLifecycle(t *testing.T) {
 		t.Fatalf("aksi QR harus tercatat di audit, dapat %d", c)
 	}
 }
+
+func TestGlobalQR(t *testing.T) {
+	db := testutil.DB(t)
+	svc := qrcodes.NewService(db, clock.NewFake(time.Now()), "https://sikat.example/")
+	ctx := context.Background()
+
+	if _, ok, err := svc.ActiveGlobal(ctx); err != nil || ok {
+		t.Fatalf("belum ada QR global: ok=%v err=%v", ok, err)
+	}
+	id, err := svc.Generate(ctx, 0, qrcodes.TypeGlobal, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Generate(ctx, 0, qrcodes.TypeGlobal, 0); err != qrcodes.ErrGlobalExists {
+		t.Fatalf("QR global kedua harus ditolak, dapat %v", err)
+	}
+	q, ok, err := svc.ActiveGlobal(ctx)
+	if err != nil || !ok || q.ID != id || q.TargetCode != qrcodes.GlobalCode || q.TargetName != qrcodes.GlobalName {
+		t.Fatalf("QR global aktif: %+v ok=%v err=%v", q, ok, err)
+	}
+	target, err := svc.Resolve(ctx, q.Token)
+	if err != nil || target.Type != qrcodes.TypeGlobal || target.DepartmentID.Valid || target.RoomID.Valid {
+		t.Fatalf("resolve QR global: %+v %v", target, err)
+	}
+	newID, err := svc.Regenerate(ctx, 0, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Resolve(ctx, q.Token); err != qrcodes.ErrInactive {
+		t.Fatalf("token QR global lama harus tidak berlaku, dapat %v", err)
+	}
+	if q2, ok, _ := svc.ActiveGlobal(ctx); !ok || q2.ID != newID || q2.Generation != 2 {
+		t.Fatalf("QR global baru: %+v", q2)
+	}
+	list, _, err := svc.List(ctx, qrcodes.Filter{Type: qrcodes.TypeGlobal, IncludeInactive: true})
+	if err != nil || len(list) != 2 {
+		t.Fatalf("daftar QR global = %d, %v", len(list), err)
+	}
+}

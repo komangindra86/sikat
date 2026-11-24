@@ -11,11 +11,16 @@ pegawai), **petugas IT**, dan **koordinator IT**. Admin IT: lihat ADMIN_GUIDE.md
 ### Melaporkan gangguan
 
 1. **Scan QR** yang tertempel di ruangan atau di perangkat dengan kamera HP.
-   Lokasi (dan perangkat, bila QR perangkat) terisi otomatis.
+   Lokasi (dan perangkat, bila QR perangkat) terisi otomatis. Bila memakai
+   **QR global** (poster "Ada gangguan IT?" di area umum), pilih sendiri **unit**
+   dan **ruangan** tempat gangguan terjadi.
 2. Isi formulir singkat:
    - **Nama** dan **unit/bagian** Anda (nama diingat di HP untuk laporan berikutnya).
-   - **Apa masalahnya?** Pilih yang paling mirip. *Tidak ada yang cocok? Pilih
-     **Lainnya** lalu ceritakan — tim IT akan memilahnya.*
+   - **Apa masalahnya?** Pilih **bagian** yang paling sesuai (Pelayanan & Support,
+     Administrasi & Inventaris, Mutu, ERM, System Developer, Keamanan Sistem), lalu
+     pilih masalahnya. Tiap bagian punya pilihan **Lainnya** untuk masalah yang tidak
+     ada di daftar. *Tidak yakin bagiannya? Pilih **Lainnya / tidak yakin** di paling
+     bawah lalu ceritakan, tim IT akan memilahnya.*
    - **Ceritakan kendalanya** (wajib), apakah pelayanan terganggu, siapa yang terdampak.
    - Foto (opsional). **Jangan memotret layar/kertas yang menampilkan data pasien**,
      dan jangan menulis nama pasien, nomor rekam medis, atau diagnosis.

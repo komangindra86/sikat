@@ -31,6 +31,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Get("/zip", h.zip)
 	r.Get("/{id}", h.detail)
 	r.Get("/{id}/png", h.png)
+	r.Get("/{id}/poster", h.poster)
 	r.Post("/{id}/deactivate", h.deactivate)
 	r.Post("/{id}/regenerate", h.regenerate)
 }
@@ -42,6 +43,8 @@ type listData struct {
 	MissingRooms int
 	MissingAsset int
 	Rooms        []RoomOption
+	Global       QR
+	HasGlobal    bool
 }
 
 type detailData struct {
@@ -73,9 +76,15 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
+	global, hasGlobal, err := h.Service.ActiveGlobal(r.Context())
+	if err != nil {
+		h.Renderer.ServerError(w, r, err)
+		return
+	}
 	h.Renderer.Render(w, r, http.StatusOK, "qr/list", web.Page{
 		Title: "QR Code", Nav: "master",
-		Data: listData{QRs: list, Pager: pager, Filter: f, MissingRooms: mr, MissingAsset: ma, Rooms: rooms},
+		Data: listData{QRs: list, Pager: pager, Filter: f, MissingRooms: mr, MissingAsset: ma, Rooms: rooms,
+			Global: global, HasGlobal: hasGlobal},
 	})
 }
 
@@ -86,7 +95,7 @@ func (h *Handler) generate(w http.ResponseWriter, r *http.Request) {
 	target, _ := strconv.ParseInt(r.PostFormValue("target_id"), 10, 64)
 	id, err := h.Service.Generate(r.Context(), actor(r), typ, target)
 	switch {
-	case errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrTargetInvalid):
+	case errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrTargetInvalid), errors.Is(err, ErrGlobalExists):
 		h.Renderer.Redirect(w, r, backURL(r), "error", err.Error())
 	case err != nil:
 		h.Renderer.ServerError(w, r, err)
@@ -176,6 +185,19 @@ func (h *Handler) png(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Disposition", `attachment; filename="`+fileName(q)+`"`)
 	}
 	_, _ = w.Write(img)
+}
+
+// poster menampilkan poster A4 untuk QR global (ditempel di area umum).
+func (h *Handler) poster(w http.ResponseWriter, r *http.Request) {
+	q, ok := h.load(w, r)
+	if !ok {
+		return
+	}
+	if q.Type != TypeGlobal || !q.IsActive {
+		h.Renderer.Error(w, r, http.StatusNotFound, "")
+		return
+	}
+	h.Renderer.Render(w, r, http.StatusOK, "qr/poster", web.Page{Title: "Poster QR global", Data: detailData{QR: q, URL: h.Service.URL(q.Token)}})
 }
 
 func parseIDs(raw string) []int64 {
@@ -273,7 +295,7 @@ func (h *Handler) regenerate(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := h.Service.Regenerate(r.Context(), actor(r), q.ID)
 	switch {
-	case errors.Is(err, ErrTargetInvalid), errors.Is(err, ErrAlreadyExists):
+	case errors.Is(err, ErrTargetInvalid), errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrGlobalExists):
 		h.Renderer.Redirect(w, r, "/app/qr/"+strconv.FormatInt(q.ID, 10), "error", err.Error())
 	case err != nil:
 		h.Renderer.ServerError(w, r, err)

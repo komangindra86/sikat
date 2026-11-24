@@ -82,6 +82,8 @@ var Entities = []*Entity{
 			{Column: "coordinator_user_id", Label: "Koordinator", Kind: KindSelect, Ref: refCoordinators, InList: true,
 				Help: "Satu koordinator per bidang (satu koordinator boleh memegang beberapa bidang). Notifikasi & eskalasi bidang ini dikirim kepadanya; bila kosong, ke semua koordinator."},
 			{Column: "description", Label: "Keterangan", Kind: KindText, MaxLen: 255, InList: true},
+			{Column: "reporter_help", Label: "Penjelasan untuk pelapor", Kind: KindText, MaxLen: 255,
+				Help: "Tampil di form lapor di bawah nama bidang. Tulis contoh masalahnya dengan bahasa sehari-hari, mis. \"Komputer, printer, atau internet bermasalah.\""},
 			sortField(),
 		},
 		OrderBy: "sort_order, name", Search: []string{"code", "name"}, HasActive: true,

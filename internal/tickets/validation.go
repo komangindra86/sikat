@@ -137,6 +137,25 @@ func ParseCommon(get func(string) string, now time.Time) (Draft, map[string]stri
 	return d, form, errs
 }
 
+// parseReporterLocation membaca lokasi yang dipilih pelapor di form QR global:
+// unit wajib, ruangan opsional (kecocokan unit-ruangan diperiksa saat tiket dibuat).
+func parseReporterLocation(get func(string) string, d *Draft, form, errs map[string]string) {
+	dept := strings.TrimSpace(get("department_id"))
+	form["department_id"] = dept
+	if id, ok := parseID(dept); !ok || id == 0 {
+		errs["department_id"] = "Pilih unit tempat gangguan terjadi."
+	} else {
+		d.DepartmentID = id
+	}
+	room := strings.TrimSpace(get("room_id"))
+	form["room_id"] = room
+	if id, ok := parseID(room); ok {
+		d.RoomID = id
+	} else {
+		errs["room_id"] = "Pilihan ruangan tidak valid."
+	}
+}
+
 // ParseStaffLocation membaca sumber & lokasi untuk tiket yang dicatat petugas.
 func ParseStaffLocation(get func(string) string, d *Draft, form, errs map[string]string) {
 	d.Channel = strings.TrimSpace(get("channel"))

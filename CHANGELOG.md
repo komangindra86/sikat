@@ -5,6 +5,14 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ## Belum dirilis
 
 ### Ditambahkan
+- **QR global pelapor** (migrasi `00017_lapor_per_bidang`): satu QR untuk seluruh rumah sakit, dibuat dari halaman QR Code, lengkap dengan poster A4 siap cetak.
+  - Pelapor memilih unit (wajib) dan ruangan sendiri; ruangan dimuat sesuai unit.
+  - Hanya satu QR global yang aktif. Bisa dibuat ulang atau dinonaktifkan seperti QR ruangan.
+  - Batas kiriman QR global dihitung per alamat IP, bukan per QR.
+- **Form pelapor per bidang**: "Apa masalahnya?" kini dimulai dari 6 bidang dengan penjelasan bahasa sehari-hari, lalu jenis gangguan bidang itu. "Lainnya / tidak yakin" (Triase) selalu di paling bawah.
+  - Penjelasan bidang untuk pelapor diatur di Master Data › Bidang (`reporter_help`).
+  - Jenis gangguan baru: 2 untuk Mutu, permintaan atau pencabutan hak akses (Keamanan Sistem), dan "Lainnya (bidang)" untuk tiap bidang.
+  - QR perangkat membuka bidang perangkat lebih dulu. Tanpa JavaScript, semua kelompok tampil berurutan.
 - **Buat link pemantauan baru** di detail tiket (kartu Pelapor), untuk pelapor yang kehilangan link.
   - Dapat dilakukan oleh penanggung jawab, petugas pendukung, petugas yang mencatat tiket, atau koordinator bidangnya.
   - Link lama langsung tidak berlaku. Link baru ditampilkan sekali beserta tombol Salin dan Bagikan.
@@ -18,6 +26,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
   - Jenis gangguan baru: permintaan & pemindahan perangkat, usulan sistem, penambahan form, perbaikan sistem. Jenis kegiatan baru untuk Administrasi & Inventaris, Mutu, dan System Developer.
   - Down tetap berhasil bila jenis gangguan baru sudah dirujuk tiket (termasuk jenis pilihan pelapor) atau riwayat pemeliharaan. Jenis dan bidangnya dibiarkan nonaktif, lalu Up berikutnya mengaktifkannya lagi (temuan uji tim server).
   - Saat diuji pada salinan produksi, checksum bidang di `deploy/verify-uniform-codes.sql` bagian 1 memang berubah (perpindahan rujukan ini).
+- Keterangan "Lainnya" untuk pelapor ditulis ulang tanpa tanda pisah panjang (00017).
 - **Tampilan standar Casemix** (`tampilan/tampilan-casemix`):
   - Token warna dengan tiga tema (Daun, Samudra, Mawar), mode gelap, dan kepadatan Biasa/Padat, dipilih per browser lewat bilah atas.
   - Font Geist dan ikon Phosphor.

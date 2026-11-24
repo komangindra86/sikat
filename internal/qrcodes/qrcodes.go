@@ -1,4 +1,7 @@
-// Package qrcodes mengelola QR ruangan dan QR perangkat.
+// Package qrcodes mengelola QR ruangan, QR perangkat, dan satu QR global.
+//
+// QR global tidak terikat lokasi: pelapor memilih unit dan ruangan sendiri.
+// Hanya satu QR global yang aktif pada satu waktu.
 //
 // Token QR adalah 16 byte acak (crypto/rand) yang dikodekan base62 menjadi 22
 // karakter — bukan ID database berurutan. Satu ruangan/perangkat hanya memiliki
@@ -24,8 +27,15 @@ import (
 
 // Jenis QR.
 const (
-	TypeRoom  = "ROOM"
-	TypeAsset = "ASSET"
+	TypeRoom   = "ROOM"
+	TypeAsset  = "ASSET"
+	TypeGlobal = "GLOBAL"
+)
+
+// Kode dan nama tampilan QR global (tidak punya ruangan/perangkat).
+const (
+	GlobalCode = "UMUM"
+	GlobalName = "QR global pelapor"
 )
 
 // Error aturan bisnis.
@@ -33,6 +43,7 @@ var (
 	ErrNotFound      = errors.New("QR tidak ditemukan")
 	ErrTargetInvalid = errors.New("Ruangan/perangkat tidak ditemukan, nonaktif, atau sudah dihapus dari inventaris.")
 	ErrAlreadyExists = errors.New("Ruangan/perangkat ini sudah memiliki QR aktif.")
+	ErrGlobalExists  = errors.New("QR global aktif sudah ada. Buat ulang dari halaman QR tersebut bila perlu mengganti.")
 	ErrInactive      = errors.New("QR ini sudah tidak aktif.")
 )
 
@@ -128,7 +139,7 @@ func (s *Service) PNG(token string, size int) ([]byte, error) {
 const selectQR = `
 	SELECT q.id, q.token, q.type, q.room_id, q.asset_id, q.is_active, q.generation, q.scan_count,
 	       q.last_scanned_at, q.created_at, q.deactivated_at,
-	       COALESCE(r.code, a.asset_code), COALESCE(r.name, a.name),
+	       COALESCE(r.code, a.asset_code, '` + GlobalCode + `'), COALESCE(r.name, a.name, '` + GlobalName + `'),
 	       COALESCE(rd.name, ad.name), COALESCE(r.name, ar.name)
 	  FROM qr_codes q
 	  LEFT JOIN rooms r ON r.id = q.room_id
@@ -151,7 +162,7 @@ func (s *Service) List(ctx context.Context, f Filter) ([]QR, int, error) {
 	if !f.IncludeInactive {
 		where = append(where, "q.is_active = TRUE")
 	}
-	if f.Type == TypeRoom || f.Type == TypeAsset {
+	if f.Type == TypeRoom || f.Type == TypeAsset || f.Type == TypeGlobal {
 		where = append(where, "q.type = ?")
 		args = append(args, f.Type)
 	}
@@ -201,6 +212,15 @@ func (s *Service) Get(ctx context.Context, id int64) (QR, error) {
 	return q, err
 }
 
+// ActiveGlobal mengembalikan QR global yang aktif (ok=false bila belum ada).
+func (s *Service) ActiveGlobal(ctx context.Context) (QR, bool, error) {
+	q, err := scanQR(s.db.QueryRowContext(ctx, selectQR+" WHERE q.active_global = 1"))
+	if errors.Is(err, sql.ErrNoRows) {
+		return QR{}, false, nil
+	}
+	return q, err == nil, err
+}
+
 // ActiveFor mengembalikan QR aktif milik ruangan/perangkat (ok=false bila belum ada).
 func (s *Service) ActiveFor(ctx context.Context, typ string, targetID int64) (QR, bool, error) {
 	col := "q.room_id"
@@ -222,6 +242,8 @@ func targetValid(ctx context.Context, tx *sql.Tx, typ string, id int64) (bool, e
 		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM rooms WHERE id = ? AND is_active = TRUE`, id).Scan(&n)
 	case TypeAsset:
 		err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM assets WHERE id = ? AND status <> 'DISPOSED'`, id).Scan(&n)
+	case TypeGlobal:
+		return true, nil
 	default:
 		return false, nil
 	}
@@ -234,9 +256,10 @@ func (s *Service) insert(ctx context.Context, tx *sql.Tx, actorID int64, typ str
 		return 0, err
 	}
 	var room, asset sql.NullInt64
-	if typ == TypeRoom {
+	switch typ {
+	case TypeRoom:
 		room = sql.NullInt64{Int64: targetID, Valid: true}
-	} else {
+	case TypeAsset:
 		asset = sql.NullInt64{Int64: targetID, Valid: true}
 	}
 	res, err := tx.ExecContext(ctx, `
@@ -244,6 +267,9 @@ func (s *Service) insert(ctx context.Context, tx *sql.Tx, actorID int64, typ str
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, token, typ, room, asset, generation, database.NullInt64(actorID), now, now)
 	if err != nil {
 		if _, dup := database.DuplicateKey(err); dup {
+			if typ == TypeGlobal {
+				return 0, ErrGlobalExists
+			}
 			return 0, ErrAlreadyExists
 		}
 		return 0, err

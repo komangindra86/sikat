@@ -408,6 +408,14 @@ func (s *Service) Categories(ctx context.Context, preferIT int64) ([]Category, e
 	return cats, nil
 }
 
+// DepartmentRooms mengembalikan ruangan aktif milik unit.
+func (s *Service) DepartmentRooms(ctx context.Context, departmentID int64) ([]Option, error) {
+	if departmentID == 0 {
+		return nil, nil
+	}
+	return s.repo.options(ctx, s.db, `SELECT id, name FROM rooms WHERE department_id = ? AND is_active = TRUE ORDER BY name`, departmentID)
+}
+
 // Departments mengembalikan unit aktif.
 func (s *Service) Departments(ctx context.Context) ([]Option, error) {
 	return s.repo.options(ctx, s.db, `SELECT id, name FROM departments WHERE is_active = TRUE ORDER BY name`)
