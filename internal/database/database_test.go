@@ -99,7 +99,7 @@ func TestErrorHelpers(t *testing.T) {
 }
 
 func TestUniformCodesMigration(t *testing.T) {
-	db := testutil.DB(t) // sudah Up, termasuk 00015
+	db := testutil.DB(t) // sudah Up, termasuk 00015 dan 00016
 	ctx := context.Background()
 	code := func(q string, args ...any) string {
 		t.Helper()
@@ -111,8 +111,9 @@ func TestUniformCodesMigration(t *testing.T) {
 	}
 
 	// Instalasi baru: kode seed ikut seragam, urut sesuai urutan tampil.
-	if c := code(`SELECT code FROM it_categories WHERE name = 'Hardware'`); c != "BDG-01" {
-		t.Fatalf("Hardware = %q, harus BDG-01", c)
+	// Hardware diganti nama menjadi Pelayanan & Support oleh 00016; kodenya tetap.
+	if c := code(`SELECT code FROM it_categories WHERE name = 'Pelayanan & Support'`); c != "BDG-01" {
+		t.Fatalf("Pelayanan & Support (dulu Hardware) = %q, harus BDG-01", c)
 	}
 	if c := code(`SELECT code FROM it_categories WHERE is_triage`); c != "BDG-07" {
 		t.Fatalf("Triase = %q, harus BDG-07", c)
@@ -128,14 +129,16 @@ func TestUniformCodesMigration(t *testing.T) {
 		t.Fatalf("%d bidang belum berformat BDG-NN", n)
 	}
 
-	// Down → kode lama kembali.
+	// Down 00016 lalu 00015 → nama dan kode lama kembali.
 	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
 	m, err := database.NewMigrator(db, mfs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Down(ctx); err != nil {
-		t.Fatalf("down 00015: %v", err)
+	for _, v := range []string{"00016", "00015"} {
+		if _, err := m.Down(ctx); err != nil {
+			t.Fatalf("down %s: %v", v, err)
+		}
 	}
 	if c := code(`SELECT code FROM it_categories WHERE name = 'Hardware'`); c != "HW" {
 		t.Fatalf("setelah down Hardware = %q, harus HW", c)
@@ -204,9 +207,120 @@ func TestUniformCodesMigration(t *testing.T) {
 	if c, err := database.NextCode(ctx, tx, "departments", "code", "UNT", 0, 3); err != nil || c != "UNT-008" {
 		t.Fatalf("kode berikutnya = %q (%v), harus UNT-008", c, err)
 	}
-	if c, err := database.NextCode(ctx, tx, "it_categories", "code", "BDG", 0, 2); err != nil || c != "BDG-08" {
-		t.Fatalf("kode bidang berikutnya = %q (%v), harus BDG-08", c, err)
+	// 00016 menambah 3 bidang (BDG-08 sampai BDG-10).
+	if c, err := database.NextCode(ctx, tx, "it_categories", "code", "BDG", 0, 2); err != nil || c != "BDG-11" {
+		t.Fatalf("kode bidang berikutnya = %q (%v), harus BDG-11", c, err)
 	}
 }
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+func TestBidangFungsiMigration(t *testing.T) {
+	db := testutil.DB(t) // sudah Up, termasuk 00016
+	ctx := context.Background()
+	str := func(q string, args ...any) string {
+		t.Helper()
+		var s string
+		if err := db.QueryRow(q, args...).Scan(&s); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+		return s
+	}
+	bidangJenis := func(jenis string) string {
+		return str(`SELECT c.name FROM ticket_categories t JOIN it_categories c ON c.id = t.it_category_id WHERE t.name = ?`, jenis)
+	}
+
+	// Bidang aktif: 6 fungsi koordinator + Triase, urut tampil.
+	rows, err := db.Query(`SELECT name FROM it_categories WHERE is_active ORDER BY sort_order`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var aktif []string
+	for rows.Next() {
+		var n string
+		_ = rows.Scan(&n)
+		aktif = append(aktif, n)
+	}
+	rows.Close()
+	want := "Pelayanan & Support,Administrasi & Inventaris,Mutu,ERM,System Developer,Keamanan Sistem,Triase / Belum terklasifikasi"
+	if got := strings.Join(aktif, ","); got != want {
+		t.Fatalf("bidang aktif = %s\nharus %s", got, want)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE name IN ('Printer','Jaringan','Server & Infrastruktur') AND NOT is_active`); n != 3 {
+		t.Fatalf("bidang yang dilebur harus nonaktif, dapat %d", n)
+	}
+	for jenis, bidang := range map[string]string{
+		"Tidak bisa mencetak":                "Pelayanan & Support",
+		"Internet atau jaringan mati":        "Pelayanan & Support",
+		"Komputer tidak menyala":             "Pelayanan & Support",
+		"SIMRS error atau tidak bisa dibuka": "ERM",
+		"Lupa password atau akun terkunci":   "Keamanan Sistem",
+		"Permintaan perangkat baru":          "Administrasi & Inventaris",
+		"Usulan sistem atau fitur baru":      "System Developer",
+		"Perbaikan sistem":                   "System Developer",
+	} {
+		if got := bidangJenis(jenis); got != bidang {
+			t.Errorf("jenis gangguan %q di bidang %q, harus %q", jenis, got, bidang)
+		}
+	}
+	if got := str(`SELECT c.name FROM activity_types a JOIN it_categories c ON c.id = a.it_category_id WHERE a.name = 'Inventarisasi'`); got != "Administrasi & Inventaris" {
+		t.Errorf("kegiatan Inventarisasi di bidang %q", got)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM activity_types a JOIN it_categories c ON c.id = a.it_category_id WHERE c.name = 'Mutu'`); n != 7 {
+		t.Errorf("jenis kegiatan Mutu = %d, harus 7 (6 baru + Audit dan evaluasi)", n)
+	}
+
+	// Down → bidang teknis kembali; lalu kompetensi lama dipakai untuk menguji perpindahan.
+	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
+	m, err := database.NewMigrator(db, mfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Down(ctx); err != nil {
+		t.Fatalf("down 00016: %v", err)
+	}
+	if got := bidangJenis("Tidak bisa mencetak"); got != "Printer" {
+		t.Fatalf("setelah down, Tidak bisa mencetak di %q, harus Printer", got)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM it_categories WHERE name IN ('Mutu','Administrasi & Inventaris','System Developer')`); n != 0 {
+		t.Fatalf("bidang baru harus terhapus setelah down, sisa %d", n)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name = 'Permintaan perangkat baru'`); n != 0 {
+		t.Fatal("jenis gangguan baru harus terhapus setelah down")
+	}
+	uid := testutil.CreateUser(t, db, "tek.bidang", "TECHNICIAN", "password-uji-12345", false)
+	if _, err := db.Exec(`INSERT INTO user_competencies (user_id, it_category_id, created_at)
+		SELECT ?, id, UTC_TIMESTAMP(3) FROM it_categories WHERE name IN ('Printer','Jaringan','Software & SIMRS')`, uid); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00016: %v", err)
+	}
+	komp := func() string {
+		r, err := db.Query(`SELECT c.name FROM user_competencies u JOIN it_categories c ON c.id = u.it_category_id WHERE u.user_id = ? ORDER BY c.name`, uid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer r.Close()
+		var out []string
+		for r.Next() {
+			var n string
+			_ = r.Scan(&n)
+			out = append(out, n)
+		}
+		return strings.Join(out, ",")
+	}
+	if got := komp(); got != "ERM,Pelayanan & Support" {
+		t.Fatalf("kompetensi setelah up = %s, harus ERM,Pelayanan & Support", got)
+	}
+	if _, err := m.Down(ctx); err != nil {
+		t.Fatalf("down 00016 kedua: %v", err)
+	}
+	if got := komp(); got != "Jaringan,Printer,Software & SIMRS" {
+		t.Fatalf("kompetensi setelah down = %s, harus kembali Jaringan,Printer,Software & SIMRS", got)
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00016 kedua: %v", err)
+	}
+}

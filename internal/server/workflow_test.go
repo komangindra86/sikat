@@ -83,7 +83,7 @@ func TestActivitiesOverHTTP(t *testing.T) {
 	if err := db.QueryRow(`SELECT id, it_category_id FROM activity_types WHERE name = 'Rapat'`).Scan(&typeID, new(any)); err != nil {
 		t.Fatal(err)
 	}
-	_ = db.QueryRow(`SELECT id FROM it_categories WHERE name = 'Software & SIMRS'`).Scan(&itID)
+	_ = db.QueryRow(`SELECT id FROM it_categories WHERE name = 'ERM'`).Scan(&itID)
 
 	admin := newClient()
 	admin.login("admin", "password-admin-123")

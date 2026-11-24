@@ -5,6 +5,12 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ## Belum dirilis
 
 ### Diubah
+- **Bidang mengikuti struktur 6 koordinator** (migrasi `00016_bidang_fungsi`):
+  - Pelayanan & Support (dulu Hardware, Printer, Jaringan; juga memilah Triase), ERM (dulu Software & SIMRS), Keamanan Sistem (dulu Akun & Akses, Server & Infrastruktur).
+  - Bidang baru: Administrasi & Inventaris, Mutu, System Developer.
+  - Tiket, kegiatan, kompetensi petugas, jenis gangguan, aturan prioritas, kebijakan SLA, template, dan kategori perangkat pindah ke bidang barunya. Bidang lama dinonaktifkan, kodenya tetap.
+  - Jenis gangguan baru: permintaan & pemindahan perangkat, usulan sistem, penambahan form, perbaikan sistem. Jenis kegiatan baru untuk Administrasi & Inventaris, Mutu, dan System Developer.
+  - Saat diuji pada salinan produksi, checksum bidang di `deploy/verify-uniform-codes.sql` bagian 1 memang berubah (perpindahan rujukan ini).
 - **Tampilan standar Casemix** (`tampilan/tampilan-casemix`):
   - Token warna dengan tiga tema (Daun, Samudra, Mawar), mode gelap, dan kepadatan Biasa/Padat, dipilih per browser lewat bilah atas.
   - Font Geist dan ikon Phosphor.

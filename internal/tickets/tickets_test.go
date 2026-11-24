@@ -319,8 +319,8 @@ func TestQueueAndWorkload(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()
 	tech := testutil.CreateUser(t, f.db, "budi", "TECHNICIAN", "password-budi-1", false)
-	// Kompetensi budi: Jaringan saja (id bidang NET).
-	if _, err := f.db.Exec(`INSERT INTO user_competencies (user_id, it_category_id, created_at) SELECT ?, id, UTC_TIMESTAMP() FROM it_categories WHERE name = 'Jaringan'`, tech); err != nil {
+	// Kompetensi budi: ERM saja (tiket fixture ada di Pelayanan & Support).
+	if _, err := f.db.Exec(`INSERT INTO user_competencies (user_id, it_category_id, created_at) SELECT ?, id, UTC_TIMESTAMP() FROM it_categories WHERE name = 'ERM'`, tech); err != nil {
 		t.Fatal(err)
 	}
 	low, _, _ := f.svc.Create(ctx, f.draft(func(d *tickets.Draft) { d.Impact = 0 }), nil)
@@ -332,7 +332,7 @@ func TestQueueAndWorkload(t *testing.T) {
 	}
 	_, total, _ = f.svc.Queue(ctx, tickets.QueueFilter{Mode: "available", UserID: tech, OnlyCompetency: true})
 	if total != 0 {
-		t.Fatalf("filter kompetensi Jaringan harus menyembunyikan tiket Hardware, dapat %d", total)
+		t.Fatalf("filter kompetensi ERM harus menyembunyikan tiket Pelayanan & Support, dapat %d", total)
 	}
 	if _, err := f.svc.Claim(ctx, low.ID, tech); err != nil {
 		t.Fatal(err)

@@ -34,9 +34,9 @@ func TestTriageTicketIsSortedIntoTheRightField(t *testing.T) {
 	w := setupWF(t)
 	ctx := context.Background()
 	n := notifSvc(w, nil)
-	triage, network, hw := fieldID(t, w, "Triase / Belum terklasifikasi"), fieldID(t, w, "Jaringan"), fieldID(t, w, "Hardware")
+	triage, network, hw := fieldID(t, w, "Triase / Belum terklasifikasi"), fieldID(t, w, "Pelayanan & Support"), fieldID(t, w, "ERM")
 	now := w.clk.Now()
-	// tek1: kompetensi Hardware; tek2: kompetensi Jaringan.
+	// tek1: kompetensi ERM; tek2: kompetensi Pelayanan & Support (jaringan).
 	if _, err := w.db.Exec(`INSERT INTO user_competencies (user_id, it_category_id, created_at) VALUES (?, ?, ?), (?, ?, ?)`,
 		w.tech.ID, hw, now, w.other.ID, network, now); err != nil {
 		t.Fatal(err)
@@ -64,7 +64,7 @@ func TestTriageTicketIsSortedIntoTheRightField(t *testing.T) {
 	// Tiket triase terlihat semua petugas & dinotifikasi ke semua petugas.
 	list, _, err := w.svc.Queue(ctx, tickets.QueueFilter{Mode: "available", UserID: w.tech.ID, OnlyCompetency: true, Limit: 10})
 	if err != nil || len(list) != 1 {
-		t.Fatalf("petugas Hardware melihat tiket triase di antrean tersedia: %d %v", len(list), err)
+		t.Fatalf("petugas ERM melihat tiket triase di antrean tersedia: %d %v", len(list), err)
 	}
 	process(t, n)
 	if inbox(t, w, w.tech.ID, notifications.TicketCreated) != 1 || inbox(t, w, w.other.ID, notifications.TicketCreated) != 1 {
@@ -106,7 +106,7 @@ func TestTriageTicketIsSortedIntoTheRightField(t *testing.T) {
 	if testutil.Count(t, w.db, `SELECT COUNT(*) FROM tickets WHERE id = ? AND sla_revision = 2`, c.ID) != 1 {
 		t.Fatal("kebijakan SLA dipilih ulang setelah koreksi")
 	}
-	// Tiket belum diambil → petugas berkompetensi Jaringan & koordinator Jaringan diberi tahu.
+	// Tiket belum diambil → petugas & koordinator Pelayanan & Support diberi tahu.
 	process(t, n)
 	if inbox(t, w, w.other.ID, notifications.TicketTransferred) != 1 || inbox(t, w, koorNet.ID, notifications.TicketTransferred) != 1 {
 		t.Fatal("dialihkan: petugas & koordinator bidang baru menerima notifikasi")
@@ -115,8 +115,8 @@ func TestTriageTicketIsSortedIntoTheRightField(t *testing.T) {
 		t.Fatal("pelaku & petugas bidang lain tidak menerima notifikasi dialihkan")
 	}
 
-	// Koreksi berikutnya (bukan dari Triase) wajib alasan; kini kewenangan koordinator Jaringan.
-	hwCat := catID(t, w, "Komputer tidak menyala")
+	// Koreksi berikutnya (bukan dari Triase) wajib alasan; kini kewenangan koordinator Pelayanan & Support.
+	hwCat := catID(t, w, "SIMRS error atau tidak bisa dibuka") // bidang lain (ERM)
 	if _, err := w.svc.ChangeCategory(ctx, c.ID, w.coord, hwCat, "Salah"); !errors.Is(err, tickets.ErrForbidden) {
 		t.Fatalf("koordinator triase tidak lagi berwenang setelah pindah bidang, dapat %v", err)
 	}
@@ -131,7 +131,7 @@ func TestTriageTicketIsSortedIntoTheRightField(t *testing.T) {
 	if r, err := w.svc.Claim(ctx, c.ID, w.other.ID); err != nil || !r.OK {
 		t.Fatal(err)
 	}
-	if errs, err := w.svc.ChangeCategory(ctx, c.ID, w.other, hwCat, "Ternyata PC antrian mati"); err != nil || errs != nil {
+	if errs, err := w.svc.ChangeCategory(ctx, c.ID, w.other, hwCat, "Ternyata aplikasi antrian SIMRS error"); err != nil || errs != nil {
 		t.Fatalf("PJ boleh mengoreksi tiketnya: %v %v", errs, err)
 	}
 	if err := w.svc.Start(ctx, c.ID, w.other); err != nil {

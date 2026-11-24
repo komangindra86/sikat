@@ -1,7 +1,7 @@
 # SIKAT — Rancangan Database
 
 > Status: **sesuai implementasi (PHASE 9).** Sumber kebenaran skema adalah migrasi
-> goose di folder [`migrations/`](../migrations) (00001–00012, 00015); dokumen ini
+> goose di folder [`migrations/`](../migrations) (00001–00012, 00015–00016); dokumen ini
 > menjelaskan maksud & aturannya. `schema-draft.sql` adalah rancangan PHASE 0
 > (referensi sejarah; perbedaan dicatat di §0). Diagram relasi: [`ERD.md`](ERD.md).
 
@@ -23,6 +23,7 @@
 | 00012_backups | `backup_logs`, `attachments.file_deleted_at` (retensi foto), pengaturan `attachments.retention_days` |
 | 00013–00014 | Dipakai tim server di produksi (kompatibilitas data lama); belum ada di repositori ini |
 | 00015_uniform_codes | Kode lama diseragamkan ke format otomatis (UNT/RNG/BDG/KAT/ALS/SPR/PRK); `legacy_codes` (kode sebelum diseragamkan); `pending_reasons.requires_note` |
+| 00016_bidang_fungsi | Bidang mengikuti 6 koordinator (Pelayanan & Support, Administrasi & Inventaris, Mutu, ERM, System Developer, Keamanan Sistem); bidang teknis lama dilebur dan dinonaktifkan, rujukannya dipindah; jenis gangguan & jenis kegiatan baru; `bidang_lama`, `bidang_lama_relasi` (untuk Down) |
 
 Perbedaan penting dari rancangan: `push_deliveries` ditambahkan (antrean push per
 perangkat dengan retry); `integration_configs` belum menyimpan rahasia terenkripsi

@@ -25,7 +25,7 @@ func TestCreateUserWithTempPassword(t *testing.T) {
 
 	created, _, errs, err := svc.Create(ctx,
 		testutil.Form(map[string]string{"username": "Budi.S", "full_name": "Budi Santoso", "role_id": tech}),
-		getAll(map[string][]string{"competencies": {"1", "4", "4"}}))
+		getAll(map[string][]string{"competencies": {"1", "3", "3"}}))
 	if err != nil || created.ID == 0 {
 		t.Fatalf("create gagal: %v %v", errs, err)
 	}

@@ -389,7 +389,7 @@ func TestTriageReport(t *testing.T) {
 	}
 	tb = f.run(t, "pemilahan", "periode=bulan&bulan=2026-11", 0)
 	r := tb.Rows[0]
-	if len(tb.Rows) != 1 || r[3].Text != "Lainnya" || r[4].Text != "Internet atau jaringan mati" || r[5].Text != "Jaringan" ||
+	if len(tb.Rows) != 1 || r[3].Text != "Lainnya" || r[4].Text != "Internet atau jaringan mati" || r[5].Text != "Pelayanan & Support" ||
 		r[7].Text != "User koor" || tb.Metrics[1].Value != "0" || tb.Metrics[3].Value != "Internet atau jaringan mati" {
 		t.Fatalf("setelah dipilah: %+v %+v", r, tb.Metrics)
 	}
