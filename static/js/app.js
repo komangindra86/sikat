@@ -233,16 +233,52 @@
   });
 
   // Salin teks: <button data-copy="#id">
+  // navigator.clipboard hanya ada di HTTPS/localhost; di HTTP biasa (mis. jaringan
+  // lokal rumah sakit) dipakai cara lama execCommand("copy") lewat textarea sementara.
+  function salinLama(teks) {
+    var ta = document.createElement("textarea");
+    ta.value = teks;
+    ta.setAttribute("readonly", "");
+    ta.className = "fixed left-0 top-0 opacity-0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, teks.length);
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+  function pilihTeks(el) {
+    var sel = window.getSelection();
+    if (!sel) return;
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
   document.addEventListener("click", function (e) {
     var t = e.target.closest("[data-copy]");
     if (!t) return;
     var src = document.querySelector(t.getAttribute("data-copy"));
-    if (!src || !navigator.clipboard) return;
-    navigator.clipboard.writeText(src.textContent.trim()).then(function () {
-      var old = t.textContent;
+    if (!src) return;
+    var teks = src.textContent.trim();
+    function berhasil() {
+      if (t.dataset.labelAsli === undefined) t.dataset.labelAsli = t.textContent;
       t.textContent = "Tersalin";
-      window.setTimeout(function () { t.textContent = old; }, 1500);
-    });
+      kabar("Link tersalin. Tempel di WA atau catatan untuk disimpan.", "success");
+      window.setTimeout(function () { t.textContent = t.dataset.labelAsli; }, 1500);
+    }
+    function gagal() {
+      pilihTeks(src); // pengguna tetap bisa menyalin manual
+      kabar("Tidak dapat menyalin otomatis. Link sudah ditandai, salin manual (tekan lama di HP atau Ctrl+C).", "info");
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(teks).then(berhasil, function () { if (salinLama(teks)) berhasil(); else gagal(); });
+    } else if (salinLama(teks)) {
+      berhasil();
+    } else {
+      gagal();
+    }
   });
 
   // Tampilkan/sembunyikan bagian kompetensi sesuai role yang dipilih.

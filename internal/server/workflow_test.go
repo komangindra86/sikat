@@ -37,6 +37,12 @@ func TestTicketWorkflowOverHTTP(t *testing.T) {
 	}
 	tech.post(base+"/start", url.Values{"csrf_token": {tok}})
 
+	// Pelapor yang membuka halaman pemantauan: status masih diperiksa otomatis, belum ada konfirmasi.
+	_, body = pelapor.get(trackPath)
+	if st := elementByID(body, "ticket-status"); !strings.Contains(st, `hx-trigger="every 30s"`) || strings.Contains(st, "Apakah masalah sudah teratasi") {
+		t.Fatal("tiket dikerjakan: halaman pelapor diperbarui otomatis, kartu konfirmasi belum tampil")
+	}
+
 	// Validasi selesaikan: 422 dan panel selesaikan terbuka kembali.
 	resp, body = tech.post(base+"/resolve", url.Values{"csrf_token": {tok}})
 	if resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(body, "Tindakan yang dilakukan wajib diisi") ||
@@ -53,6 +59,11 @@ func TestTicketWorkflowOverHTTP(t *testing.T) {
 
 	// Pelapor melihat catatan publik saja, lalu mengonfirmasi.
 	_, body = pelapor.get(trackPath)
+	// Kartu konfirmasi ada di bagian yang dimuat ulang otomatis (muncul tanpa refresh),
+	// lalu pembaruan berhenti agar isian "belum beres" tidak terhapus.
+	if st := elementByID(body, "ticket-status"); !strings.Contains(st, "Apakah masalah sudah teratasi") || strings.Contains(st, "hx-trigger") {
+		t.Fatal("tiket selesai: kartu konfirmasi harus di dalam bagian yang diperbarui, dan pembaruan otomatis berhenti")
+	}
 	if !strings.Contains(body, "Apakah masalah sudah teratasi") || !strings.Contains(body, "Printer sudah bisa dipakai") || strings.Contains(body, "Roller aus") {
 		t.Fatal("halaman pelapor: konfirmasi tampil, catatan internal tidak bocor")
 	}
@@ -137,4 +148,29 @@ func TestActivitiesOverHTTP(t *testing.T) {
 	if resp, _ := other.get(detail); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("petugas lain tidak boleh melihat kegiatan yang bukan miliknya, dapat %d", resp.StatusCode)
 	}
+}
+
+// elementByID mengembalikan HTML elemen <div id="..."> beserta isinya (menghitung div bersarang).
+func elementByID(body, id string) string {
+	start := strings.Index(body, `<div id="`+id+`"`)
+	if start < 0 {
+		return ""
+	}
+	depth := 0
+	for i := start; i < len(body); {
+		switch {
+		case strings.HasPrefix(body[i:], "<div"):
+			depth++
+			i += 4
+		case strings.HasPrefix(body[i:], "</div>"):
+			depth--
+			i += 6
+			if depth == 0 {
+				return body[start:i]
+			}
+		default:
+			i++
+		}
+	}
+	return body[start:]
 }

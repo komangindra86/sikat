@@ -82,6 +82,10 @@ func TestReportsAndDashboardsOverHTTP(t *testing.T) {
 	if !strings.Contains(body, "Status sistem") || !strings.Contains(body, "Integrasi SIMRS") || !strings.Contains(body, "SIMRS belum terhubung") || !strings.Contains(body, "Backup database") {
 		t.Fatal("dashboard admin menampilkan status sistem apa adanya")
 	}
+	// Isi beranda (semua role) diperbarui otomatis lewat HTMX, memuat ulang bagiannya sendiri.
+	if !strings.Contains(body, `id="beranda" hx-get="/app" hx-trigger="every 30s" hx-select="#beranda"`) {
+		t.Fatal("beranda harus diperbarui otomatis tiap 30 detik")
+	}
 	if resp, _ := admin.get("/app/reports/beban-kerja"); resp.StatusCode != 200 {
 		t.Fatalf("admin dapat membuka laporan, dapat %d", resp.StatusCode)
 	}

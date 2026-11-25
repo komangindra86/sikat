@@ -10,6 +10,8 @@
     {{if .User.Can "ticket.create"}}<a href="/app/tickets/new" class="btn btn-primary"><span class="icon h-4 w-4">{{template "icon" "plus"}}</span>Catat tiket</a>{{end}}
   </div>
 </div>
+{{/* Isi beranda diperbarui otomatis tiap 30 detik (angka tiket, SLA, status sistem). */}}
+<div id="beranda" hx-get="/app" hx-trigger="every 30s" hx-select="#beranda" hx-swap="outerHTML" hx-disinherit="*">
 
 {{if .Data.Tech}}{{template "dash-tech" .}}{{else if .Data.Coord}}{{template "dash-coord" .}}{{else if .Data.ShowTickets}}{{$ts := .Data.Tickets}}
 {{if gt $ts.CriticalNew 0}}
@@ -124,6 +126,7 @@
     </section>
     {{end}}
   </div>
+</div>
 </div>
 {{end}}
 

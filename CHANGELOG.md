@@ -5,6 +5,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ## Belum dirilis
 
 ### Ditambahkan
+- **Beranda diperbarui otomatis** tiap 30 detik (angka tiket, SLA, status sistem) untuk semua role, seperti halaman antrean tiket.
 - **QR global pelapor** (migrasi `00017_lapor_per_bidang`): satu QR untuk seluruh rumah sakit, dibuat dari halaman QR Code, lengkap dengan poster A4 siap cetak.
   - Pelapor memilih unit (wajib) dan ruangan sendiri; ruangan dimuat sesuai unit.
   - Hanya satu QR global yang aktif. Bisa dibuat ulang atau dinonaktifkan seperti QR ruangan.
@@ -17,6 +18,10 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
   - Dapat dilakukan oleh penanggung jawab, petugas pendukung, petugas yang mencatat tiket, atau koordinator bidangnya.
   - Link lama langsung tidak berlaku. Link baru ditampilkan sekali beserta tombol Salin dan Bagikan.
   - Tercatat di histori tiket (pelapor melihat "Link pemantauan diperbarui") dan jejak audit (`ticket.link_renew`).
+
+### Diperbaiki
+- **Tombol Salin link** kini bekerja di alamat HTTP biasa (mis. `http://sikat.test` atau jaringan lokal). Sebelumnya tombol diam karena fitur salin browser hanya ada di HTTPS; kini memakai cara cadangan, dan bila tetap gagal link ditandai untuk disalin manual.
+- **Kartu "Apakah masalah sudah teratasi?"** di halaman pemantauan pelapor muncul sendiri begitu petugas menyelesaikan tiket, tanpa refresh. Setelah itu pembaruan otomatis berhenti agar isian "belum beres" tidak terhapus.
 
 ### Diubah
 - **Bidang mengikuti struktur 6 koordinator** (migrasi `00016_bidang_fungsi`):

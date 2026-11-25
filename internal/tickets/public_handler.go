@@ -68,6 +68,12 @@ type trackData struct {
 	Open        string
 }
 
+// Polling: halaman pemantauan masih memeriksa perubahan status. Berhenti saat tiket
+// Selesai (kartu konfirmasi tampil) atau berakhir, agar isian pelapor tidak terhapus.
+func (d trackData) Polling() bool {
+	return d.Ticket.Status != workflows.Resolved && !workflows.IsTerminal(d.Ticket.Status)
+}
+
 // CanComment: pelapor masih dapat menambah keterangan.
 func (d trackData) CanComment() bool { return !workflows.IsTerminal(d.Ticket.Status) }
 
