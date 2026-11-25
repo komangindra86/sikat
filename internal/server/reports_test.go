@@ -2,8 +2,10 @@ package server_test
 
 import (
 	"bytes"
+	"html"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -54,7 +56,25 @@ func TestReportsAndDashboardsOverHTTP(t *testing.T) {
 	if r.StatusCode != 200 || r.Header.Get("Content-Type") != "application/pdf" || !bytes.HasPrefix(b, []byte("%PDF-")) {
 		t.Fatalf("ekspor PDF: %d %v", r.StatusCode, r.Header)
 	}
-	if testutil.Count(t, db, `SELECT COUNT(*) FROM audit_logs WHERE action = 'report.export'`) != 2 {
+	// Tombol Excel/PDF di halaman membawa filter yang sedang tampil (bukan terkodekan
+	// menjadi %26/%3d sehingga ekspor kembali ke bulan berjalan tanpa filter).
+	_, body = koor.get("/app/reports/sla?periode=tahun&tahun=2025&prioritas=HIGH")
+	m := regexp.MustCompile(`href="(/app/reports/sla\?[^"]*format=xlsx)"`).FindStringSubmatch(body)
+	if m == nil {
+		t.Fatal("tombol ekspor Excel harus ada")
+	}
+	link := html.UnescapeString(m[1])
+	if !strings.Contains(link, "periode=tahun&") || !strings.Contains(link, "tahun=2025&") || !strings.Contains(link, "prioritas=HIGH&") {
+		t.Fatalf("link ekspor harus membawa filter: %s", link)
+	}
+	if r, _ := download(koor, link); r.Header.Get("Content-Disposition") != `attachment; filename="sikat-sla-2025.xlsx"` {
+		t.Fatalf("ekspor dari tombol harus memakai periode yang difilter: %v", r.Header.Get("Content-Disposition"))
+	}
+	if testutil.Count(t, db, `SELECT COUNT(*) FROM audit_logs WHERE action = 'report.export'
+		AND JSON_UNQUOTE(JSON_EXTRACT(after_data, '$.filter')) LIKE '%prioritas=HIGH%'`) != 1 {
+		t.Fatal("ekspor dari tombol tercatat dengan filternya")
+	}
+	if testutil.Count(t, db, `SELECT COUNT(*) FROM audit_logs WHERE action = 'report.export'`) != 3 {
 		t.Fatal("setiap ekspor tercatat di audit")
 	}
 
@@ -75,6 +95,9 @@ func TestReportsAndDashboardsOverHTTP(t *testing.T) {
 	}
 	if _, body := koor.get("/app"); !strings.Contains(body, "Kinerja petugas") || !strings.Contains(body, "Distribusi gangguan") || !strings.Contains(body, "Kegiatan internal") {
 		t.Fatal("dashboard koordinator")
+	}
+	if _, body := koor.get("/app"); !regexp.MustCompile(`href="/app/reports/koordinator\?bulan=\d{4}-\d{2}&amp;periode=bulan"`).MatchString(body) {
+		t.Fatal("tautan laporan di dashboard koordinator harus membawa periodenya")
 	}
 	admin := newClient()
 	admin.login("admin", "password-admin-123")

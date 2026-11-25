@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"html/template"
 	"sort"
 	"strconv"
 	"strings"
@@ -37,14 +38,14 @@ type DistRow struct {
 // CoordView: dashboard koordinator.
 type CoordView struct {
 	MonthLabel string
-	MonthQuery string
+	MonthQuery template.URL
 	// Triage: tiket aktif di bidang Triase yang menunggu dipilah (ditampilkan untuk
 	// koordinator triase, atau semua koordinator bila triase belum punya koordinator).
 	TriageCount   int
 	TriageFieldID int64
 	// Fields: bidang yang dikoordinasi (kosong = belum ditetapkan → semua bidang).
 	Fields                                             []string
-	FieldQuery                                         string
+	FieldQuery                                         template.URL // "&bidang_ids=…"
 	MonthTotal, New, Working, Pending, DoneMonth       int
 	CriticalActive, Breached, Activities, ActivityDone int
 	Performance                                        reports.Table
@@ -176,7 +177,7 @@ func (h *Handler) coordView(ctx context.Context, u *rbac.User, now time.Time) (C
 		hc = "ticket_id IN (SELECT id FROM tickets WHERE it_category_id IN " + in + ")"
 		fa = []any{u.ID}
 		for _, id := range f.FieldIDs {
-			v.FieldQuery += "&bidang_ids=" + strconv.FormatInt(id, 10)
+			v.FieldQuery += template.URL("&bidang_ids=" + strconv.FormatInt(id, 10))
 		}
 	}
 	args := func(vals ...any) []any {

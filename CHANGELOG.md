@@ -22,6 +22,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ### Diperbaiki
 - **Tombol Salin link** kini bekerja di alamat HTTP biasa (mis. `http://sikat.test` atau jaringan lokal). Sebelumnya tombol diam karena fitur salin browser hanya ada di HTTPS; kini memakai cara cadangan, dan bila tetap gagal link ditandai untuk disalin manual.
 - **Kartu "Apakah masalah sudah teratasi?"** di halaman pemantauan pelapor muncul sendiri begitu petugas menyelesaikan tiket, tanpa refresh. Setelah itu pembaruan otomatis berhenti agar isian "belum beres" tidak terhapus.
+- **Ekspor laporan Excel/PDF** kini memuat data sesuai filter yang tampil (periode, unit, bidang, petugas, prioritas, status). Sebelumnya tombol unduh kehilangan filter, sehingga file selalu berisi bulan berjalan tanpa filter. Tautan laporan di dashboard koordinator, termasuk batas bidang koordinator, ikut diperbaiki.
 
 ### Diubah
 - **Bidang mengikuti struktur 6 koordinator** (migrasi `00016_bidang_fungsi`):

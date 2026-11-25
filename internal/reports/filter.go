@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"html/template"
 	"net/url"
 	"strconv"
 	"strings"
@@ -180,8 +181,10 @@ func (f Filter) Query() url.Values {
 	return v
 }
 
-// QueryString untuk template.
-func (f Filter) QueryString() string { return f.Query().Encode() }
+// QueryString untuk template. Bertipe template.URL agar "&" dan "=" tidak di-escape
+// saat disisipkan setelah "?" pada href (string biasa akan menjadi %26/%3d dan
+// seluruh filter hilang). Nilainya hasil url.Values.Encode, jadi aman.
+func (f Filter) QueryString() template.URL { return template.URL(f.Query().Encode()) }
 
 // cond membangun klausa WHERE.
 type cond struct {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -90,7 +91,7 @@ type viewData struct {
 	Fields  []Option
 	Staff   []Option
 	Years   []int
-	Query   string
+	Query   template.URL
 }
 
 func (h *Handler) options(ctx context.Context, q string, args ...any) ([]Option, error) {
@@ -281,7 +282,7 @@ func (h *Handler) export(w http.ResponseWriter, r *http.Request, d Def, f Filter
 		return
 	}
 	_ = audit.Record(ctx, h.DB, h.Service.Now(), audit.Entry{Action: "report.export", EntityType: "reports",
-		After: map[string]any{"report": d.Slug, "format": format, "filter": f.QueryString(), "rows": len(t.Rows)}})
+		After: map[string]any{"report": d.Slug, "format": format, "filter": string(f.QueryString()), "rows": len(t.Rows)}})
 	w.Header().Set("Content-Type", ctype)
 	w.Header().Set("Content-Disposition", `attachment; filename="`+Filename(d.Slug, f, format)+`"`)
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
