@@ -5,6 +5,20 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ## Belum dirilis
 
 ### Ditambahkan
+- **Arsip kajian kebutuhan** (menu Kajian, migrasi `00021_kajian`) untuk permintaan perangkat atau sistem/aplikasi baru dari unit.
+  - Di form lapor (QR), **"Permintaan perangkat baru"** (bidang Administrasi & Inventaris) dan **"Usulan sistem atau fitur baru"** (bidang System Developer) kini membuka form kajian, tidak lagi membuat tiket. Jalur ini diatur per jenis gangguan di Master Data › Jenis Gangguan (kolom Jalur); form Catat tiket petugas tidak terpengaruh.
+  - Pemohon mengisi nama, unit, jenis kebutuhan (sudah terpilih dari jenis gangguan), judul, dan ringkasan, lalu melampirkan dokumen kajian (PDF, Word, atau Excel, maks. 10 MB). Isi file diperiksa sesuai jenisnya.
+  - Pemohon mendapat nomor kajian (KJN-00001) dan link status untuk melihat apakah kajian sudah diterima.
+  - Admin IT mendapat notifikasi **"Kajian baru masuk"** (inbox + push), membuka kajian di menu Kajian, mengunduh dokumennya, lalu menekan **Terima kajian** (dengan catatan opsional yang tampil di link status pemohon). Tidak ada alur persetujuan: kajian disimpan sebagai arsip.
+  - Hanya Admin IT yang bisa membuka dan mengunduh kajian. Penerimaan tercatat di jejak audit. Dokumen disimpan di folder `storage/kajian`.
+- **Daftar lisensi** (Master Data › Lisensi, migrasi `00020_lisensi`): nama, penyedia, jumlah, tanggal mulai berlaku dan berakhir, serta catatan. Kunci lisensi tidak disimpan.
+  - Daftar diurutkan dari yang paling dekat berakhir, dengan penanda sisa hari: kuning bila ≤ 30 hari, merah bila berakhir hari ini atau sudah lewat. Lisensi tanpa tanggal berakhir ditandai "Tanpa batas".
+  - Notifikasi baru **"Lisensi segera habis"** untuk Admin IT (inbox + push), dikirim 30, 14, 7, dan 1 hari sebelum berakhir, pada hari berakhir, lalu tiap 7 hari sampai tanggal berakhir diperbarui atau lisensi dinonaktifkan. Memperbarui tanggal berakhir memulai pengingat dari awal.
+  - Diperiksa tiap jam oleh worker `periksa-lisensi`. Role lain bisa ikut menerima lewat Preferensi Notifikasi.
+- **Stok sparepart** (migrasi `00019_stok_sparepart`): Master Data › Sparepart kini punya kolom Stok (boleh desimal, mis. 2,5 meter).
+  - Stok berkurang otomatis saat sparepart dicatat terpakai di penyelesaian tiket atau entri manual riwayat perangkat, dan kembali bila entrinya dibatalkan.
+  - Pemakaian melebihi stok ditolak dengan pesan sisa stok. Sparepart yang habis tampil "stok habis" dan tidak bisa dipilih.
+  - Sparepart yang sudah ada mulai dengan stok 0: admin perlu mengisi stok sebelum sparepart bisa dipakai.
 - **Saran nama pelapor dari API pegawai SIMRS** di form "Catat tiket", memakai endpoint yang sama dengan aplikasi CSSD (`SIKAT_SIMRS_PEGAWAI_URL`, `SIKAT_SIMRS_TOKEN`, `SIKAT_SIMRS_COOKIE`, `SIKAT_SIMRS_TIMEOUT_SECONDS`).
   - Daftar disimpan di memori 1 jam dan dimuat saat aplikasi mulai. Bila SIMRS gangguan, daftar terakhir tetap dipakai; tanpa daftar, nama tetap diisi bebas.
   - Hanya nama yang disimpan; data pribadi pegawai lain dari SIMRS tidak ikut.
@@ -29,6 +43,7 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 - **Ekspor laporan Excel/PDF** kini memuat data sesuai filter yang tampil (periode, unit, bidang, petugas, prioritas, status). Sebelumnya tombol unduh kehilangan filter, sehingga file selalu berisi bulan berjalan tanpa filter. Tautan laporan di dashboard koordinator, termasuk batas bidang koordinator, ikut diperbaiki.
 
 ### Dihapus
+- **Harga sparepart**: harga acuan di Master Data › Sparepart (kolom `default_unit_cost`, migrasi `00019_stok_sparepart`) dan isian "Harga satuan" saat mencatat sparepart terpakai. Biaya perbaikan di riwayat perangkat, rekomendasi penggantian, dan laporan kini hanya biaya jasa/vendor. Harga satuan lama di `maintenance_parts` tetap tersimpan sebagai arsip, tetapi tidak lagi ditampilkan atau dijumlahkan.
 - **Master Data › Pegawai** dan impor CSV pegawai (migrasi `00018_pegawai_dari_simrs`): tabel `employees` dan jejak integrasi pegawai dihapus, diganti API pegawai SIMRS.
 
 ### Diubah

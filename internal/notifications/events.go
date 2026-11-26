@@ -26,6 +26,10 @@ const (
 	SLAWarning        = "SLA_WARNING"
 	SLABreach         = "SLA_BREACH"
 	RepeatDamage      = "REPEAT_DAMAGE"
+	// LicenseExpiry: lisensi mendekati atau melewati tanggal berakhir (Master Data › Lisensi).
+	LicenseExpiry = "LICENSE_EXPIRY"
+	// ProposalSubmitted: kajian kebutuhan perangkat/sistem baru dikirim pemohon.
+	ProposalSubmitted = "PROPOSAL_SUBMITTED"
 	// Test: notifikasi uji dari halaman pengaturan (hanya ke pengirimnya, selalu push).
 	Test = "TEST"
 )
@@ -49,6 +53,8 @@ var Events = []EventInfo{
 	{SLAWarning, "SLA hampir habis", "Petugas: target respons → petugas sesuai kompetensi; target penyelesaian → anggota tim tiket."},
 	{SLABreach, "SLA terlewati", "Petugas: target respons → petugas sesuai kompetensi; target penyelesaian → anggota tim tiket."},
 	{RepeatDamage, "Perangkat sering rusak", "Perangkat mencapai ambang kerusakan berulang."},
+	{LicenseExpiry, "Lisensi segera habis", "30, 14, 7, dan 1 hari sebelum lisensi berakhir, pada hari berakhir, lalu tiap 7 hari sampai diperpanjang atau dinonaktifkan."},
+	{ProposalSubmitted, "Kajian baru masuk", "Pemohon mengirim kajian kebutuhan perangkat/sistem baru lewat QR lapor. Hanya Admin IT yang dapat membuka dan menerima kajian."},
 }
 
 // ValidEvent memeriksa jenis event yang dapat diatur.

@@ -2,11 +2,14 @@ package master
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"sikat/internal/clock"
 	"sikat/internal/web"
 )
 
@@ -41,6 +44,47 @@ type listData struct {
 	Pager     web.Pager
 	Search    string
 	Inactive  bool
+	Today     time.Time // tanggal hari ini (WITA) untuk sisa hari field Expiry
+}
+
+// Badge adalah penanda status di samping nilai sel.
+type Badge struct {
+	Text, Class string
+}
+
+// Badge mengembalikan sisa hari field Expiry (nil bila bukan field Expiry).
+// Kosong = tanpa batas; ≤ 30 hari = kuning; hari ini/lewat = merah.
+func (d listData) Badge(rec Record, f Field) *Badge {
+	if !f.Expiry {
+		return nil
+	}
+	v := rec.Get(f.Column)
+	if v == "" {
+		return &Badge{"Tanpa batas", "badge-muted"}
+	}
+	exp, err := time.Parse("2006-01-02", v)
+	if err != nil {
+		return nil
+	}
+	days := DaysUntil(d.Today, exp)
+	switch {
+	case !rec.IsActive:
+		return nil
+	case days < 0:
+		return &Badge{fmt.Sprintf("Kedaluwarsa %d hari lalu", -days), "badge-alert"}
+	case days == 0:
+		return &Badge{"Berakhir hari ini", "badge-alert"}
+	case days <= 30:
+		return &Badge{fmt.Sprintf("%d hari lagi", days), "badge-warn"}
+	}
+	return &Badge{fmt.Sprintf("%d hari lagi", days), "badge-selesai"}
+}
+
+// DaysUntil menghitung selisih hari kalender dari today ke date (negatif = lewat).
+func DaysUntil(today, date time.Time) int {
+	a := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	b := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	return int(b.Sub(a).Hours() / 24)
 }
 
 // Cell mengembalikan teks tampilan sel daftar.
@@ -62,8 +106,10 @@ func (d listData) Cell(rec Record, f Field) string {
 		return v
 	case KindEnum:
 		return f.ChoiceLabel(v)
-	case KindMoney:
-		return web.FormatMoney(v)
+	case KindQty:
+		return web.FormatQty(v)
+	case KindDate:
+		return web.FormatDate(v)
 	}
 	if v == "" {
 		return "–"
@@ -116,7 +162,8 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Renderer.Render(w, r, http.StatusOK, "master/list", web.Page{
 		Title: e.Title, Nav: "master",
-		Data: listData{Entity: e, Records: recs, RefLabels: labels, Pager: pager, Search: search, Inactive: inactive},
+		Data: listData{Entity: e, Records: recs, RefLabels: labels, Pager: pager, Search: search, Inactive: inactive,
+			Today: h.Service.clock.Now().In(clock.Location)},
 	})
 }
 
@@ -184,7 +231,16 @@ func (h *Handler) editForm(w http.ResponseWriter, r *http.Request) {
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
-	h.renderForm(w, r, http.StatusOK, e, id, rec.Values, &rec, nil)
+	form := map[string]string{}
+	for k, v := range rec.Values {
+		form[k] = v
+	}
+	for _, f := range e.Fields {
+		if f.Kind == KindQty {
+			form[f.Column] = web.FormatQty(form[f.Column]) // "12.50" → "12,5"
+		}
+	}
+	h.renderForm(w, r, http.StatusOK, e, id, form, &rec, nil)
 }
 
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {

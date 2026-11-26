@@ -15,6 +15,7 @@ import (
 	"sikat/internal/priority"
 	"sikat/internal/rbac"
 	"sikat/internal/sla"
+	"sikat/internal/web"
 	"sikat/internal/workflows"
 )
 
@@ -1040,16 +1041,17 @@ func (s *Service) ActionTemplates(ctx context.Context, ticketID int64) ([]Templa
 	return out, rows.Err()
 }
 
-// SparePart adalah pilihan sparepart di form penyelesaian.
+// SparePart adalah pilihan sparepart di form penyelesaian: stok terformat dan apakah habis.
 type SparePart struct {
 	ID    int64
 	Label string
-	Cost  sql.NullString
+	Stock string
+	Empty bool
 }
 
-// SpareParts mengembalikan sparepart aktif.
+// SpareParts mengembalikan sparepart aktif beserta stoknya.
 func (s *Service) SpareParts(ctx context.Context) ([]SparePart, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, CONCAT(name, ' (', unit, ')'), default_unit_cost FROM spare_parts WHERE is_active = TRUE ORDER BY name`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, CONCAT(name, ' (', unit, ')'), stock, stock <= 0 FROM spare_parts WHERE is_active = TRUE ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -1057,9 +1059,10 @@ func (s *Service) SpareParts(ctx context.Context) ([]SparePart, error) {
 	var out []SparePart
 	for rows.Next() {
 		var p SparePart
-		if err := rows.Scan(&p.ID, &p.Label, &p.Cost); err != nil {
+		if err := rows.Scan(&p.ID, &p.Label, &p.Stock, &p.Empty); err != nil {
 			return nil, err
 		}
+		p.Stock = web.FormatQty(p.Stock)
 		out = append(out, p)
 	}
 	return out, rows.Err()

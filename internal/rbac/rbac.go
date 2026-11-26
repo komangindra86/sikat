@@ -42,12 +42,15 @@ const (
 	PermMaintenanceReview Permission = "maintenance.review"
 	// PermSLAView: melihat dashboard SLA, eskalasi, dan laporan pelanggaran bulanan.
 	PermSLAView Permission = "sla.view"
+	// PermProposalManage: menerima dan mengarsipkan kajian kebutuhan perangkat/sistem baru.
+	PermProposalManage Permission = "proposal.manage"
 )
 
 var matrix = map[string]map[Permission]bool{
 	RoleAdmin: set(
 		PermDashboard, PermAssetView, PermMasterManage, PermUserManage, PermConfigManage,
 		PermAuditView, PermTicketQueue, PermTicketCancel, PermReportAll, PermIntegration, PermSLAView,
+		PermProposalManage,
 	),
 	RoleCoordinator: set(
 		PermDashboard, PermAssetView, PermTicketQueue, PermTicketClaim, PermTicketCreate, PermTicketTakeover,

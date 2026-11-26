@@ -32,6 +32,20 @@ func TestParseMoney(t *testing.T) {
 	}
 }
 
+func TestParseQty(t *testing.T) {
+	cases := map[string]string{"12": "12.00", "2,5": "2.50", "2.5": "2.50", " 0 ": "0.00", "0,05": "0.05", "99999999.99": "99999999.99"}
+	for in, want := range cases {
+		if got, err := master.ParseQty(in); err != nil || got != want {
+			t.Errorf("ParseQty(%q) = %q, %v; ingin %q", in, got, err, want)
+		}
+	}
+	for _, bad := range []string{"-1", "abc", "1/2", "1e3", "2,555", "100000000", "1.000,5", ""} {
+		if _, err := master.ParseQty(bad); err == nil {
+			t.Errorf("ParseQty(%q) harus error", bad)
+		}
+	}
+}
+
 func TestValidate(t *testing.T) {
 	e, _ := master.EntityBySlug("departments")
 	v := master.Validate(e, testutil.Form(map[string]string{"code": " igd ", "name": ""}))
@@ -59,6 +73,25 @@ func TestValidate(t *testing.T) {
 	v = master.Validate(tc, testutil.Form(map[string]string{"name": "Baris\nbaru", "it_category_id": "1", "default_priority": "MEDIUM", "sort_order": "-1"}))
 	if v.Errors["name"] == "" || v.Errors["sort_order"] == "" {
 		t.Fatalf("baris baru & angka negatif harus error: %v", v.Errors)
+	}
+}
+
+func TestValidateLicenseDates(t *testing.T) {
+	lic, _ := master.EntityBySlug("licenses")
+	v := master.Validate(lic, testutil.Form(map[string]string{"name": "Office", "started_at": "2026-02-30", "expires_at": "1999-12-31", "quantity": "-1"}))
+	if v.Errors["started_at"] == "" || v.Errors["expires_at"] == "" || v.Errors["quantity"] == "" {
+		t.Fatalf("tanggal tidak valid & jumlah negatif harus error: %v", v.Errors)
+	}
+	v = master.Validate(lic, testutil.Form(map[string]string{"name": "Office", "expires_at": "2027-01-31"}))
+	if !v.OK() || *v.Values["expires_at"] != "2027-01-31" || v.Values["started_at"] != nil {
+		t.Fatalf("tanggal valid, mulai kosong = NULL: %v", v.Errors)
+	}
+	today := time.Date(2026, 11, 26, 23, 30, 0, 0, time.UTC)
+	for date, want := range map[string]int{"2026-11-26": 0, "2026-12-26": 30, "2026-11-20": -6, "2027-11-26": 365} {
+		d, _ := time.Parse("2006-01-02", date)
+		if got := master.DaysUntil(today, d); got != want {
+			t.Errorf("DaysUntil(%s) = %d, ingin %d", date, got, want)
+		}
 	}
 }
 

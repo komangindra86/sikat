@@ -49,7 +49,11 @@ func (r repository) scan(e *Entity, sc interface{ Scan(...any) error }) (Record,
 		return Record{}, err
 	}
 	for i, f := range e.Fields {
-		rec.Values[f.Column] = vals[i].String
+		v := vals[i].String
+		if f.Kind == KindDate && len(v) > 10 {
+			v = v[:10] // "2026-12-31T00:00:00Z" → "2026-12-31"
+		}
+		rec.Values[f.Column] = v
 	}
 	return rec, nil
 }

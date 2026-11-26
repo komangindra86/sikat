@@ -145,8 +145,12 @@ func (s *Service) Create(ctx context.Context, d Draft, photos []Photo) (Created,
 		if err != nil {
 			return err
 		}
-		if !ok {
+		switch {
+		case !ok:
 			errs["ticket_category_id"] = "Jenis masalah tidak tersedia. Pilih yang lain."
+		case d.Channel == ChannelQR && cat.proposalKind.Valid:
+			// Permintaan perangkat/sistem baru dari pelapor lewat kajian kebutuhan, bukan tiket.
+			errs["ticket_category_id"] = "Permintaan ini dikirim lewat kajian kebutuhan. Pilih lagi jenis ini untuk membuka form kajian."
 		}
 		if d.ReporterDepartmentID != 0 {
 			if _, ok, err := s.repo.departmentActive(ctx, tx, d.ReporterDepartmentID); err != nil {

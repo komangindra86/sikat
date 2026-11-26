@@ -92,8 +92,8 @@ func TestErrorHelpers(t *testing.T) {
 	if !database.IsForeignKeyMissing(err) {
 		t.Fatalf("harus terdeteksi FK tidak ada: %v", err)
 	}
-	_, err = db.Exec(`INSERT INTO spare_parts (code, name, default_unit_cost, created_at, updated_at) VALUES ('X','X',-1,?,?)`, now, now)
-	if name, ok := database.CheckConstraint(err); !ok || name != "chk_spare_parts_cost" {
+	_, err = db.Exec(`INSERT INTO spare_parts (code, name, stock, created_at, updated_at) VALUES ('X','X',-1,?,?)`, now, now)
+	if name, ok := database.CheckConstraint(err); !ok || name != "chk_spare_parts_stock" {
 		t.Fatalf("CheckConstraint = %q,%v (%v)", name, ok, err)
 	}
 }
@@ -129,13 +129,13 @@ func TestUniformCodesMigration(t *testing.T) {
 		t.Fatalf("%d bidang belum berformat BDG-NN", n)
 	}
 
-	// Down 00018, 00017, 00016, lalu 00015 → nama dan kode lama kembali.
+	// Down 00021 s.d. 00016, lalu 00015 → nama dan kode lama kembali.
 	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
 	m, err := database.NewMigrator(db, mfs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []string{"00018", "00017", "00016", "00015"} {
+	for _, v := range []string{"00021", "00020", "00019", "00018", "00017", "00016", "00015"} {
 		if _, err := m.Down(ctx); err != nil {
 			t.Fatalf("down %s: %v", v, err)
 		}
@@ -276,9 +276,9 @@ func TestBidangFungsiMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// down00016 membatalkan 00018 dan 00017 lebih dulu (migrasi terbaru) lalu 00016.
+	// down00016 membatalkan 00021 s.d. 00017 lebih dulu (migrasi terbaru) lalu 00016.
 	down00016 := func() error {
-		for _, want := range []string{"00018", "00017", "00016"} {
+		for _, want := range []string{"00021", "00020", "00019", "00018", "00017", "00016"} {
 			got, err := m.Down(ctx)
 			if err != nil {
 				return err
@@ -448,7 +448,7 @@ func TestLaporPerBidangMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"00018", "00017"} {
+	for _, want := range []string{"00021", "00020", "00019", "00018", "00017"} {
 		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
 			t.Fatalf("down %s: %s %v", want, got, err)
 		}
@@ -471,7 +471,7 @@ func TestLaporPerBidangMigration(t *testing.T) {
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name LIKE 'Lainnya (%' AND is_active`); n != 6 {
 		t.Fatalf("setelah up lagi, jenis Lainnya per bidang = %d, harus 6", n)
 	}
-	for _, want := range []string{"00018", "00017"} {
+	for _, want := range []string{"00021", "00020", "00019", "00018", "00017"} {
 		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
 			t.Fatalf("down %s kedua: %s %v", want, got, err)
 		}
@@ -502,8 +502,10 @@ func TestPegawaiDariSimrsMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, "00018") {
-		t.Fatalf("down 00018: %s %v", got, err)
+	for _, want := range []string{"00021", "00020", "00019", "00018"} {
+		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
+			t.Fatalf("down %s: %s %v", want, got, err)
+		}
 	}
 	if !tableExists() || testutil.Count(t, db, `SELECT COUNT(*) FROM integration_configs WHERE entity_type = 'EMPLOYEE' AND provider = 'LOCAL'`) != 1 {
 		t.Fatal("down membuat ulang tabel employees dan konfigurasi integrasinya")
@@ -539,5 +541,131 @@ func TestPegawaiDariSimrsMigration(t *testing.T) {
 	}
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM integration_configs`); n != 3 {
 		t.Fatalf("konfigurasi integrasi = %d, harus 3 (unit, ruangan, perangkat)", n)
+	}
+}
+
+func TestStokSparepartMigration(t *testing.T) {
+	db := testutil.DB(t) // sudah Up, termasuk 00019
+	ctx := context.Background()
+	now := time.Now().UTC()
+	column := func(name string) bool {
+		return testutil.Count(t, db, `SELECT COUNT(*) FROM information_schema.columns
+			WHERE table_schema = DATABASE() AND table_name = 'spare_parts' AND column_name = ?`, name) == 1
+	}
+	if column("default_unit_cost") || !column("stock") {
+		t.Fatal("harga acuan harus sudah dihapus dan kolom stok ada")
+	}
+	if _, err := db.Exec(`INSERT INTO spare_parts (code, name, stock, created_at, updated_at) VALUES ('SPR-0001', 'PSU', 4.5, ?, ?)`, now, now); err != nil {
+		t.Fatal(err)
+	}
+
+	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
+	m, err := database.NewMigrator(db, mfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"00021", "00020", "00019"} {
+		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
+			t.Fatalf("down %s: %s %v", want, got, err)
+		}
+	}
+	if !column("default_unit_cost") || column("stock") {
+		t.Fatal("down mengembalikan harga acuan dan menghapus stok")
+	}
+	if _, err := db.Exec(`UPDATE spare_parts SET default_unit_cost = 175000`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00019 lagi: %v", err)
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM spare_parts WHERE code = 'SPR-0001' AND stock = 0`); n != 1 {
+		t.Fatal("sparepart yang ada mulai dengan stok 0")
+	}
+}
+
+func TestLisensiMigration(t *testing.T) {
+	db := testutil.DB(t) // sudah Up, termasuk 00020
+	ctx := context.Background()
+	now := time.Now().UTC()
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM notification_preferences p JOIN roles r ON r.id = p.role_id
+		WHERE p.event_type = 'LICENSE_EXPIRY' AND r.code = 'ADMIN' AND p.channel = 'PUSH'`); n != 1 {
+		t.Fatal("admin menerima pengingat lisensi lewat push secara bawaan")
+	}
+	if _, err := db.Exec(`INSERT INTO licenses (code, name, started_at, expires_at, created_at, updated_at) VALUES ('LIS-001', 'X', '2027-01-01', '2026-01-01', ?, ?)`, now, now); err == nil {
+		t.Fatal("tanggal berakhir sebelum mulai harus ditolak")
+	}
+	if _, err := db.Exec(`INSERT INTO licenses (code, name, expires_at, created_at, updated_at) VALUES ('LIS-001', 'Office', '2026-12-01', ?, ?)`, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO outbox_events (event_type, dedupe_key, status, available_at, created_at) VALUES ('LICENSE_EXPIRY', 'license:1:2026-12-01:7', 'DONE', ?, ?)`, now, now); err != nil {
+		t.Fatal(err)
+	}
+	uid := testutil.CreateUser(t, db, "admin", "ADMIN", "password-admin-123", false)
+	if _, err := db.Exec(`INSERT INTO notifications (user_id, event_id, event_type, title, body, push_body, url, channel, created_at)
+		SELECT ?, id, event_type, 'Lisensi', '-', '-', '/', 'INBOX', ? FROM outbox_events WHERE event_type = 'LICENSE_EXPIRY'`, uid, now); err != nil {
+		t.Fatal(err)
+	}
+
+	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
+	m, err := database.NewMigrator(db, mfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"00021", "00020"} {
+		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
+			t.Fatalf("down %s: %s %v", want, got, err)
+		}
+	}
+	if testutil.Count(t, db, `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'licenses'`) != 0 ||
+		testutil.Count(t, db, `SELECT COUNT(*) FROM notification_preferences WHERE event_type = 'LICENSE_EXPIRY'`) != 0 ||
+		testutil.Count(t, db, `SELECT COUNT(*) FROM outbox_events WHERE event_type = 'LICENSE_EXPIRY'`) != 0 {
+		t.Fatal("down menghapus tabel lisensi, preferensi, dan notifikasinya")
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00020 lagi: %v", err)
+	}
+}
+
+func TestKajianMigration(t *testing.T) {
+	db := testutil.DB(t) // sudah Up, termasuk 00021
+	ctx := context.Background()
+	now := time.Now().UTC()
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM notification_preferences p JOIN roles r ON r.id = p.role_id
+		WHERE p.event_type = 'PROPOSAL_SUBMITTED' AND r.code = 'ADMIN' AND p.channel = 'PUSH'`); n != 1 {
+		t.Fatal("admin menerima notifikasi kajian lewat push secara bawaan")
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE
+		(name = 'Permintaan perangkat baru' AND proposal_kind = 'DEVICE') OR (name = 'Usulan sistem atau fitur baru' AND proposal_kind = 'SYSTEM')`); n != 2 ||
+		testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE proposal_kind IS NOT NULL`) != 2 {
+		t.Fatal("hanya permintaan perangkat baru dan usulan sistem/fitur baru yang lewat kajian")
+	}
+	ins := `INSERT INTO proposals (public_token_hash, kind, title, summary, requester_name, file_key, file_name, file_mime, file_size, file_sha256,
+		status, received_at, created_at, updated_at) VALUES (UNHEX(SHA2(?, 256)), 'DEVICE', 'Printer', '-', 'Sari', 'k.pdf', 'k.pdf', 'application/pdf', 1, UNHEX(SHA2('x', 256)), ?, ?, ?, ?)`
+	if _, err := db.Exec(ins, "a", "RECEIVED", nil, now, now); err == nil {
+		t.Fatal("status Diterima wajib punya waktu diterima")
+	}
+	if _, err := db.Exec(ins, "b", "SUBMITTED", nil, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO outbox_events (event_type, dedupe_key, status, available_at, created_at) VALUES ('PROPOSAL_SUBMITTED', 'proposal:1', 'DONE', ?, ?)`, now, now); err != nil {
+		t.Fatal(err)
+	}
+
+	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
+	m, err := database.NewMigrator(db, mfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, "00021") {
+		t.Fatalf("down 00021: %s %v", got, err)
+	}
+	if testutil.Count(t, db, `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'proposals'`) != 0 ||
+		testutil.Count(t, db, `SELECT COUNT(*) FROM notification_preferences WHERE event_type = 'PROPOSAL_SUBMITTED'`) != 0 ||
+		testutil.Count(t, db, `SELECT COUNT(*) FROM outbox_events WHERE event_type = 'PROPOSAL_SUBMITTED'`) != 0 ||
+		testutil.Count(t, db, `SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ticket_categories' AND column_name = 'proposal_kind'`) != 0 {
+		t.Fatal("down menghapus tabel kajian, preferensi, dan notifikasinya")
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00021 lagi: %v", err)
 	}
 }

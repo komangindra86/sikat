@@ -24,7 +24,8 @@ const (
 	KindInt
 	KindSelect // referensi ke tabel lain (foreign key)
 	KindEnum   // pilihan tetap
-	KindMoney
+	KindQty    // jumlah desimal >= 0 (mis. stok), 2 angka di belakang koma
+	KindDate   // tanggal (YYYY-MM-DD)
 )
 
 // Ref mendeskripsikan tabel yang direferensikan field KindSelect.
@@ -57,6 +58,8 @@ type Field struct {
 	Choices  []Choice // untuk KindEnum; Value "" berarti NULL
 	Default  string
 	InList   bool // tampil sebagai kolom di daftar
+	// Expiry: tanggal berakhir; daftar menampilkan sisa hari dengan penanda warna.
+	Expiry bool
 	// Auto: nilai dibuat sistem saat data dibuat dan tidak dapat diubah lewat form.
 	Auto *AutoCode
 }
@@ -77,7 +80,8 @@ func (f Field) IsBool() bool     { return f.Kind == KindBool }
 func (f Field) IsInt() bool      { return f.Kind == KindInt }
 func (f Field) IsSelect() bool   { return f.Kind == KindSelect }
 func (f Field) IsEnum() bool     { return f.Kind == KindEnum }
-func (f Field) IsMoney() bool    { return f.Kind == KindMoney }
+func (f Field) IsQty() bool      { return f.Kind == KindQty }
+func (f Field) IsDate() bool     { return f.Kind == KindDate }
 
 // ChoiceLabel mengembalikan label pilihan enum.
 func (f Field) ChoiceLabel(v string) string {

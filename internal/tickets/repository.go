@@ -123,12 +123,13 @@ func (repository) attachments(ctx context.Context, db database.DBTX, ticketID in
 type categoryInfo struct {
 	itCategoryID    int64
 	defaultPriority string
+	proposalKind    sql.NullString
 }
 
 func (repository) category(ctx context.Context, db database.DBTX, id int64) (categoryInfo, bool, error) {
 	var c categoryInfo
-	err := db.QueryRowContext(ctx, `SELECT it_category_id, default_priority FROM ticket_categories WHERE id = ? AND is_active = TRUE`, id).
-		Scan(&c.itCategoryID, &c.defaultPriority)
+	err := db.QueryRowContext(ctx, `SELECT it_category_id, default_priority, proposal_kind FROM ticket_categories WHERE id = ? AND is_active = TRUE`, id).
+		Scan(&c.itCategoryID, &c.defaultPriority, &c.proposalKind)
 	if errors.Is(err, sql.ErrNoRows) {
 		return c, false, nil
 	}
@@ -402,7 +403,7 @@ func (repository) options(ctx context.Context, db database.DBTX, q string, args 
 }
 
 func (repository) categories(ctx context.Context, db database.DBTX) ([]Category, error) {
-	rows, err := db.QueryContext(ctx, `SELECT tc.id, tc.name, tc.help_text, tc.it_category_id, ic.name, ic.is_triage, ic.reporter_help
+	rows, err := db.QueryContext(ctx, `SELECT tc.id, tc.name, tc.help_text, tc.it_category_id, ic.name, ic.is_triage, ic.reporter_help, tc.proposal_kind
 		FROM ticket_categories tc JOIN it_categories ic ON ic.id = tc.it_category_id
 		WHERE tc.is_active = TRUE ORDER BY ic.is_triage, ic.sort_order, ic.name, tc.sort_order, tc.name`)
 	if err != nil {
@@ -412,7 +413,7 @@ func (repository) categories(ctx context.Context, db database.DBTX) ([]Category,
 	var out []Category
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.Name, &c.HelpText, &c.ITCategoryID, &c.ITCategoryName, &c.IsTriage, &c.ITCategoryHelp); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.HelpText, &c.ITCategoryID, &c.ITCategoryName, &c.IsTriage, &c.ITCategoryHelp, &c.ProposalKind); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

@@ -88,11 +88,20 @@
       {{with .Help}}{{if .Valid}}<p class="help mt-0.5" data-ket-bidang>{{.String}}</p>{{end}}{{end}}
       <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {{range .Items}}
+        {{if .ProposalKind.Valid}}
+        {{/* Jalur kajian: bukan tiket, membuka form kajian kebutuhan. */}}
+        <a href="/q/{{$d.Token}}/kajian?kind={{.ProposalKind.String}}" class="choice block no-underline" data-jalur-kajian>
+          <span class="block font-bold text-foreground">{{.Name}}</span>
+          {{if .HelpText.Valid}}<span class="block text-xs text-muted-foreground">{{.HelpText.String}}</span>{{end}}
+          <span class="mt-1 flex items-center gap-1 text-xs font-bold text-aksen">Kirim dokumen kajian<span class="icon size-4">{{template "icon" "caret-right"}}</span></span>
+        </a>
+        {{else}}
         <label class="choice">
           <input type="radio" name="ticket_category_id" value="{{.ID}}" class="sr-only" {{if eq (printf "%d" .ID) (index $d.Form "ticket_category_id")}}checked{{end}}>
           <span class="block font-bold text-foreground">{{.Name}}</span>
           {{if .HelpText.Valid}}<span class="block text-xs text-muted-foreground">{{.HelpText.String}}</span>{{end}}
         </label>
+        {{end}}
         {{end}}
       </div>
     </div>

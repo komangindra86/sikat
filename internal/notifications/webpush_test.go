@@ -178,7 +178,7 @@ func TestPushBodyIsGenericForLockScreen(t *testing.T) {
 		"used_pct": 80, "count": 5, "window_days": 90, "due_at": "2026-11-12T08:00:00Z"}
 	for _, e := range append(Events, EventInfo{Type: Test}) {
 		ev := outboxRow{ID: 9, Type: e.Type, Payload: payload,
-			TicketID: sql.NullInt64{Int64: 77, Valid: e.Type != RepeatDamage && e.Type != Test},
+			TicketID: sql.NullInt64{Int64: 77, Valid: e.Type != RepeatDamage && e.Type != LicenseExpiry && e.Type != ProposalSubmitted && e.Type != Test},
 			AssetID:  sql.NullInt64{Int64: 5, Valid: e.Type == RepeatDamage}}
 		var tip *ticketInfo
 		if ev.TicketID.Valid {

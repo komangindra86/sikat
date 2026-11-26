@@ -55,7 +55,7 @@ func setup(t *testing.T) env {
 	acat := ins(`INSERT INTO asset_categories (code, name, created_at, updated_at) VALUES ('PC','PC',?,?)`, now, now)
 	e.asset = ins(`INSERT INTO assets (asset_code, name, asset_category_id, room_id, department_id, procured_at, created_at, updated_at)
 		VALUES ('IGD-01','Komputer IGD-01',?,?,?,'2019-01-01',?,?)`, acat, e.room, dept, now, now)
-	e.partID = ins(`INSERT INTO spare_parts (code, name, default_unit_cost, created_at, updated_at) VALUES ('PSU','PSU 450W',175000,?,?)`, now, now)
+	e.partID = ins(`INSERT INTO spare_parts (code, name, stock, created_at, updated_at) VALUES ('PSU','PSU 450W',3,?,?)`, now, now)
 	_ = db.QueryRow(`SELECT id FROM ticket_categories WHERE name = 'Komputer tidak menyala'`).Scan(&e.cat)
 	_ = db.QueryRow(`SELECT id FROM ticket_categories WHERE name = 'Komputer lambat atau hang'`).Scan(&e.cat2)
 	e.tech = &rbac.User{ID: testutil.CreateUser(t, db, "tek", "TECHNICIAN", "password-tek1", false), RoleCode: rbac.RoleTechnician}
@@ -104,7 +104,17 @@ func TestTicketResolutionCreatesHistory(t *testing.T) {
 	if n := testutil.Count(t, e.db, `SELECT COUNT(*) FROM asset_maintenance_histories`); n != 0 {
 		t.Fatal("riwayat tidak boleh tercatat saat validasi gagal")
 	}
-	errs, err := e.tk.Resolve(ctx, c.ID, e.tech, tickets.ResolveInput{Action: "Ganti PSU", Result: "REPLACED", ServiceCost: "50.000",
+	// Melebihi stok (3), dijumlahkan dari beberapa baris → ditolak, stok utuh.
+	pid := strconv.FormatInt(e.partID, 10)
+	errs, err := e.tk.Resolve(ctx, c.ID, e.tech, tickets.ResolveInput{Action: "Ganti PSU", Result: "REPLACED",
+		Parts: []tickets.PartLine{{PartID: pid, Qty: "2"}, {PartID: pid, Qty: "1,5"}}})
+	if err != nil || errs["parts"] != "Stok PSU 450W tidak cukup: tersisa 3 pcs." {
+		t.Fatalf("pemakaian melebihi stok harus ditolak: %v %v", errs, err)
+	}
+	if s := stock(t, e); s != "3.00" {
+		t.Fatalf("stok tidak berubah saat ditolak: %s", s)
+	}
+	errs, err = e.tk.Resolve(ctx, c.ID, e.tech, tickets.ResolveInput{Action: "Ganti PSU", Result: "REPLACED", ServiceCost: "50.000",
 		AssetStatusAfter: "ACTIVE", Parts: []tickets.PartLine{{PartID: strconv.FormatInt(e.partID, 10), Qty: "2"}, {PartID: ""}}})
 	if err != nil || errs != nil {
 		t.Fatalf("%v %v", errs, err)
@@ -114,8 +124,11 @@ func TestTicketResolutionCreatesHistory(t *testing.T) {
 		t.Fatalf("satu entri perbaikan dari tiket: %+v", hist)
 	}
 	h := hist[0]
-	if len(h.Parts) != 1 || h.Parts[0].Qty != "2" || h.Parts[0].LineCost.String != "350000.00" || h.TotalCost() != "400000.00" {
+	if len(h.Parts) != 1 || h.Parts[0].Qty != "2" || h.Parts[0].Unit != "pcs" || h.TotalCost() != "50000.00" {
 		t.Fatalf("sparepart & biaya: %+v total=%s", h.Parts, h.TotalCost())
+	}
+	if s := stock(t, e); s != "1.00" {
+		t.Fatalf("stok berkurang sesuai pemakaian: %s", s)
 	}
 	if h.DowntimeMinutes.Int64 != 120 || h.Complaint.String != "Komputer bermasalah" || h.CategoryName.String != "Komputer tidak menyala" {
 		t.Fatalf("downtime/keluhan/jenis: %+v", h)
@@ -141,7 +154,7 @@ func TestTicketResolutionCreatesHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.DamagesAll != 1 || st.RepairsAll != 2 || st.CostAll != "400000.00" || st.DowntimeAll < 120 || !st.LastMaintenance.Valid {
+	if st.DamagesAll != 1 || st.RepairsAll != 2 || st.CostAll != "50000.00" || st.DowntimeAll < 120 || !st.LastMaintenance.Valid {
 		t.Fatalf("statistik: %+v", st)
 	}
 }
@@ -244,13 +257,20 @@ func TestActivityHistoryAndManualEntries(t *testing.T) {
 	}
 	errs, err = e.ms.AddManual(ctx, e.tech, e.asset, maintenance.ManualInput{
 		Type: "CORRECTIVE", Action: "Servis vendor: ganti motherboard", Result: "FIXED", FinishedAt: "2026-11-09T15:00",
-		ServiceCost: "1.250.000", Parts: []tickets.PartLine{{PartID: strconv.FormatInt(e.partID, 10), Qty: "1", UnitCost: "200000"}},
+		ServiceCost: "1.250.000", Parts: []tickets.PartLine{{PartID: strconv.FormatInt(e.partID, 10), Qty: "2,5"}},
 	})
 	if err != nil || errs != nil {
 		t.Fatalf("%v %v", errs, err)
 	}
+	if s := stock(t, e); s != "0.50" {
+		t.Fatalf("stok berkurang oleh entri manual: %s", s)
+	}
+	parts, _ := e.ms.SpareParts(ctx)
+	if len(parts) != 1 || parts[0].Stock != "0,5" || parts[0].Empty {
+		t.Fatalf("pilihan sparepart menampilkan stok: %+v", parts)
+	}
 	st, _ := e.ms.Stats(ctx, e.asset)
-	if st.CostAll != "1450000.00" || st.RepairsAll != 1 {
+	if st.CostAll != "1250000.00" || st.RepairsAll != 1 {
 		t.Fatalf("statistik setelah entri manual: %+v", st)
 	}
 	// Koreksi: hanya koordinator, alasan wajib; entri batal tidak dihitung.
@@ -274,7 +294,22 @@ func TestActivityHistoryAndManualEntries(t *testing.T) {
 	if st.CostAll != "0.00" || st.RepairsAll != 0 {
 		t.Fatalf("entri batal tidak dihitung: %+v", st)
 	}
+	if s := stock(t, e); s != "3.00" {
+		t.Fatalf("entri batal mengembalikan stok: %s", s)
+	}
+	if _, _, err := e.ms.Void(ctx, e.coord, manualID, "Lagi"); err != nil || stock(t, e) != "3.00" {
+		t.Fatalf("pembatalan kedua tidak mengembalikan stok lagi: %v", err)
+	}
 	if _, err := e.db.Exec(`DELETE FROM asset_maintenance_histories WHERE id = ?`, manualID); err == nil {
 		t.Fatal("riwayat tidak boleh dihapus (trigger)")
 	}
+}
+
+func stock(t *testing.T, e env) string {
+	t.Helper()
+	var s string
+	if err := e.db.QueryRow(`SELECT stock FROM spare_parts WHERE id = ?`, e.partID).Scan(&s); err != nil {
+		t.Fatal(err)
+	}
+	return s
 }

@@ -117,6 +117,14 @@ func (s *Service) MarkTicketRead(ctx context.Context, userID, ticketID int64) {
 	}
 }
 
+// MarkURLRead menandai dibaca notifikasi pengguna yang menuju url (mis. halaman kajian).
+func (s *Service) MarkURLRead(ctx context.Context, userID int64, url string) {
+	if _, err := s.db.ExecContext(ctx, `UPDATE notifications SET read_at = ? WHERE user_id = ? AND url = ? AND read_at IS NULL`,
+		s.clock.Now(), userID, url); err != nil {
+		s.log.Warn("notifikasi: tandai dibaca", "err", err)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Langganan push (perangkat)
 // ---------------------------------------------------------------------------

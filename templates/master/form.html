@@ -41,7 +41,9 @@
           </select>
         {{else if $f.IsInt}}
           <input class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="number" inputmode="numeric" min="{{$f.Min}}" {{if $f.Max}}max="{{$f.Max}}"{{end}} value="{{$val}}">
-        {{else if $f.IsMoney}}
+        {{else if $f.IsDate}}
+          <input class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="date" min="2000-01-01" max="2100-12-31" value="{{$val}}" {{if $f.Required}}required{{end}}>
+        {{else if $f.IsQty}}
           <input class="input {{if $err}}input-error{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="text" inputmode="decimal" value="{{$val}}" placeholder="0">
         {{else}}
           <input class="input {{if $err}}input-error{{end}} {{if $f.Upper}}uppercase{{end}}" id="f-{{$f.Column}}" name="{{$f.Column}}" type="text" value="{{$val}}" {{if $f.MaxLen}}maxlength="{{$f.MaxLen}}"{{end}} {{if $f.Required}}required{{end}}>

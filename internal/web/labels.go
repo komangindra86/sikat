@@ -77,7 +77,8 @@ var labelGroups = map[string][]Option{
 		{"TICKET_CREATED", "Tiket baru"}, {"TICKET_CRITICAL", "Tiket kritis"}, {"TICKET_CLAIMED", "Tiket diambil"},
 		{"TICKET_STARTED", "Mulai dikerjakan"}, {"TICKET_PENDING", "Tiket tertunda"}, {"TICKET_RESOLVED", "Tiket selesai"},
 		{"TICKET_REOPENED", "Dibuka kembali"}, {"TICKET_ASSIGNED", "Penugasan"}, {"TICKET_TRANSFERRED", "Dialihkan ke bidang"}, {"SLA_WARNING", "SLA hampir habis"},
-		{"SLA_BREACH", "SLA terlewati"}, {"REPEAT_DAMAGE", "Perangkat sering rusak"}, {"TEST", "Notifikasi uji"},
+		{"SLA_BREACH", "SLA terlewati"}, {"REPEAT_DAMAGE", "Perangkat sering rusak"}, {"LICENSE_EXPIRY", "Lisensi segera habis"},
+		{"PROPOSAL_SUBMITTED", "Kajian baru masuk"}, {"TEST", "Notifikasi uji"},
 	},
 	"integration_entity": {
 		{"DEPARTMENT", "Unit"}, {"ROOM", "Ruangan"}, {"ASSET", "Perangkat"},
@@ -119,6 +120,12 @@ var labelGroups = map[string][]Option{
 	"activity_status": {
 		{"PLANNED", "Direncanakan"}, {"IN_PROGRESS", "Berlangsung"}, {"DONE", "Selesai"}, {"CANCELLED", "Dibatalkan"},
 	},
+	"proposal_kind": {
+		{"DEVICE", "Perangkat baru"}, {"SYSTEM", "Sistem/aplikasi baru"},
+	},
+	"proposal_status": {
+		{"SUBMITTED", "Belum diterima"}, {"RECEIVED", "Diterima"},
+	},
 }
 
 // tones memetakan kode ke jenis badge status Casemix (bentuk ikon membawa arti):
@@ -145,7 +152,7 @@ var tones = map[string]map[string]string{
 	"notif_event": {
 		"TICKET_CREATED": "idle", "TICKET_CRITICAL": "alert", "TICKET_CLAIMED": "proses", "TICKET_STARTED": "lanjut",
 		"TICKET_PENDING": "warn", "TICKET_RESOLVED": "selesai", "TICKET_REOPENED": "warn", "TICKET_ASSIGNED": "proses", "TICKET_TRANSFERRED": "proses",
-		"SLA_WARNING": "warn", "SLA_BREACH": "alert", "REPEAT_DAMAGE": "warn", "TEST": "muted",
+		"SLA_WARNING": "warn", "SLA_BREACH": "alert", "REPEAT_DAMAGE": "warn", "LICENSE_EXPIRY": "warn", "PROPOSAL_SUBMITTED": "idle", "TEST": "muted",
 	},
 	"sync_action": {
 		"INSERT": "selesai", "UPDATE": "proses", "UNCHANGED": "muted", "LINK": "proses", "CONFLICT": "warn",
@@ -162,6 +169,9 @@ var tones = map[string]map[string]string{
 	},
 	"activity_status": {
 		"PLANNED": "idle", "IN_PROGRESS": "lanjut", "DONE": "selesai", "CANCELLED": "muted",
+	},
+	"proposal_status": {
+		"SUBMITTED": "warn", "RECEIVED": "selesai",
 	},
 }
 

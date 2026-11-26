@@ -118,10 +118,10 @@ func Logger(log *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-// RedactPath menyamarkan token akses publik (/t/{token}, /q/{token}) agar tidak
-// tersimpan di log; siapa pun yang membaca log tidak boleh bisa membuka tiket.
+// RedactPath menyamarkan token akses publik (/t/{token}, /q/{token}, /k/{token}) agar
+// tidak tersimpan di log; siapa pun yang membaca log tidak boleh bisa membuka tiket/kajian.
 func RedactPath(p string) string {
-	for _, prefix := range []string{"/t/", "/q/"} {
+	for _, prefix := range []string{"/t/", "/q/", "/k/"} {
 		if strings.HasPrefix(p, prefix) {
 			rest := strings.TrimPrefix(p, prefix)
 			if i := strings.IndexByte(rest, '/'); i >= 0 {

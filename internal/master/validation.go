@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -44,6 +45,9 @@ func Validate(e *Entity, get func(string) string) Validated {
 			continue
 		}
 
+		if raw == "" && f.Kind == KindQty {
+			raw = "0" // jumlah kosong = 0 (kolom NOT NULL)
+		}
 		if raw == "" {
 			if f.Required {
 				out.Errors[f.Column] = f.Label + " wajib diisi."
@@ -90,13 +94,19 @@ func Validate(e *Entity, get func(string) string) Validated {
 				out.Errors[f.Column] = "Pilihan tidak valid."
 				continue
 			}
-		case KindMoney:
-			m, err := ParseMoney(raw)
-			if err != nil {
-				out.Errors[f.Column] = f.Label + ": " + err.Error()
+		case KindDate:
+			d, err := time.Parse("2006-01-02", raw)
+			if err != nil || d.Year() < 2000 || d.Year() > 2100 {
+				out.Errors[f.Column] = f.Label + " harus berupa tanggal yang valid."
 				continue
 			}
-			raw = m
+		case KindQty:
+			q, err := ParseQty(raw)
+			if err != nil {
+				out.Errors[f.Column] = f.Label + ": " + err.Error() + "."
+				continue
+			}
+			raw = q
 		}
 		v := raw
 		out.Values[f.Column] = &v
@@ -111,6 +121,29 @@ func choiceAllowed(cs []Choice, v string) bool {
 		}
 	}
 	return false
+}
+
+// maxQty sesuai DECIMAL(10,2).
+var maxQty, _ = new(big.Rat).SetString("99999999.99")
+
+// ParseQty menerima jumlah seperti "12", "2,5", atau "2.5" (koma atau titik sebagai
+// desimal, tanpa pemisah ribuan) dan mengembalikan string desimal "2.50" untuk DECIMAL(10,2).
+func ParseQty(raw string) (string, error) {
+	s := strings.ReplaceAll(strings.TrimSpace(raw), ",", ".")
+	if strings.HasPrefix(s, "-") {
+		return "", fmt.Errorf("tidak boleh negatif")
+	}
+	r, ok := new(big.Rat).SetString(s)
+	if s == "" || !ok || strings.ContainsAny(s, "eE/") {
+		return "", fmt.Errorf("harus berupa angka, contoh 12 atau 2,5")
+	}
+	if r.Cmp(maxQty) > 0 {
+		return "", fmt.Errorf("nilai terlalu besar")
+	}
+	if _, frac, has := strings.Cut(s, "."); has && len(frac) > 2 {
+		return "", fmt.Errorf("maksimal 2 angka di belakang koma")
+	}
+	return r.FloatString(2), nil
 }
 
 // maxMoney sesuai DECIMAL(14,2).

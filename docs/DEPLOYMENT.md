@@ -7,7 +7,7 @@ server produksi tidak membutuhkan Go maupun Node.js.
 ```
 Internet/Intranet ──HTTPS──> Nginx (TLS, gzip) ──> 127.0.0.1:8080  sikat serve (systemd, user sikat)
                                                         ├─ MySQL 8 (localhost)
-                                                        ├─ /var/lib/sikat           (foto lampiran)
+                                                        ├─ /var/lib/sikat           (foto lampiran, dokumen kajian)
                                                         └─ /var/backups/sikat       (backup harian → salin off-site)
 ```
 
@@ -133,8 +133,8 @@ Setelah HTTPS aktif, aplikasi otomatis memasang cookie `Secure` dan header HSTS.
   `sudo -u sikat /opt/sikat/sikat restore-test`. Backup terbaru dipulihkan ke database
   sementara, versi migrasi dan jumlah baris tabel utama dibandingkan dengan saat
   backup, lalu database sementara dihapus.
-- **Foto lampiran** (`/var/lib/sikat/attachments`) tidak masuk backup database.
-  Salin bersama backup ke lokasi lain.
+- **Foto lampiran** (`/var/lib/sikat/attachments`) dan **dokumen kajian**
+  (`/var/lib/sikat/kajian`) tidak masuk backup database. Salin bersama backup ke lokasi lain.
 
 ### Salinan off-site (wajib)
 
@@ -142,7 +142,7 @@ Backup di server yang sama tidak melindungi dari kerusakan disk/server. Contoh
 cron harian pukul 03.00 menyalin ke server/NAS lain:
 
 ```cron
-0 3 * * * sikat rsync -a --delete /var/backups/sikat/ backup@nas.rs.local:/backup/sikat/db/ && rsync -a /var/lib/sikat/attachments/ backup@nas.rs.local:/backup/sikat/attachments/
+0 3 * * * sikat rsync -a --delete /var/backups/sikat/ backup@nas.rs.local:/backup/sikat/db/ && rsync -a /var/lib/sikat/attachments/ backup@nas.rs.local:/backup/sikat/attachments/ && rsync -a /var/lib/sikat/kajian/ backup@nas.rs.local:/backup/sikat/kajian/
 ```
 
 ### Memulihkan ke produksi (bila terjadi bencana)

@@ -110,7 +110,9 @@ internal/
   departments/       unit
   rooms/             ruangan
   assets/            perangkat, kategori perangkat, alert kerusakan berulang
-  maintenance/       riwayat pemeliharaan, sparepart
+  maintenance/       riwayat pemeliharaan, sparepart & stok
+  licenses/          pengingat lisensi yang mendekati/melewati tanggal berakhir
+  proposals/         arsip kajian kebutuhan perangkat/sistem baru (form publik, diterima Admin)
   qrcodes/           token QR, PNG, cetak massal
   tickets/           pengajuan publik, detail, komentar, lampiran, nomor tiket
   assignments/       klaim, ambil alih, lepas, anggota pendukung
@@ -266,6 +268,7 @@ role.
 | `config.manage` (SLA, prioritas, notifikasi, sistem) | ✓ | – | – |
 | `user.manage` | ✓ | – | – |
 | `integration.manage` | ✓ | – | – |
+| `proposal.manage` (menerima & mengunduh kajian kebutuhan) | ✓ | – | – |
 
 **Koordinator per bidang** (diputuskan 13/11/2026, migrasi `00009`): setiap bidang
 (`it_categories.coordinator_user_id`) memiliki tepat satu koordinator; satu
@@ -408,7 +411,7 @@ catatan opsional, entri `ticket_histories`, dan `outbox_event` untuk notifikasi.
 
 Saat **RESOLVED** dan tiket terhubung ke perangkat, sistem otomatis membuat
 entri `asset_maintenance_histories` dari data penyelesaian (tindakan, hasil,
-sparepart, biaya, durasi) — petugas tidak mengetik ulang.
+sparepart (mengurangi stok), biaya jasa/vendor, durasi) — petugas tidak mengetik ulang.
 
 ### 6.5 SLA
 
@@ -531,10 +534,15 @@ sequenceDiagram
   - Event: `TICKET_CREATED` (non-kritis), `TICKET_CRITICAL` (dari eskalasi SLA
     `CRITICAL_IMMEDIATE`), `TICKET_CLAIMED/STARTED/PENDING/RESOLVED/REOPENED`,
     `TICKET_ASSIGNED` (anggota pendukung ditambahkan / tiket diambil alih — hanya
-    orang bersangkutan), `SLA_WARNING`, `SLA_BREACH`, `REPEAT_DAMAGE`, `TEST`.
+    orang bersangkutan), `SLA_WARNING`, `SLA_BREACH`, `REPEAT_DAMAGE`,
+    `LICENSE_EXPIRY`, `PROPOSAL_SUBMITTED`, `TEST`.
     Histori tiket menulis outbox lewat `repository.addHistory` (dedupe `h:<id histori>`);
     eskalasi SLA lewat `sla.Record` (dedupe `sla:<id eskalasi>`, `notify = FALSE` tidak
-    menulis outbox); kerusakan berulang saat peringatan dibuat (`asset_alert:<id>`).
+    menulis outbox); kerusakan berulang saat peringatan dibuat (`asset_alert:<id>`);
+    pengingat lisensi oleh worker `periksa-lisensi` tiap jam (`internal/licenses`,
+    dedupe `license:<id>:<tanggal berakhir>:<tahap>`, tahap 30/14/7/1/0 hari lalu
+    tiap 7 hari setelah berakhir; tanggal baru = pengingat mulai dari awal);
+    kajian kebutuhan saat pemohon mengirim kajian (`proposal:<id>`).
   - Penerima: Koordinator/Admin = seluruh anggota role sesuai preferensi; Petugas
     dibatasi relevansi — tiket baru/kritis/diambil & SLA respons → kompetensi sesuai
     (atau tanpa kompetensi); mulai/tunda/selesai/dibuka ulang & SLA penyelesaian →

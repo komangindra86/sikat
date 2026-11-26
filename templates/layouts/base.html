@@ -175,6 +175,7 @@
 {{template "nav-link" (dict "Href" "/app" "Icon" "home" "Label" "Beranda" "On" (eq $p.Nav "home"))}}
 {{if $u.Can "ticket.view_queue"}}{{template "nav-link" (dict "Href" "/app/tickets" "Icon" "ticket" "Label" "Tiket" "On" (eq $p.Nav "tickets"))}}{{end}}
 {{if $u.Can "activity.create"}}{{template "nav-link" (dict "Href" "/app/activities" "Icon" "activity" "Label" "Kegiatan" "On" (eq $p.Nav "activities"))}}{{end}}
+{{if $u.Can "proposal.manage"}}{{template "nav-link" (dict "Href" "/app/kajian" "Icon" "inbox" "Label" "Kajian" "On" (eq $p.Nav "kajian"))}}{{end}}
 {{if or ($u.Can "report.view_all") ($u.Can "report.view_own")}}{{template "nav-link" (dict "Href" "/app/reports" "Icon" "chart" "Label" "Laporan" "On" (eq $p.Nav "reports"))}}{{end}}
 {{if $u.Can "sla.view"}}{{template "nav-link" (dict "Href" "/app/sla" "Icon" "clock" "Label" "SLA" "On" (eq $p.Nav "sla"))}}{{end}}
 {{if $u.Can "asset.view"}}

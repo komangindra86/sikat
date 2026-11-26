@@ -20,6 +20,7 @@ import (
 	"sikat/internal/rbac"
 	"sikat/internal/settings"
 	"sikat/internal/tickets"
+	"sikat/internal/web"
 )
 
 // Error aturan bisnis.
@@ -57,18 +58,26 @@ func (s *Service) Config(ctx context.Context) Config {
 }
 
 // ---------------------------------------------------------------------------
-// Sparepart & biaya
+// Sparepart (stok) & biaya
 // ---------------------------------------------------------------------------
 
+// ErrStock: stok berubah di antara validasi dan penyimpanan (seharusnya tidak terjadi
+// karena baris sparepart dikunci FOR UPDATE saat validasi dalam transaksi yang sama).
+var ErrStock = errors.New("stok sparepart tidak cukup")
+
+var maxPartQty = big.NewRat(9999, 1)
+
 type partLine struct {
-	partID   int64
-	qty      string
-	unitCost sql.NullString
+	partID int64
+	qty    string
 }
 
-// parseParts memvalidasi baris sparepart. Harga kosong memakai harga acuan sparepart.
+// parseParts memvalidasi baris sparepart, termasuk stok: jumlah pemakaian per sparepart
+// (dijumlahkan bila dipilih di beberapa baris) tidak boleh melebihi stok. Dalam transaksi,
+// baris sparepart dikunci (FOR UPDATE) sampai transaksi selesai.
 func parseParts(ctx context.Context, q database.DBTX, raw []tickets.PartLine, errs map[string]string) ([]partLine, error) {
 	var out []partLine
+	used := map[int64]*big.Rat{}
 	for _, r := range raw {
 		pid := strings.TrimSpace(r.PartID)
 		if pid == "" {
@@ -79,9 +88,8 @@ func parseParts(ctx context.Context, q database.DBTX, raw []tickets.PartLine, er
 			errs["parts"] = "Pilihan sparepart tidak valid."
 			continue
 		}
-		var name string
-		var def sql.NullString
-		err = q.QueryRowContext(ctx, `SELECT name, default_unit_cost FROM spare_parts WHERE id = ? AND is_active = TRUE`, id).Scan(&name, &def)
+		var name, unit, stock string
+		err = q.QueryRowContext(ctx, `SELECT name, unit, stock FROM spare_parts WHERE id = ? AND is_active = TRUE FOR UPDATE`, id).Scan(&name, &unit, &stock)
 		if errors.Is(err, sql.ErrNoRows) {
 			errs["parts"] = "Sparepart tidak ditemukan atau nonaktif."
 			continue
@@ -89,27 +97,27 @@ func parseParts(ctx context.Context, q database.DBTX, raw []tickets.PartLine, er
 		if err != nil {
 			return nil, err
 		}
-		qtyRaw := strings.TrimSpace(strings.ReplaceAll(r.Qty, ",", "."))
+		qtyRaw := strings.TrimSpace(r.Qty)
 		if qtyRaw == "" {
 			qtyRaw = "1"
 		}
-		qty, ok := new(big.Rat).SetString(qtyRaw)
-		if !ok || qty.Sign() <= 0 || qty.Cmp(big.NewRat(9999, 1)) > 0 {
-			errs["parts"] = "Jumlah " + name + " harus angka lebih dari 0."
+		qs, err := master.ParseQty(qtyRaw)
+		qty, _ := new(big.Rat).SetString(qs)
+		if err != nil || qty.Sign() <= 0 || qty.Cmp(maxPartQty) > 0 {
+			errs["parts"] = "Jumlah " + name + " harus angka lebih dari 0 (maks. 2 angka di belakang koma)."
 			continue
 		}
-		line := partLine{partID: id, qty: qty.FloatString(2)}
-		if c := strings.TrimSpace(r.UnitCost); c != "" {
-			m, err := master.ParseMoney(c)
-			if err != nil {
-				errs["parts"] = "Harga " + name + ": " + err.Error() + "."
-				continue
-			}
-			line.unitCost = sql.NullString{String: m, Valid: true}
-		} else {
-			line.unitCost = def
+		total := used[id]
+		if total == nil {
+			total = new(big.Rat)
+			used[id] = total
 		}
-		out = append(out, line)
+		total.Add(total, qty)
+		if avail, _ := new(big.Rat).SetString(stock); total.Cmp(avail) > 0 {
+			errs["parts"] = fmt.Sprintf("Stok %s tidak cukup: tersisa %s %s.", name, web.FormatQty(stock), unit)
+			continue
+		}
+		out = append(out, partLine{partID: id, qty: qs})
 	}
 	if len(out) > 10 {
 		errs["parts"] = "Maksimal 10 jenis sparepart per entri."
@@ -130,15 +138,34 @@ func parseCost(raw string, errs map[string]string, key string) sql.NullString {
 	return sql.NullString{String: m, Valid: true}
 }
 
+// insertParts mencatat sparepart terpakai dan mengurangi stoknya.
 func insertParts(ctx context.Context, tx *sql.Tx, entryID int64, parts []partLine, now time.Time) error {
 	for _, p := range parts {
 		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO maintenance_parts (maintenance_history_id, spare_part_id, quantity, unit_cost, created_at) VALUES (?, ?, ?, ?, ?)`,
-			entryID, p.partID, p.qty, p.unitCost, now); err != nil {
+			INSERT INTO maintenance_parts (maintenance_history_id, spare_part_id, quantity, created_at) VALUES (?, ?, ?, ?)`,
+			entryID, p.partID, p.qty, now); err != nil {
 			return err
+		}
+		res, err := tx.ExecContext(ctx, `UPDATE spare_parts SET stock = stock - ?, updated_at = ? WHERE id = ? AND stock >= ?`,
+			p.qty, now, p.partID, p.qty)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n != 1 {
+			return ErrStock
 		}
 	}
 	return nil
+}
+
+// restoreStock mengembalikan stok sparepart dari entri yang dibatalkan.
+func restoreStock(ctx context.Context, tx *sql.Tx, entryID int64, now time.Time) error {
+	_, err := tx.ExecContext(ctx, `
+		UPDATE spare_parts sp
+		  JOIN (SELECT spare_part_id, SUM(quantity) qty FROM maintenance_parts WHERE maintenance_history_id = ? GROUP BY spare_part_id) p
+		    ON p.spare_part_id = sp.id
+		   SET sp.stock = sp.stock + p.qty, sp.updated_at = ?`, entryID, now)
+	return err
 }
 
 // updateAssetStatus mengubah status perangkat bila berbeda, dengan audit.
@@ -261,9 +288,8 @@ func (s *Service) facts(ctx context.Context, q database.DBTX, assetID int64, c C
 	}
 	var cost sql.NullString
 	if err := q.QueryRowContext(ctx, `
-		SELECT COALESCE(SUM(h.service_cost), 0) + COALESCE((SELECT SUM(p.line_cost) FROM maintenance_parts p
-		        JOIN asset_maintenance_histories h2 ON h2.id = p.maintenance_history_id WHERE h2.asset_id = ? AND h2.voided_at IS NULL), 0)
-		  FROM asset_maintenance_histories h WHERE h.asset_id = ? AND h.voided_at IS NULL`, assetID, assetID).Scan(&cost); err != nil {
+		SELECT COALESCE(SUM(h.service_cost), 0)
+		  FROM asset_maintenance_histories h WHERE h.asset_id = ? AND h.voided_at IS NULL`, assetID).Scan(&cost); err != nil {
 		return f, err
 	}
 	f.TotalCost, _ = strconv.ParseFloat(cost.String, 64)
@@ -333,9 +359,11 @@ func (s *Service) ActivitySaved(ctx context.Context, tx *sql.Tx, ev activities.S
 	}
 	if ev.Status != activities.StatusDone || ev.AssetID == 0 {
 		if exists && !voided.Valid {
-			_, err := tx.ExecContext(ctx, `UPDATE asset_maintenance_histories SET voided_at = ?, voided_by = ?, void_reason = ?, updated_at = ? WHERE id = ?`,
-				now, database.NullInt64(ev.ActorID), "Kegiatan tidak lagi selesai atau tidak terkait perangkat", now, id)
-			return err
+			if _, err := tx.ExecContext(ctx, `UPDATE asset_maintenance_histories SET voided_at = ?, voided_by = ?, void_reason = ?, updated_at = ? WHERE id = ?`,
+				now, database.NullInt64(ev.ActorID), "Kegiatan tidak lagi selesai atau tidak terkait perangkat", now, id); err != nil {
+				return err
+			}
+			return restoreStock(ctx, tx, id, now) // entri kegiatan saat ini tanpa sparepart; dijaga bila kelak ada
 		}
 		return nil
 	}
@@ -402,8 +430,7 @@ func (s *Service) Stats(ctx context.Context, assetID int64) (Stats, error) {
 	if err != nil {
 		return st, err
 	}
-	costQ := `SELECT COALESCE(SUM(h.service_cost), 0) + COALESCE(SUM((SELECT SUM(p.line_cost) FROM maintenance_parts p WHERE p.maintenance_history_id = h.id)), 0)
-	            FROM asset_maintenance_histories h WHERE h.asset_id = ? AND h.voided_at IS NULL`
+	costQ := `SELECT COALESCE(SUM(h.service_cost), 0) FROM asset_maintenance_histories h WHERE h.asset_id = ? AND h.voided_at IS NULL`
 	if err := s.db.QueryRowContext(ctx, costQ, assetID).Scan(&st.CostAll); err != nil {
 		return st, err
 	}
@@ -416,7 +443,7 @@ func (s *Service) History(ctx context.Context, assetID int64) ([]Entry, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT h.id, h.asset_id, h.maintenance_type, h.source, h.ticket_id, t.ticket_no, h.ticket_cycle, h.activity_id, a.activity_no,
 		       tc.name, u.full_name, h.complaint, h.action_taken, h.result, h.started_at, h.finished_at, h.repair_minutes,
-		       h.downtime_minutes, h.service_cost, (SELECT SUM(p.line_cost) FROM maintenance_parts p WHERE p.maintenance_history_id = h.id),
+		       h.downtime_minutes, h.service_cost,
 		       h.asset_status_after, h.notes, h.voided_at, h.void_reason, vu.full_name
 		  FROM asset_maintenance_histories h
 		  LEFT JOIN tickets t ON t.id = h.ticket_id
@@ -434,7 +461,7 @@ func (s *Service) History(ctx context.Context, assetID int64) ([]Entry, error) {
 		var e Entry
 		if err := rows.Scan(&e.ID, &e.AssetID, &e.Type, &e.Source, &e.TicketID, &e.TicketNo, &e.TicketCycle, &e.ActivityID, &e.ActivityNo,
 			&e.CategoryName, &e.PerformerName, &e.Complaint, &e.Action, &e.Result, &e.StartedAt, &e.FinishedAt, &e.RepairMinutes,
-			&e.DowntimeMinutes, &e.ServiceCost, &e.PartsCost, &e.StatusAfter, &e.Notes, &e.VoidedAt, &e.VoidReason, &e.VoiderName); err != nil {
+			&e.DowntimeMinutes, &e.ServiceCost, &e.StatusAfter, &e.Notes, &e.VoidedAt, &e.VoidReason, &e.VoiderName); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -446,7 +473,7 @@ func (s *Service) History(ctx context.Context, assetID int64) ([]Entry, error) {
 		return out, nil
 	}
 	prow, err := s.db.QueryContext(ctx, `
-		SELECT p.maintenance_history_id, sp.name, sp.unit, p.quantity, p.unit_cost, p.line_cost
+		SELECT p.maintenance_history_id, sp.name, sp.unit, p.quantity
 		  FROM maintenance_parts p JOIN spare_parts sp ON sp.id = p.spare_part_id
 		  JOIN asset_maintenance_histories h ON h.id = p.maintenance_history_id
 		 WHERE h.asset_id = ? ORDER BY p.id`, assetID)
@@ -457,12 +484,11 @@ func (s *Service) History(ctx context.Context, assetID int64) ([]Entry, error) {
 	for prow.Next() {
 		var hid int64
 		var p PartUsed
-		if err := prow.Scan(&hid, &p.Name, &p.Unit, &p.Qty, &p.UnitCost, &p.LineCost); err != nil {
+		if err := prow.Scan(&hid, &p.Name, &p.Unit, &p.Qty); err != nil {
 			return nil, err
 		}
 		if i, ok := idx[hid]; ok {
-			p.Qty = strings.TrimSuffix(strings.TrimSuffix(p.Qty, "0"), ".0")
-			p.Qty = strings.TrimSuffix(p.Qty, ".")
+			p.Qty = web.FormatQty(p.Qty)
 			out[i].Parts = append(out[i].Parts, p)
 		}
 	}
@@ -521,9 +547,9 @@ func (s *Service) Alerts(ctx context.Context, open bool, limit int) ([]Alert, er
 	return out, rows.Err()
 }
 
-// SpareParts mengembalikan sparepart aktif.
+// SpareParts mengembalikan sparepart aktif beserta stoknya.
 func (s *Service) SpareParts(ctx context.Context) ([]Option, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, CONCAT(name, ' (', unit, ')'), default_unit_cost FROM spare_parts WHERE is_active = TRUE ORDER BY name`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, CONCAT(name, ' (', unit, ')'), stock, stock <= 0 FROM spare_parts WHERE is_active = TRUE ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -531,9 +557,10 @@ func (s *Service) SpareParts(ctx context.Context) ([]Option, error) {
 	var out []Option
 	for rows.Next() {
 		var o Option
-		if err := rows.Scan(&o.ID, &o.Label, &o.Cost); err != nil {
+		if err := rows.Scan(&o.ID, &o.Label, &o.Stock, &o.Empty); err != nil {
 			return nil, err
 		}
+		o.Stock = web.FormatQty(o.Stock)
 		out = append(out, o)
 	}
 	return out, rows.Err()
@@ -704,6 +731,9 @@ func (s *Service) Void(ctx context.Context, u *rbac.User, entryID int64, reason 
 			now, u.ID, reason, now, entryID); err != nil {
 			return err
 		}
+		if err := restoreStock(ctx, tx, entryID, now); err != nil {
+			return err
+		}
 		return audit.Record(ctx, tx, now, audit.Entry{Action: "maintenance.void", EntityType: "asset_maintenance_histories", EntityID: entryID,
 			After: map[string]string{"reason": reason}})
 	})
@@ -779,21 +809,4 @@ func decisionLabel(d string) string {
 		return "diusulkan penggantian"
 	}
 	return "lainnya"
-}
-
-// addDecimal menjumlahkan dua string desimal ("" dianggap kosong).
-func addDecimal(a, b string) string {
-	if a == "" && b == "" {
-		return ""
-	}
-	x, _ := new(big.Rat).SetString(defaultZero(a))
-	y, _ := new(big.Rat).SetString(defaultZero(b))
-	return new(big.Rat).Add(x, y).FloatString(2)
-}
-
-func defaultZero(s string) string {
-	if s == "" {
-		return "0"
-	}
-	return s
 }

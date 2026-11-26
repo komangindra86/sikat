@@ -245,6 +245,9 @@ type Category struct {
 	IsTriage       bool
 	// ITCategoryHelp: penjelasan bidang dengan bahasa awam untuk pelapor.
 	ITCategoryHelp sql.NullString
+	// ProposalKind terisi (DEVICE/SYSTEM) = di form lapor publik pilihan ini membuka
+	// form kajian kebutuhan, bukan membuat tiket.
+	ProposalKind sql.NullString
 }
 
 // Option adalah pilihan select umum.

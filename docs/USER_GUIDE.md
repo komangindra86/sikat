@@ -41,6 +41,19 @@ pegawai), **petugas IT**, dan **koordinator IT**. Admin IT: lihat ADMIN_GUIDE.md
 Tidak bisa scan QR? Hubungi IT lewat telepon/WA — petugas akan mencatatkan
 laporan Anda.
 
+### Meminta perangkat atau sistem baru
+
+Permintaan perangkat atau sistem/aplikasi baru memakai **kajian kebutuhan**, bukan
+laporan gangguan.
+
+1. Siapkan dokumen kajian (PDF, Word, atau Excel, maks. 10 MB).
+2. Scan QR lapor, lalu pilih **Administrasi & Inventaris › Permintaan perangkat baru**
+   atau **System Developer › Usulan sistem atau fitur baru**. Form kajian terbuka.
+3. Isi nama, unit, jenis kebutuhan, judul, dan ringkasan, lampirkan dokumen, lalu
+   **Kirim kajian**.
+4. Simpan **link status** yang muncul. Di sana terlihat apakah kajian sudah
+   **diterima Admin IT**, beserta catatan dari admin bila ada.
+
 ---
 
 ## 2. Petugas IT
@@ -72,7 +85,7 @@ Di halaman detail tiket:
 | **Mulai kerjakan** | Status → Sedang Dikerjakan |
 | **Tunda** | Pilih alasan (mis. menunggu sparepart); SLA berhenti hanya bila alasan & kebijakan mengizinkan |
 | **Lanjutkan** | Kembali dikerjakan |
-| **Selesaikan** | Isi tindakan (boleh pakai template), hasil, waktu layanan pulih; untuk perangkat: sparepart, biaya, kondisi perangkat. Riwayat perangkat terisi otomatis. |
+| **Selesaikan** | Isi tindakan (boleh pakai template), hasil, waktu layanan pulih; untuk perangkat: sparepart dan jumlahnya (stok berkurang otomatis; sparepart yang habis tidak bisa dipilih), biaya jasa/vendor, kondisi perangkat. Riwayat perangkat terisi otomatis. |
 | **Kembalikan ke antrean** | Bila tidak dapat menangani |
 | **Tambah anggota pendukung** | Petugas lain ikut menangani |
 | **Koreksi jenis gangguan** | Bila jenis yang dipilih pelapor keliru; tiket pindah ke bidang yang tepat |

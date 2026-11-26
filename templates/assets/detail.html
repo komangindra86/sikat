@@ -139,7 +139,7 @@
       {{if .CategoryName.Valid}}<div class="mt-1 text-sm"><span class="text-muted-foreground">Jenis kerusakan:</span> {{.CategoryName.String}}</div>{{end}}
       {{if .Complaint.Valid}}<div class="text-sm"><span class="text-muted-foreground">Keluhan:</span> "{{truncate 160 .Complaint.String}}"</div>{{end}}
       <div class="text-sm"><span class="text-muted-foreground">Tindakan:</span> {{.Action}}</div>
-      {{if .Parts}}<div class="text-sm"><span class="text-muted-foreground">Sparepart:</span> {{range $i, $p := .Parts}}{{if $i}}, {{end}}{{$p.Name}} × {{$p.Qty}}{{if $p.LineCost.Valid}} ({{money $p.LineCost.String}}){{end}}{{end}}</div>{{end}}
+      {{if .Parts}}<div class="text-sm"><span class="text-muted-foreground">Sparepart:</span> {{range $i, $p := .Parts}}{{if $i}}, {{end}}{{$p.Name}} × {{$p.Qty}} {{$p.Unit}}{{end}}</div>{{end}}
       <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span>Petugas: {{if .PerformerName.Valid}}{{.PerformerName.String}}{{else}}–{{end}}</span>
         <span>Hasil: {{label "maintenance_result" .Result}}</span>

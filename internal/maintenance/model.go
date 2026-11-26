@@ -26,7 +26,6 @@ type Entry struct {
 	RepairMinutes   sql.NullInt64
 	DowntimeMinutes sql.NullInt64
 	ServiceCost     sql.NullString
-	PartsCost       sql.NullString
 	StatusAfter     sql.NullString
 	Notes           sql.NullString
 	VoidedAt        sql.NullTime
@@ -35,16 +34,15 @@ type Entry struct {
 	Parts           []PartUsed
 }
 
-// TotalCost menjumlahkan biaya jasa dan sparepart (string desimal, "" bila tidak ada).
-func (e Entry) TotalCost() string { return addDecimal(e.ServiceCost.String, e.PartsCost.String) }
+// TotalCost adalah biaya jasa/vendor entri (string desimal, "" bila tidak ada).
+// Sparepart tidak berharga; pemakaiannya mengurangi stok.
+func (e Entry) TotalCost() string { return e.ServiceCost.String }
 
 // PartUsed adalah sparepart yang dipakai pada satu entri.
 type PartUsed struct {
-	Name     string
-	Unit     string
-	Qty      string
-	UnitCost sql.NullString
-	LineCost sql.NullString
+	Name string
+	Unit string
+	Qty  string
 }
 
 // Stats adalah statistik perangkat.
@@ -83,11 +81,12 @@ type Alert struct {
 	UpdatedAt      time.Time
 }
 
-// Option adalah pilihan select.
+// Option adalah pilihan sparepart: label, stok (terformat), dan apakah stok habis.
 type Option struct {
 	ID    int64
 	Label string
-	Cost  sql.NullString
+	Stock string
+	Empty bool
 }
 
 // AssetView adalah seluruh data pemeliharaan untuk halaman detail perangkat.

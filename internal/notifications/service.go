@@ -388,7 +388,7 @@ func audienceFor(ev outboxRow, ti *ticketInfo) audience {
 			return audPool
 		}
 		return audTeam
-	case RepeatDamage:
+	case RepeatDamage, LicenseExpiry, ProposalSubmitted:
 		return audAll
 	}
 	return audNone

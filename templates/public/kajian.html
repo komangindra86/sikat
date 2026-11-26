@@ -1,0 +1,73 @@
+{{template "public" .}}
+{{define "content"}}
+{{$d := .Data}}{{$p := .}}
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/q/{{$d.Token}}" class="hover:underline">Lapor gangguan</a> › Kajian kebutuhan</nav>
+<h1 class="text-xl font-bold text-foreground">Kirim kajian kebutuhan</h1>
+<p class="mt-1 text-sm text-muted-foreground">Permintaan perangkat baru atau usulan sistem/fitur baru dikirim sebagai kajian kebutuhan, bukan laporan gangguan. Siapkan dokumen kajian Anda lebih dulu, lalu lampirkan di sini. Kajian diterima dan diarsipkan oleh Admin IT.</p>
+
+<form method="post" action="/q/{{$d.Token}}/kajian" enctype="multipart/form-data" class="mt-4 space-y-5" novalidate>
+  {{template "csrf" .CSRFToken}}
+  {{template "form-errors" .}}
+  <div class="hp" aria-hidden="true"><label>Jangan diisi <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+  <div class="card card-body space-y-4">
+    <div>
+      <label class="label" for="requester_name">Nama Anda <span class="text-bad" aria-hidden="true">*</span></label>
+      <input class="input {{if $p.Err "requester_name"}}input-error{{end}}" id="requester_name" name="requester_name" type="text" maxlength="120" value="{{index $d.Form "requester_name"}}" autocomplete="name" data-remember="sikat_reporter_name" required
+        {{- if $d.Suggest}} list="saran-pegawai" hx-get="/q/{{$d.Token}}/pegawai" hx-trigger="input changed delay:300ms" hx-target="#saran-pegawai" hx-swap="innerHTML" hx-sync="this:replace"{{end}}>
+      {{if $d.Suggest}}<datalist id="saran-pegawai"></datalist>
+      <p class="help">Ketik minimal 3 huruf untuk memilih nama Anda, atau isi bebas.</p>{{end}}
+      {{with $p.Err "requester_name"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    <div>
+      <label class="label" for="department_id">Unit pemohon <span class="text-bad" aria-hidden="true">*</span></label>
+      <select class="input {{if $p.Err "department_id"}}input-error{{end}}" id="department_id" name="department_id" required>
+        <option value="">Pilih unit…</option>
+        {{range $d.Departments}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $d.Form "department_id")}}selected{{end}}>{{.Label}}</option>{{end}}
+      </select>
+      {{with $p.Err "department_id"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    <div>
+      <label class="label" for="requester_phone">No. HP / ekstensi (opsional)</label>
+      <input class="input {{if $p.Err "requester_phone"}}input-error{{end}}" id="requester_phone" name="requester_phone" type="tel" maxlength="30" value="{{index $d.Form "requester_phone"}}" autocomplete="tel" data-remember="sikat_reporter_phone">
+      {{with $p.Err "requester_phone"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+  </div>
+
+  <fieldset class="card card-body">
+    <legend class="label text-base">Jenis kebutuhan <span class="text-bad" aria-hidden="true">*</span></legend>
+    <div class="mt-2 grid gap-2">
+      {{range labels "proposal_kind"}}
+      <label class="choice">
+        <input type="radio" name="kind" value="{{.Value}}" class="sr-only" {{if eq .Value (index $d.Form "kind")}}checked{{end}}>
+        <span class="block font-bold text-foreground">{{.Label}}</span>
+      </label>
+      {{end}}
+    </div>
+    {{with $p.Err "kind"}}<p class="error-text">{{.}}</p>{{end}}
+  </fieldset>
+
+  <div class="card card-body space-y-4">
+    <div>
+      <label class="label" for="title">Judul kajian <span class="text-bad" aria-hidden="true">*</span></label>
+      <input class="input {{if $p.Err "title"}}input-error{{end}}" id="title" name="title" type="text" maxlength="200" value="{{index $d.Form "title"}}" placeholder="Contoh: Pengadaan printer label untuk Farmasi" required>
+      {{with $p.Err "title"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    <div>
+      <label class="label" for="summary">Ringkasan kebutuhan <span class="text-bad" aria-hidden="true">*</span></label>
+      <textarea class="input {{if $p.Err "summary"}}input-error{{end}}" id="summary" name="summary" rows="4" maxlength="2000" placeholder="Apa yang dibutuhkan, berapa banyak, dan untuk apa" required>{{index $d.Form "summary"}}</textarea>
+      {{with $p.Err "summary"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    <div>
+      <label class="label" for="document">Dokumen kajian <span class="text-bad" aria-hidden="true">*</span></label>
+      <input class="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-tema file:px-4 file:font-bold file:text-aksen" id="document" name="document" type="file" accept="{{$d.Accept}}" required>
+      <p class="help">PDF, Word, atau Excel, maksimal {{$d.MaxMB}} MB.</p>
+      {{if $p.Errors}}{{if not ($p.Err "document")}}<p class="help font-bold text-warn">Pilih ulang dokumen sebelum mengirim lagi.</p>{{end}}{{end}}
+      {{with $p.Err "document"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary btn-block min-h-14 text-base" data-busy-text="Mengirim…">Kirim kajian</button>
+  <p class="text-center text-xs text-muted-foreground">Untuk gangguan perangkat atau aplikasi yang sudah ada, gunakan <a href="/q/{{$d.Token}}" class="hover:underline">form lapor gangguan</a>.{{with .ITContact}} Kontak IT: {{.}}.{{end}}</p>
+</form>
+{{end}}

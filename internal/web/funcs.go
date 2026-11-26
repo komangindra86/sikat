@@ -23,6 +23,7 @@ func (r *Renderer) funcs() template.FuncMap {
 		"labels":    Labels,
 		"tone":      Tone,
 		"money":     FormatMoney,
+		"qty":       FormatQty,
 		"dict":      dict,
 		"add":       func(a, b int) int { return a + b },
 		"join":      strings.Join,
@@ -205,6 +206,30 @@ func minutesText(v any) string {
 		return strconv.FormatInt(d, 10) + " hari " + strconv.FormatInt(h, 10) + " j"
 	}
 	return humanDuration(time.Duration(m) * time.Minute)
+}
+
+// FormatDate memformat tanggal "2026-12-31" menjadi "31 Desember 2026" ("–" bila kosong).
+func FormatDate(v string) string {
+	d, err := time.Parse("2006-01-02", strings.TrimSpace(v))
+	if err != nil {
+		if strings.TrimSpace(v) == "" {
+			return "–"
+		}
+		return v
+	}
+	return strconv.Itoa(d.Day()) + " " + bulanID[d.Month()-1] + " " + strconv.Itoa(d.Year())
+}
+
+// FormatQty memformat jumlah desimal tanpa nol di belakang: "12.00" → "12", "2.50" → "2,5".
+func FormatQty(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return "–"
+	}
+	if strings.Contains(v, ".") {
+		v = strings.TrimRight(strings.TrimRight(v, "0"), ".")
+	}
+	return strings.Replace(v, ".", ",", 1)
 }
 
 // FormatMoney memformat angka desimal ("175000.00") menjadi "Rp 175.000".

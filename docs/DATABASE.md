@@ -1,7 +1,7 @@
 # SIKAT — Rancangan Database
 
 > Status: **sesuai implementasi (PHASE 9).** Sumber kebenaran skema adalah migrasi
-> goose di folder [`migrations/`](../migrations) (00001–00012, 00015–00018); dokumen ini
+> goose di folder [`migrations/`](../migrations) (00001–00012, 00015–00021); dokumen ini
 > menjelaskan maksud & aturannya. `schema-draft.sql` adalah rancangan PHASE 0
 > (referensi sejarah; perbedaan dicatat di §0). Diagram relasi: [`ERD.md`](ERD.md).
 
@@ -25,6 +25,9 @@
 | 00015_uniform_codes | Kode lama diseragamkan ke format otomatis (UNT/RNG/BDG/KAT/ALS/SPR/PRK); `legacy_codes` (kode sebelum diseragamkan); `pending_reasons.requires_note` |
 | 00017_lapor_per_bidang | QR jenis `GLOBAL` (satu yang aktif, `active_global`); `it_categories.reporter_help` (penjelasan bidang untuk pelapor); jenis gangguan Mutu, hak akses, dan "Lainnya (bidang)"; `lapor_per_bidang_lama` (untuk Down) |
 | 00018_pegawai_dari_simrs | Tabel `employees` dihapus (nama pegawai diambil dari API pegawai SIMRS); jejak integrasi pegawai dihapus dan `EMPLOYEE` dibuang dari `entity_type` tabel integrasi. Down membuat ulang tabel kosong |
+| 00021_kajian | Tabel `proposals` (arsip kajian kebutuhan perangkat/sistem baru beserta metadata dokumennya; status `SUBMITTED` → `RECEIVED`) preferensi notifikasi `PROPOSAL_SUBMITTED` (Admin: push), dan `ticket_categories.proposal_kind` (jenis gangguan jalur kajian: "Permintaan perangkat baru" = DEVICE, "Usulan sistem atau fitur baru" = SYSTEM). Down menghapus tabel, kolom, preferensi, dan notifikasinya; file dokumen di disk tidak dihapus |
+| 00020_lisensi | Tabel `licenses` (daftar lisensi, `expires_at` NULL = tanpa batas, `CHECK started_at <= expires_at`) dan preferensi notifikasi `LICENSE_EXPIRY` (Admin: push). Down menghapus tabel, preferensi, dan notifikasi lisensi |
+| 00019_stok_sparepart | `spare_parts.default_unit_cost` dihapus; `spare_parts.stock` DECIMAL(10,2) ditambahkan (awal 0, `CHECK stock >= 0`). Down mengembalikan kolom harga (kosong) dan menghapus stok |
 | 00016_bidang_fungsi | Bidang mengikuti 6 koordinator (Pelayanan & Support, Administrasi & Inventaris, Mutu, ERM, System Developer, Keamanan Sistem); bidang teknis lama dilebur dan dinonaktifkan, rujukannya dipindah; jenis gangguan & jenis kegiatan baru; `bidang_lama`, `bidang_lama_relasi` (untuk Down) |
 
 Perbedaan penting dari rancangan: `push_deliveries` ditambahkan (antrean push per
@@ -88,8 +91,10 @@ Tabel dari master prompt (✓) dan tambahan yang diperlukan (＋) beserta alasan
 | `assets` | ✓ | Master perangkat | `asset_code` unik; field selain kode/nama/kategori opsional |
 | `qr_codes` | ✓ | Token QR ruangan/perangkat | CHECK target sesuai tipe; UNIQUE generated → **satu QR aktif per ruangan/perangkat**; regenerate = nonaktifkan lama + buat baru (`generation`, `replaced_by_id`) |
 | `asset_maintenance_histories` | ✓ | Timeline perbaikan/pemeliharaan perangkat | `repair_minutes` & `downtime_minutes` = generated column; UNIQUE (tiket, perangkat, siklus) mencegah entri ganda; CHECK sumber |
-| `spare_parts` | ✓ | Katalog sparepart (tanpa stok) | – |
-| `maintenance_parts` | ✓ | Sparepart per entri pemeliharaan | `line_cost` generated = qty × harga |
+| `spare_parts` | ✓ | Katalog sparepart + stok | `stock` ≥ 0 |
+| `proposals` | ＋ | Arsip kajian kebutuhan perangkat/sistem baru dari pemohon (tanpa login) | token link status disimpan sebagai SHA-256 (unik); dokumen PDF/Word/Excel di `storage/kajian` (`file_key`, `file_sha256`); CHECK status `RECEIVED` ⇔ `received_at` terisi |
+| `licenses` | ＋ | Lisensi perangkat lunak/layanan dan tanggal berakhirnya | `code` unik; `started_at` ≤ `expires_at`; index (`is_active`, `expires_at`) untuk pemeriksaan pengingat |
+| `maintenance_parts` | ✓ | Sparepart per entri pemeliharaan | `unit_cost`/`line_cost` arsip harga sebelum 00019 (tidak dipakai aplikasi) |
 | `asset_alerts` | ＋ | Peringatan kerusakan berulang + keputusan koordinator | UNIQUE generated → maks satu alert terbuka per perangkat; CHECK alert ditutup wajib punya keputusan |
 
 ### 2.4 Tiket
@@ -185,13 +190,20 @@ Statistik halaman perangkat:
 | Jumlah perbaikan | `COUNT(asset_maintenance_histories)` tipe CORRECTIVE |
 | Gangguan berulang | tiket dalam jendela `repeat_damage.window_days` |
 | Total downtime | `SUM(downtime_minutes)` |
-| Total biaya | `SUM(service_cost) + SUM(maintenance_parts.line_cost)` |
+| Total biaya | `SUM(service_cost)` (biaya jasa/vendor; sparepart tidak berharga sejak 00019) |
 | Perawatan terakhir | `MAX(finished_at)` |
 
-### 3.4 Sparepart tanpa stok
+### 3.4 Stok sparepart
 
-Asumsi PHASE 0: `spare_parts` hanya katalog + harga acuan; tidak ada stok
-masuk/keluar. Sparepart dicatat pada entri pemeliharaan perangkat. Tiket tanpa
+Sejak 00019 `spare_parts` menyimpan stok tanpa harga. Admin mengisi dan
+menyesuaikan stok di Master Data › Sparepart (nilai mutlak, tercatat di jejak
+audit perubahan master). Saat sparepart dicatat pada entri pemeliharaan, baris
+sparepart dikunci (`SELECT ... FOR UPDATE`), pemakaian per sparepart dijumlahkan
+dan ditolak bila melebihi stok, lalu `stock` dikurangi dalam transaksi yang sama.
+Membatalkan entri (void) mengembalikan stok sebanyak `maintenance_parts.quantity`
+entri itu. Tidak ada tabel mutasi stok masuk/keluar terpisah.
+
+Sparepart dicatat pada entri pemeliharaan perangkat. Tiket tanpa
 perangkat terdaftar tidak mencatat sparepart (form penyelesaian akan mendorong
 petugas menautkan perangkat).
 

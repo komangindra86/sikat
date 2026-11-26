@@ -19,7 +19,7 @@ flowchart LR
     AST["Perangkat & QR<br/>asset_categories, assets, qr_codes"]
     TKT["Tiket<br/>tickets, ticket_assignments,<br/>ticket_histories, ticket_comments,<br/>attachments, number_sequences"]
     SLA["Prioritas & SLA<br/>priority_rules, sla_policies,<br/>sla_calendars, sla_calendar_hours,<br/>sla_holidays, sla_escalations"]
-    MNT["Pemeliharaan<br/>asset_maintenance_histories,<br/>spare_parts, maintenance_parts,<br/>asset_alerts"]
+    MNT["Pemeliharaan<br/>asset_maintenance_histories,<br/>spare_parts, maintenance_parts,<br/>asset_alerts, licenses,<br/>proposals"]
     ACT["Kegiatan Internal<br/>internal_activities, activity_members"]
     NTF["Notifikasi<br/>outbox_events, notifications,<br/>push_subscriptions,<br/>notification_preferences"]
     INT["Integrasi<br/>integration_configs,<br/>integration_sync_logs,<br/>external_id_mappings"]
@@ -375,15 +375,36 @@ erDiagram
         varchar code UK
         varchar name
         varchar unit
-        decimal default_unit_cost
+        decimal stock
+    }
+    proposals {
+        bigint id PK
+        binary public_token_hash UK
+        enum kind "DEVICE/SYSTEM"
+        varchar title
+        bigint department_id FK
+        varchar requester_name
+        varchar file_key "storage/kajian"
+        enum status "SUBMITTED/RECEIVED"
+        bigint received_by FK
+    }
+    licenses {
+        bigint id PK
+        varchar code UK
+        varchar name
+        varchar vendor
+        int quantity
+        date started_at
+        date expires_at "NULL = tanpa batas"
+        boolean is_active
     }
     maintenance_parts {
         bigint id PK
         bigint maintenance_history_id FK
         bigint spare_part_id FK
         decimal quantity
-        decimal unit_cost
-        decimal line_cost "generated"
+        decimal unit_cost "arsip"
+        decimal line_cost "arsip, generated"
     }
     asset_alerts {
         bigint id PK

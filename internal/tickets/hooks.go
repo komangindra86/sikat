@@ -16,9 +16,8 @@ type CreatedEvent struct {
 
 // PartLine adalah satu baris sparepart dari form penyelesaian (nilai mentah).
 type PartLine struct {
-	PartID   string
-	Qty      string
-	UnitCost string
+	PartID string
+	Qty    string
 }
 
 // ResolvedEvent dikirim ke Hooks saat tiket yang terkait perangkat diselesaikan.

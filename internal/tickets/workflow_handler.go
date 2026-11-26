@@ -318,17 +318,14 @@ func (h *Handler) addPhotos(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PartLinesFrom membaca baris sparepart dari form (part_id[], part_qty[], part_cost[]).
+// PartLinesFrom membaca baris sparepart dari form (part_id[], part_qty[]).
 func PartLinesFrom(r *http.Request) []PartLine {
-	ids, qtys, costs := r.PostForm["part_id"], r.PostForm["part_qty"], r.PostForm["part_cost"]
+	ids, qtys := r.PostForm["part_id"], r.PostForm["part_qty"]
 	var out []PartLine
 	for i, id := range ids {
 		l := PartLine{PartID: id}
 		if i < len(qtys) {
 			l.Qty = qtys[i]
-		}
-		if i < len(costs) {
-			l.UnitCost = costs[i]
 		}
 		out = append(out, l)
 	}

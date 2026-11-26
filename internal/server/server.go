@@ -25,11 +25,13 @@ import (
 	"sikat/internal/config"
 	"sikat/internal/dashboard"
 	"sikat/internal/integration"
+	"sikat/internal/licenses"
 	"sikat/internal/maintenance"
 	"sikat/internal/master"
 	"sikat/internal/middleware"
 	"sikat/internal/notifications"
 	"sikat/internal/priority"
+	"sikat/internal/proposals"
 	"sikat/internal/qrcodes"
 	"sikat/internal/rbac"
 	"sikat/internal/reports"
@@ -208,6 +210,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	maintH := &maintenance.Handler{Service: maintSvc, Renderer: renderer, Require: guard.Require, RenderAsset: assetH.RenderDetail}
 	slaSvc := ticketSvc.SLA()
 	slaH := &sla.Handler{Service: slaSvc, Renderer: renderer, Require: guard.Require}
+	licenseChecker := licenses.Checker{DB: d.DB, Clock: d.Clock}
 	runner := &worker.Runner{DB: d.DB, Log: d.Log, LockName: "sikat_worker", Jobs: []worker.Job{{
 		Name: "periksa-sla", Interval: time.Minute,
 		Run: func(ctx context.Context) error {
@@ -274,6 +277,16 @@ func New(ctx context.Context, d Deps) (*App, error) {
 			return err
 		},
 	}, {
+		// Pengingat lisensi yang mendekati/melewati tanggal berakhir (ke Admin IT).
+		Name: "periksa-lisensi", Interval: time.Hour,
+		Run: func(ctx context.Context) error {
+			n, err := licenseChecker.Check(ctx)
+			if n > 0 {
+				d.Log.Info("pengingat lisensi dikirim", "jumlah", n)
+			}
+			return err
+		},
+	}, {
 		Name: "tutup-otomatis-tiket", Interval: time.Hour,
 		Run: func(ctx context.Context) error {
 			n, err := ticketSvc.AutoClose(ctx, settingsSvc.Int(ctx, settings.KeyAutoCloseDays))
@@ -286,6 +299,15 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	publicH := &tickets.PublicHandler{Service: ticketSvc, QR: qrSvc, Settings: settingsSvc, Renderer: renderer,
 		BaseURL: d.Config.BaseURL, IPLimiter: publicLimiter, QRLimiter: qrLimiter,
 		Employees: employees, SuggestLimiter: suggestLimiter}
+	// Kajian kebutuhan: dokumen di folder terpisah dari foto (tanpa retensi otomatis).
+	proposalStore := attachments.Store{Dir: filepath.Join(d.Config.StorageDir, "kajian")}
+	if err := proposalStore.Check(); err != nil {
+		return nil, err
+	}
+	proposalSvc := proposals.NewService(d.DB, d.Clock, proposalStore)
+	proposalH := &proposals.Handler{Service: proposalSvc, Renderer: renderer, OnView: notifSvc.MarkURLRead}
+	proposalPublicH := &proposals.PublicHandler{Service: proposalSvc, QR: qrSvc, Renderer: renderer, BaseURL: d.Config.BaseURL,
+		IPLimiter: publicLimiter, QRLimiter: qrLimiter, Suggest: employees != nil}
 	userH := &users.Handler{Service: users.NewService(d.DB, d.Clock), Renderer: renderer}
 	settingsH := &settings.Handler{Service: settingsSvc, Renderer: renderer}
 	integH := &integration.Handler{Service: integSvc, Renderer: renderer}
@@ -319,6 +341,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	app.Group(func(r chi.Router) {
 		r.Use(middleware.NoStore)
 		publicH.Routes(r)
+		proposalPublicH.Routes(r)
 	})
 
 	app.Route("/app", func(r chi.Router) {
@@ -336,6 +359,7 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		r.With(guard.Require(rbac.PermConfigManage)).Get("/priority/test", priorityH.Test)
 		r.With(guard.Require(rbac.PermTicketQueue)).Route("/tickets", ticketH.Routes)
 		r.With(guard.Require(rbac.PermActivityCreate)).Route("/activities", activityH.Routes)
+		r.With(guard.Require(rbac.PermProposalManage)).Route("/kajian", proposalH.Routes)
 		r.Route("/maintenance", maintH.Routes)
 		r.Route("/sla", slaH.Routes)
 		r.Route("/notifications", notifH.Routes)

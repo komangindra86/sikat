@@ -889,8 +889,6 @@ func runActivities(ctx context.Context, s *Service, f Filter) (Table, error) {
 // Perangkat: sering rusak, pemeliharaan, downtime
 // ---------------------------------------------------------------------------
 
-const partsCost = `COALESCE((SELECT SUM(p.line_cost) FROM maintenance_parts p WHERE p.maintenance_history_id = h.id), 0)`
-
 func runRepeatDamage(ctx context.Context, s *Service, f Filter) (Table, error) {
 	threshold := s.RepeatThreshold(ctx)
 	if threshold < 2 {
@@ -914,7 +912,7 @@ func runRepeatDamage(ctx context.Context, s *Service, f Filter) (Table, error) {
 		SELECT x.id, x.name, x.asset_code, d.name, COUNT(*) n, MAX(t.created_at),
 		       (SELECT SUM(h.downtime_minutes) FROM asset_maintenance_histories h
 		         WHERE h.asset_id = x.id AND h.voided_at IS NULL AND h.finished_at >= ? AND h.finished_at < ?),
-		       (SELECT SUM(COALESCE(h.service_cost, 0) + `+partsCost+`) FROM asset_maintenance_histories h
+		       (SELECT SUM(h.service_cost) FROM asset_maintenance_histories h
 		         WHERE h.asset_id = x.id AND h.voided_at IS NULL AND h.finished_at >= ? AND h.finished_at < ?),
 		       (SELECT al.recommendation FROM asset_alerts al WHERE al.asset_id = x.id AND al.status <> 'CLOSED' LIMIT 1)
 		  FROM tickets t JOIN assets x ON x.id = t.asset_id LEFT JOIN departments d ON d.id = x.department_id
@@ -957,7 +955,7 @@ func runMaintenance(ctx context.Context, s *Service, f Filter) (Table, error) {
 	c := f.maintenanceCond()
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT x.id, h.finished_at, x.name, x.asset_code, d.name, h.maintenance_type, h.source, tk.ticket_no, h.action_taken, h.result,
-		       u.full_name, h.repair_minutes, h.service_cost + 0, `+partsCost+`
+		       u.full_name, h.repair_minutes, h.service_cost + 0
 		  FROM asset_maintenance_histories h
 		  JOIN assets x ON x.id = h.asset_id
 		  LEFT JOIN departments d ON d.id = x.department_id
@@ -975,17 +973,12 @@ func runMaintenance(ctx context.Context, s *Service, f Filter) (Table, error) {
 		var finished time.Time
 		var name, code, typ, src, action, result string
 		var dept, ticketNo, perf sql.NullString
-		var repair, service sql.NullFloat64
-		var parts float64
-		if err := rows.Scan(&assetID, &finished, &name, &code, &dept, &typ, &src, &ticketNo, &action, &result, &perf, &repair, &service, &parts); err != nil {
+		var repair, cost sql.NullFloat64
+		if err := rows.Scan(&assetID, &finished, &name, &code, &dept, &typ, &src, &ticketNo, &action, &result, &perf, &repair, &cost); err != nil {
 			return t, err
 		}
 		assets[assetID] = true
-		cost := sql.NullFloat64{}
-		if service.Valid || parts > 0 {
-			cost = sql.NullFloat64{Float64: service.Float64 + parts, Valid: true}
-			totalCost += cost.Float64
-		}
+		totalCost += cost.Float64
 		srcText := web.Label("maintenance_source", src)
 		if ticketNo.Valid {
 			srcText += " " + ticketNo.String
@@ -1007,7 +1000,7 @@ func runMaintenance(ctx context.Context, s *Service, f Filter) (Table, error) {
 		{"Perangkat", formatInt(int64(len(assets))), ""},
 		{"Total biaya", moneyCell(sql.NullFloat64{Float64: totalCost, Valid: true}).Text, ""},
 	}
-	t.Notes = []string{"Catatan yang dibatalkan tidak ditampilkan. Biaya = jasa + sparepart yang dicatat."}
+	t.Notes = []string{"Catatan yang dibatalkan tidak ditampilkan. Biaya = biaya jasa/vendor yang dicatat."}
 	return t, nil
 }
 

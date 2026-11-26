@@ -116,13 +116,21 @@ type Store struct {
 	Dir string
 }
 
-// Save menulis data dengan nama acak di subfolder tahun/bulan dan mengembalikan kuncinya.
+// Save menulis foto JPEG dengan nama acak di subfolder tahun/bulan dan mengembalikan kuncinya.
 func (s Store) Save(data []byte, now time.Time) (string, error) {
+	return s.SaveExt(data, now, "jpg")
+}
+
+// SaveExt seperti Save dengan ekstensi file sendiri (mis. "pdf" untuk dokumen kajian).
+func (s Store) SaveExt(data []byte, now time.Time, ext string) (string, error) {
+	if ext == "" || strings.ContainsAny(ext, "./\\") {
+		return "", errors.New("ekstensi file tidak valid")
+	}
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	key := fmt.Sprintf("%04d/%02d/%s.jpg", now.Year(), int(now.Month()), hex.EncodeToString(b))
+	key := fmt.Sprintf("%04d/%02d/%s.%s", now.Year(), int(now.Month()), hex.EncodeToString(b), ext)
 	full := filepath.Join(s.Dir, filepath.FromSlash(key))
 	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
 		return "", err

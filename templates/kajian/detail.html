@@ -1,0 +1,55 @@
+{{template "base" .}}
+{{define "content"}}
+{{$d := .Data}}{{$k := $d.P}}{{$p := .}}
+<nav class="mb-2 text-sm text-muted-foreground"><a href="/app/kajian" class="hover:underline">Kajian kebutuhan</a> › {{$k.No}}</nav>
+<div class="flex items-start justify-between gap-3">
+  <div class="min-w-0">
+    <div class="text-sm font-bold text-muted-foreground">{{$k.No}} · {{label "proposal_kind" $k.Kind}}</div>
+    <h1 class="page-title">{{$k.Title}}</h1>
+  </div>
+  <span class="badge badge-{{tone "proposal_status" $k.Status}} shrink-0 text-sm">{{label "proposal_status" $k.Status}}</span>
+</div>
+
+<div class="mt-4 grid gap-4 lg:grid-cols-3">
+  <section class="card card-body lg:col-span-2" aria-labelledby="isi">
+    <h2 id="isi" class="section-title">Ringkasan kebutuhan</h2>
+    <p class="mt-2 whitespace-pre-line text-sm">{{$k.Summary}}</p>
+    <div class="mt-4 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex min-w-0 items-center gap-2">
+        <span class="icon size-5 shrink-0 text-aksen">{{template "icon" "document"}}</span>
+        <div class="min-w-0"><div class="break-all font-bold">{{$k.FileName}}</div><div class="text-xs text-muted-foreground">{{$k.SizeText}}</div></div>
+      </div>
+      <a href="/app/kajian/{{$k.ID}}/dokumen" class="btn btn-secondary shrink-0" download>Unduh dokumen</a>
+    </div>
+  </section>
+
+  <section class="card card-body" aria-labelledby="pemohon">
+    <h2 id="pemohon" class="section-title">Pemohon</h2>
+    <dl class="mt-2 space-y-1 text-sm">
+      <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Nama</dt><dd class="font-bold">{{$k.RequesterName}}</dd></div>
+      <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Unit</dt><dd>{{nullStr $k.DepartmentName}}</dd></div>
+      <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Kontak</dt><dd>{{if $k.RequesterPhone.Valid}}{{$k.RequesterPhone.String}}{{else}}–{{end}}</dd></div>
+      <div class="flex gap-2"><dt class="w-24 shrink-0 text-muted-foreground">Masuk</dt><dd>{{wita $k.CreatedAt}}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<section class="card card-body mt-4" aria-labelledby="penerimaan">
+  <h2 id="penerimaan" class="section-title">Penerimaan</h2>
+  {{if $k.Received}}
+  <p class="mt-2 text-sm">Diterima oleh <strong>{{nullStr $k.ReceivedByName}}</strong> pada {{wita $k.ReceivedAt.Time}}.</p>
+  {{with $k.ReceivedNote.String}}<div class="mt-2 text-sm"><div class="text-xs font-bold text-muted-foreground">Catatan untuk pemohon</div><p class="mt-1 whitespace-pre-line">{{.}}</p></div>{{end}}
+  {{else}}
+  <form method="post" action="/app/kajian/{{$k.ID}}/terima" class="mt-2 space-y-3">
+    {{template "csrf" .CSRFToken}}
+    <div>
+      <label class="label" for="received_note">Catatan untuk pemohon (opsional)</label>
+      <textarea class="input {{if $p.Err "received_note"}}input-error{{end}}" id="received_note" name="received_note" rows="2" maxlength="1000" placeholder="Mis. akan dibahas pada rapat anggaran berikutnya">{{index $d.Form "received_note"}}</textarea>
+      <p class="help">Tampil di link status kajian milik pemohon.</p>
+      {{with $p.Err "received_note"}}<p class="error-text">{{.}}</p>{{end}}
+    </div>
+    <button type="submit" class="btn btn-primary" data-busy-text="Menyimpan…">Terima kajian</button>
+  </form>
+  {{end}}
+</section>
+{{end}}

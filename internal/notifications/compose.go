@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"sikat/internal/clock"
+	"sikat/internal/web"
 )
 
 var priorityLabel = map[string]string{"CRITICAL": "Kritis", "HIGH": "Tinggi", "MEDIUM": "Sedang", "LOW": "Rendah"}
@@ -147,6 +148,31 @@ func compose(ev outboxRow, t *ticketInfo, actor, asset string) content {
 		c.PushBody = "Perangkat sering rusak perlu ditinjau"
 		if ev.AssetID.Valid {
 			c.URL = fmt.Sprintf("/app/assets/%d", ev.AssetID.Int64)
+		}
+	case LicenseExpiry:
+		name, days := str(p, "name"), num(p, "days")
+		switch {
+		case days > 0:
+			c.Title = fmt.Sprintf("Lisensi %s berakhir %d hari lagi", name, days)
+			c.PushBody = fmt.Sprintf("Lisensi berakhir %d hari lagi · perlu diperpanjang", days)
+		case days == 0:
+			c.Title = "Lisensi " + name + " berakhir hari ini"
+			c.PushBody = "Lisensi berakhir hari ini · perlu diperpanjang"
+		default:
+			c.Title = "Lisensi " + name + " sudah kedaluwarsa"
+			c.PushBody = "Lisensi sudah kedaluwarsa · perlu diperpanjang"
+		}
+		c.Body = join("Berakhir "+web.FormatDate(str(p, "expires_at")), str(p, "vendor"),
+			"Setelah diperpanjang, perbarui tanggal berakhir di Master Data › Lisensi.")
+		if id := num(p, "license_id"); id > 0 {
+			c.URL = fmt.Sprintf("/app/master/licenses/%d/edit", id)
+		}
+	case ProposalSubmitted:
+		c.Title = "Kajian baru: " + str(p, "title")
+		c.Body = join(web.Label("proposal_kind", str(p, "kind")), str(p, "department"), "Dari "+str(p, "requester"))
+		c.PushBody = "Kajian kebutuhan baru masuk · perlu diterima"
+		if id := num(p, "proposal_id"); id > 0 {
+			c.URL = fmt.Sprintf("/app/kajian/%d", id)
 		}
 	case Test:
 		c.Title = "Notifikasi uji"

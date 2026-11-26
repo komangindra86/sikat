@@ -88,6 +88,9 @@ var Entities = []*Entity{
 				Help: "Tampil di bawah pilihan untuk membantu pelapor."},
 			{Column: "default_priority", Label: "Prioritas bawaan", Kind: KindEnum, Required: true, Choices: priorityChoices,
 				Default: "MEDIUM", InList: true, Help: "Dipakai bila tidak ada aturan prioritas yang cocok."},
+			{Column: "proposal_kind", Label: "Jalur", Kind: KindEnum, Choices: []Choice{
+				{"", "Tiket (bawaan)"}, {"DEVICE", "Kajian kebutuhan: perangkat baru"}, {"SYSTEM", "Kajian kebutuhan: sistem/aplikasi baru"},
+			}, Help: "Jalur kajian: di form lapor (QR), pilihan ini membuka form kajian kebutuhan (lampiran dokumen, diterima Admin IT), bukan membuat tiket. Form Catat tiket petugas tidak terpengaruh."},
 			sortField(),
 		},
 		OrderBy: "sort_order, name", Search: []string{"name", "help_text"}, HasActive: true,
@@ -152,17 +155,41 @@ var Entities = []*Entity{
 	},
 	{
 		Slug: "spare-parts", Table: "spare_parts", Title: "Sparepart", Singular: "sparepart",
-		Description: "Katalog sparepart dan harga acuan (tanpa stok).",
+		Description: "Katalog sparepart dan stoknya. Stok berkurang otomatis saat sparepart dicatat terpakai.",
 		Fields: []Field{
 			codeField("SPR", 4),
 			{Column: "name", Label: "Nama sparepart", Kind: KindText, Required: true, MaxLen: 150, InList: true},
 			{Column: "unit", Label: "Satuan", Kind: KindText, Required: true, MaxLen: 20, Default: "pcs", InList: true},
-			{Column: "default_unit_cost", Label: "Harga acuan (Rp)", Kind: KindMoney, InList: true,
-				Help: "Opsional. Contoh: 175000"},
+			{Column: "stock", Label: "Stok", Kind: KindQty, Default: "0", InList: true,
+				Help: "Jumlah yang tersedia, dalam satuan di atas. Berkurang saat dicatat terpakai pada tiket atau riwayat perangkat, dan kembali bila entrinya dibatalkan."},
 		},
 		OrderBy: "name", Search: []string{"code", "name"}, HasActive: true,
 		UniqueFields: map[string]UniqueRule{
 			"uq_spare_parts_code": {"code", "Kode sparepart sudah dipakai."},
+		},
+	},
+	{
+		Slug: "licenses", Table: "licenses", Title: "Lisensi", Singular: "lisensi",
+		Description: "Lisensi perangkat lunak dan layanan beserta tanggal berakhirnya. Admin diingatkan sebelum lisensi habis.",
+		Fields: []Field{
+			codeField("LIS", 3),
+			{Column: "name", Label: "Nama lisensi", Kind: KindText, Required: true, MaxLen: 150, InList: true,
+				Help: "Contoh: Microsoft 365 Business, Antivirus, Sertifikat SSL domain rumah sakit."},
+			{Column: "vendor", Label: "Penyedia / vendor", Kind: KindText, MaxLen: 150, InList: true},
+			{Column: "quantity", Label: "Jumlah", Kind: KindInt, Min: 0, Max: 1000000, InList: true,
+				Help: "Opsional. Jumlah seat, pengguna, atau perangkat yang dicakup."},
+			{Column: "started_at", Label: "Mulai berlaku", Kind: KindDate},
+			{Column: "expires_at", Label: "Berakhir", Kind: KindDate, InList: true, Expiry: true,
+				Help: "Kosongkan untuk lisensi tanpa batas waktu. Admin mendapat notifikasi 30, 14, 7, dan 1 hari sebelumnya, pada hari berakhir, lalu tiap 7 hari sampai tanggal ini diperbarui atau lisensi dinonaktifkan."},
+			{Column: "notes", Label: "Catatan", Kind: KindTextarea, MaxLen: 1000,
+				Help: "Mis. nomor kontrak, kontak vendor, cara perpanjangan. Jangan simpan kunci lisensi atau kata sandi di sini."},
+		},
+		OrderBy: "expires_at IS NULL, expires_at, name", Search: []string{"code", "name", "vendor"}, HasActive: true,
+		UniqueFields: map[string]UniqueRule{
+			"uq_licenses_code": {"code", "Kode lisensi sudah dipakai."},
+		},
+		CheckFields: map[string]UniqueRule{
+			"chk_licenses_dates": {"expires_at", "Tanggal berakhir tidak boleh sebelum tanggal mulai berlaku."},
 		},
 	},
 }

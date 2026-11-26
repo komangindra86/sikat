@@ -23,7 +23,8 @@ pengguna, pengaturan sistem, jejak audit, QR ruangan/perangkat, pengajuan
 tiket tanpa login, prioritas otomatis, pemantauan tiket pelapor, antrean & klaim
 tiket, pencatatan tiket via telepon/WA, alur kerja tiket lengkap (tunda, selesai,
 konfirmasi pelapor, ambil alih, prioritas manual), tutup otomatis, kegiatan internal IT,
-riwayat & statistik perangkat, sparepart & biaya, deteksi perangkat sering rusak,
+arsip kajian kebutuhan perangkat/sistem baru (dari form lapor QR, diterima Admin IT),
+riwayat & statistik perangkat, stok sparepart & biaya, deteksi perangkat sering rusak,
 SLA berbasis kalender kerja & hari libur, eskalasi otomatis, dashboard & laporan SLA bulanan,
 inbox notifikasi, Web Push (VAPID) dengan preferensi per role, PWA installable,
 dashboard per role, 15 laporan (termasuk laporan koordinator pengganti spreadsheet)

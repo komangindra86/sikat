@@ -22,6 +22,15 @@ func TestFormatMoney(t *testing.T) {
 	}
 }
 
+func TestFormatQty(t *testing.T) {
+	cases := map[string]string{"12.00": "12", "2.50": "2,5", "0.05": "0,05", "0.00": "0", "100": "100", "": "–"}
+	for in, want := range cases {
+		if got := FormatQty(in); got != want {
+			t.Errorf("FormatQty(%q) = %q, ingin %q", in, got, want)
+		}
+	}
+}
+
 func TestFormatWITA(t *testing.T) {
 	utc := time.Date(2026, 11, 11, 16, 30, 0, 0, time.UTC)
 	if got := formatWITA(utc); got != "12/11/2026 00:30" {

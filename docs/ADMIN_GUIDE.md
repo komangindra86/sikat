@@ -48,8 +48,28 @@ Instalasi server: DEPLOYMENT.md.
 | Master Data › Aturan Prioritas | Aturan berurutan (dampak, cakupan, perangkat pengganti, layanan kritis). Uji di *Uji aturan*. |
 | Master Data › Alasan Tunda | Termasuk tanda "Menghentikan SLA" |
 | Master Data › Template Tindakan | Teks tindakan siap pakai petugas |
+| Master Data › Sparepart | Nama, satuan, dan **stok** (tanpa harga). Stok berkurang saat petugas mencatat sparepart terpakai dan kembali bila entrinya dibatalkan; pemakaian melebihi stok ditolak. Isi stok saat barang masuk. |
 | Master Data › Kebijakan SLA & Kalender Kerja | Target respons/penyelesaian per prioritas (bisa khusus bidang/jenis/unit), jam kerja, hari libur |
 | Pengaturan › Preferensi notifikasi | Kejadian per role: tidak dikirim / inbox / inbox + push |
+| Master Data › Lisensi | Daftar lisensi dan tanggal berakhirnya (kosongkan bila tanpa batas). Admin mendapat notifikasi **Lisensi segera habis** 30, 14, 7, dan 1 hari sebelumnya, pada hari berakhir, lalu tiap 7 hari. Setelah diperpanjang, **perbarui tanggal berakhir** agar pengingat berhenti dan dimulai lagi untuk periode baru; lisensi yang tidak diperpanjang, nonaktifkan. Aktifkan push di perangkat (Notifikasi › Pengaturan) agar pengingat muncul di HP. Jangan simpan kunci lisensi di catatan. |
+
+### Kajian kebutuhan perangkat/sistem baru
+
+Permintaan perangkat atau sistem/aplikasi baru tidak dibuat sebagai tiket. Pemohon
+membuat dokumen kajian, lalu di form lapor (QR) memilih **Permintaan perangkat baru**
+(bidang Administrasi & Inventaris) atau **Usulan sistem atau fitur baru** (bidang
+System Developer). Pilihan itu membuka form kajian — tanpa login. Jenis gangguan
+lain bisa dijadikan jalur kajian lewat kolom **Jalur** di Master Data › Jenis Gangguan.
+
+1. Admin mendapat notifikasi **Kajian baru masuk**. Buka menu **Kajian**; kajian
+   yang belum diterima tampil paling atas.
+2. Buka kajian, baca ringkasannya, dan **Unduh dokumen** (PDF/Word/Excel).
+3. Tekan **Terima kajian**. Catatan opsional (mis. "dibahas pada rapat anggaran")
+   tampil di link status milik pemohon.
+
+Tidak ada persetujuan atau penolakan di SIKAT: kajian disimpan sebagai arsip dan
+bisa dicari menurut nomor, judul, unit, atau pemohon. Dokumen kajian disimpan di
+folder `storage/kajian` dan tidak dihapus otomatis.
 
 Gunakan laporan **Pemilahan jenis gangguan** secara berkala: keterangan pelapor
 yang memilih "Lainnya" menunjukkan jenis gangguan baru yang perlu ditambahkan.
@@ -61,8 +81,8 @@ yang memilih "Lainnya" menunjukkan jenis gangguan baru yang perlu ditambahkan.
   membandingkan isinya). Lakukan uji restore minimal sebulan sekali dan setelah
   update versi.
 - Dashboard Admin menandai bila backup terakhir gagal atau lebih dari sehari lalu.
-- Foto lampiran tidak termasuk backup database — pastikan folder foto ikut disalin
-  off-site (DEPLOYMENT.md §5).
+- Foto lampiran dan dokumen kajian tidak termasuk backup database — pastikan folder
+  `storage/attachments` dan `storage/kajian` ikut disalin off-site (DEPLOYMENT.md §5).
 
 ## 5. Pemantauan sistem
 

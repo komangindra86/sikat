@@ -268,6 +268,9 @@ func (h *PublicHandler) employees(w http.ResponseWriter, r *http.Request) {
 	}
 	var names []string
 	q := strings.TrimSpace(r.URL.Query().Get("reporter_name"))
+	if q == "" {
+		q = strings.TrimSpace(r.URL.Query().Get("requester_name")) // form kajian kebutuhan
+	}
 	if utf8.RuneCountInString(q) >= SuggestMinChars && utf8.RuneCountInString(q) <= 120 &&
 		(h.SuggestLimiter == nil || h.SuggestLimiter.Allow(reqctx.InfoFrom(r.Context()).IP)) {
 		names = MatchNames(h.Employees.Names(r.Context()), q, SuggestMax)

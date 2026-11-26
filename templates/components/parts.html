@@ -1,20 +1,19 @@
-{{/* part-rows: 3 baris isian sparepart. Data: Parts ([]{ID, Label, Cost}), Err (string). */}}
+{{/* part-rows: 3 baris isian sparepart. Data: Parts ([]{ID, Label, Stock, Empty}), Err (string). */}}
 {{define "part-rows"}}
 <fieldset class="sm:col-span-2">
   <legend class="label">Sparepart yang dipakai</legend>
   <div class="space-y-2">
     {{range $i := seq 3}}
-    <div class="grid grid-cols-[1fr_5rem] gap-2 sm:grid-cols-[1fr_6rem_9rem]">
+    <div class="grid grid-cols-[1fr_5rem] gap-2 sm:grid-cols-[1fr_6rem]">
       <select class="input" name="part_id" aria-label="Sparepart {{add $i 1}}">
         <option value="">Tidak ada</option>
-        {{range $.Parts}}<option value="{{.ID}}">{{.Label}}{{if .Cost.Valid}} · {{money .Cost.String}}{{end}}</option>{{end}}
+        {{range $.Parts}}<option value="{{.ID}}" {{if .Empty}}disabled{{end}}>{{.Label}} · {{if .Empty}}stok habis{{else}}stok {{.Stock}}{{end}}</option>{{end}}
       </select>
       <input class="input" name="part_qty" inputmode="decimal" placeholder="Jml" value="1" aria-label="Jumlah sparepart {{add $i 1}}">
-      <input class="input col-span-2 sm:col-span-1" name="part_cost" inputmode="decimal" placeholder="Harga satuan" aria-label="Harga satuan sparepart {{add $i 1}}">
     </div>
     {{end}}
   </div>
-  <p class="help">Harga satuan kosong = harga acuan sparepart.</p>
+  <p class="help">Stok sparepart berkurang saat disimpan, dan kembali bila entri dibatalkan.</p>
   {{with .Err}}<p class="error-text">{{.}}</p>{{end}}
 </fieldset>
 {{end}}
