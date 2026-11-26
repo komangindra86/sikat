@@ -160,7 +160,7 @@ func TestApplyLinksExistingLocalDataSafely(t *testing.T) {
 	}
 }
 
-func TestApplyRoomsEmployeesAssetsResolveReferences(t *testing.T) {
+func TestApplyRoomsAssetsResolveReferences(t *testing.T) {
 	f := setup(t)
 	now := f.clk.Now()
 	if _, err := f.db.Exec(`INSERT INTO asset_categories (code, name, created_at, updated_at) VALUES ('PC','Komputer',?,?)`, now, now); err != nil {
@@ -171,10 +171,6 @@ func TestApplyRoomsEmployeesAssetsResolveReferences(t *testing.T) {
 	r := f.apply(t, integration.EntityRoom, "external_id,kode,nama,unit,lokasi\nR-1,IGD-TRS,Ruang Triase,U-1,Gedung A\nR-2,LAB-1,Lab Darah,LAB,\nR-3,X,Ruang X,U-9,\n", integration.Options{})
 	if r.Inserted != 2 || action(r, "R-3") != integration.ActError {
 		t.Fatalf("ruangan: unit via external_id atau kode; unit tak dikenal ditolak: %+v", r.Rows)
-	}
-	r = f.apply(t, integration.EntityEmployee, "nip,nama,unit,jabatan\n1987,Ners Ani,U-1,Perawat\n1990,Budi,,\n", integration.Options{})
-	if r.Inserted != 2 || testutil.Count(t, f.db, `SELECT COUNT(*) FROM employees e JOIN departments d ON d.id = e.department_id WHERE e.nip = '1987' AND d.code = 'IGD'`) != 1 {
-		t.Fatalf("pegawai: %+v", r.Rows)
 	}
 	r = f.apply(t, integration.EntityAsset, "external_id,kode_aset,nama,kategori,unit,ruangan,merek\nA-1,IGD-PC-01,PC Triase,PC,,R-1,Lenovo\nA-2,LAB-PC-01,PC Lab,Komputer,U-1,R-2,\nA-3,X-1,Mesin X,Alat Lab,,,\n", integration.Options{})
 	if action(r, "A-1") != integration.ActInsert || action(r, "A-2") != integration.ActError || action(r, "A-3") != integration.ActError {
@@ -311,7 +307,7 @@ func TestCSVImportPreviewApplyCancel(t *testing.T) {
 		t.Fatal("impor batal tidak dapat diterapkan")
 	}
 	st, err := svc.Statuses(ctx)
-	if err != nil || len(st) != 4 || st[0].Total != 1 || st[0].FromSource != 1 || st[0].LastLog == nil {
+	if err != nil || len(st) != 3 || st[0].Total != 1 || st[0].FromSource != 1 || st[0].LastLog == nil {
 		t.Fatalf("status integrasi: %+v %v", st, err)
 	}
 }

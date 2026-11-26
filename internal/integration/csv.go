@@ -43,12 +43,6 @@ var csvSpecs = map[string]csvSpec{
 		Help: map[string]string{"unit": "external_id unit pada file/sumber yang sama, atau kode unit di SIKAT",
 			"lokasi": "Keterangan lokasi (opsional)"},
 	},
-	EntityEmployee: {
-		Columns:  []string{"nip", "nama", "unit", "jabatan", "telepon", "aktif"},
-		Required: []string{"nip", "nama"},
-		Example:  [][]string{{"198701012010012001", "Ners Ani Lestari", "U-001", "Perawat", "0812-0000-0000", "ya"}},
-		Help:     map[string]string{"nip": "NIP/NIK pegawai, dipakai sebagai external_id", "unit": "external_id atau kode unit (opsional)"},
-	},
 	EntityAsset: {
 		Columns:  []string{"external_id", "kode_aset", "nama", "kategori", "unit", "ruangan", "merek", "model", "nomor_seri"},
 		Required: []string{"external_id", "kode_aset", "nama", "kategori"},
@@ -187,9 +181,6 @@ func ParseCSV(entity string, data []byte) (Batch, error) {
 		case EntityRoom:
 			b.Rooms = append(b.Rooms, Room{Row: line, ExternalID: get("external_id"), Code: get("kode"), Name: get("nama"),
 				DepartmentRef: get("unit"), LocationNote: get("lokasi"), Active: active})
-		case EntityEmployee:
-			b.Employees = append(b.Employees, Employee{Row: line, ExternalID: get("nip"), Name: get("nama"),
-				DepartmentRef: get("unit"), Position: get("jabatan"), Phone: get("telepon"), Active: active})
 		case EntityAsset:
 			b.Assets = append(b.Assets, Asset{Row: line, ExternalID: get("external_id"), Code: get("kode_aset"), Name: get("nama"),
 				CategoryRef: get("kategori"), DepartmentRef: get("unit"), RoomRef: get("ruangan"),

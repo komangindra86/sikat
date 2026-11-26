@@ -44,7 +44,10 @@
   <div class="card card-body space-y-4">
     <div>
       <label class="label" for="reporter_name">Nama Anda <span class="text-bad" aria-hidden="true">*</span></label>
-      <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" type="text" maxlength="120" value="{{index $d.Form "reporter_name"}}" autocomplete="name" data-remember="sikat_reporter_name" required>
+      <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" type="text" maxlength="120" value="{{index $d.Form "reporter_name"}}" autocomplete="name" data-remember="sikat_reporter_name" required
+        {{- if $d.Suggest}} list="saran-pegawai" hx-get="/q/{{$d.Token}}/pegawai" hx-trigger="input changed delay:300ms" hx-target="#saran-pegawai" hx-swap="innerHTML" hx-sync="this:replace"{{end}}>
+      {{if $d.Suggest}}<datalist id="saran-pegawai"></datalist>
+      <p class="help">Ketik minimal 3 huruf untuk memilih nama Anda, atau isi bebas.</p>{{end}}
       {{with $p.Err "reporter_name"}}<p class="error-text">{{.}}</p>{{end}}
     </div>
     <div>
@@ -161,6 +164,8 @@
   <p class="text-center text-xs text-muted-foreground">Untuk keadaan darurat medis, tetap ikuti prosedur darurat rumah sakit.{{with .ITContact}} Kontak IT: {{.}}.{{end}}</p>
 </form>
 {{end}}
+
+{{define "employee-options"}}{{range .Data.Names}}<option value="{{.}}"></option>{{end}}{{end}}
 
 {{define "room-options"}}
 <option value="">Tidak tahu / tidak ada di daftar</option>

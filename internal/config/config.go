@@ -36,6 +36,12 @@ type Config struct {
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
 	VAPIDSubject    string
+	// API SIMRS (sama dengan aplikasi CSSD): daftar pegawai untuk saran nama pelapor.
+	// URL atau token kosong = saran nama nonaktif; nama pelapor tetap diisi bebas.
+	SimrsPegawaiURL string
+	SimrsToken      string
+	SimrsCookie     string
+	SimrsTimeout    time.Duration
 }
 
 // IsProduction bernilai true bila SIKAT_ENV=production.
@@ -143,6 +149,20 @@ func FromEnv(get func(string) string) (Config, error) {
 			cfg.VAPIDSubject = "mailto:admin@" + u.Hostname()
 		}
 	}
+
+	cfg.SimrsPegawaiURL = strings.TrimSpace(get("SIKAT_SIMRS_PEGAWAI_URL"))
+	cfg.SimrsToken = strings.TrimSpace(get("SIKAT_SIMRS_TOKEN"))
+	cfg.SimrsCookie = strings.TrimSpace(get("SIKAT_SIMRS_COOKIE"))
+	if cfg.SimrsPegawaiURL != "" {
+		if su, err := url.Parse(cfg.SimrsPegawaiURL); err != nil || (su.Scheme != "http" && su.Scheme != "https") || su.Host == "" {
+			errs = append(errs, "SIKAT_SIMRS_PEGAWAI_URL harus URL lengkap http(s)://")
+		}
+	}
+	secs, err := intEnv(get, "SIKAT_SIMRS_TIMEOUT_SECONDS", 30, 1, 300)
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+	cfg.SimrsTimeout = time.Duration(secs) * time.Second
 
 	if len(errs) > 0 {
 		return Config{}, errors.New("konfigurasi tidak valid:\n  - " + strings.Join(errs, "\n  - "))

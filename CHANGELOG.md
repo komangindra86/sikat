@@ -5,6 +5,10 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 ## Belum dirilis
 
 ### Ditambahkan
+- **Saran nama pelapor dari API pegawai SIMRS** di form "Catat tiket", memakai endpoint yang sama dengan aplikasi CSSD (`SIKAT_SIMRS_PEGAWAI_URL`, `SIKAT_SIMRS_TOKEN`, `SIKAT_SIMRS_COOKIE`, `SIKAT_SIMRS_TIMEOUT_SECONDS`).
+  - Daftar disimpan di memori 1 jam dan dimuat saat aplikasi mulai. Bila SIMRS gangguan, daftar terakhir tetap dipakai; tanpa daftar, nama tetap diisi bebas.
+  - Hanya nama yang disimpan; data pribadi pegawai lain dari SIMRS tidak ikut.
+  - Form pelapor (QR) juga memberi saran nama, tetapi tanpa memuat seluruh daftar: nama dicari setelah 3 huruf, maksimal 8 hasil, hanya lewat QR aktif, dan dibatasi per alamat IP agar daftar pegawai tidak bisa disedot.
 - **Beranda diperbarui otomatis** tiap 30 detik (angka tiket, SLA, status sistem) untuk semua role, seperti halaman antrean tiket.
 - **QR global pelapor** (migrasi `00017_lapor_per_bidang`): satu QR untuk seluruh rumah sakit, dibuat dari halaman QR Code, lengkap dengan poster A4 siap cetak.
   - Pelapor memilih unit (wajib) dan ruangan sendiri; ruangan dimuat sesuai unit.
@@ -23,6 +27,9 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 - **Tombol Salin link** kini bekerja di alamat HTTP biasa (mis. `http://sikat.test` atau jaringan lokal). Sebelumnya tombol diam karena fitur salin browser hanya ada di HTTPS; kini memakai cara cadangan, dan bila tetap gagal link ditandai untuk disalin manual.
 - **Kartu "Apakah masalah sudah teratasi?"** di halaman pemantauan pelapor muncul sendiri begitu petugas menyelesaikan tiket, tanpa refresh. Setelah itu pembaruan otomatis berhenti agar isian "belum beres" tidak terhapus.
 - **Ekspor laporan Excel/PDF** kini memuat data sesuai filter yang tampil (periode, unit, bidang, petugas, prioritas, status). Sebelumnya tombol unduh kehilangan filter, sehingga file selalu berisi bulan berjalan tanpa filter. Tautan laporan di dashboard koordinator, termasuk batas bidang koordinator, ikut diperbaiki.
+
+### Dihapus
+- **Master Data › Pegawai** dan impor CSV pegawai (migrasi `00018_pegawai_dari_simrs`): tabel `employees` dan jejak integrasi pegawai dihapus, diganti API pegawai SIMRS.
 
 ### Diubah
 - **Bidang mengikuti struktur 6 koordinator** (migrasi `00016_bidang_fungsi`):

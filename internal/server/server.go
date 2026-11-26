@@ -34,6 +34,7 @@ import (
 	"sikat/internal/rbac"
 	"sikat/internal/reports"
 	"sikat/internal/settings"
+	"sikat/internal/simrs"
 	"sikat/internal/sla"
 	"sikat/internal/tickets"
 	"sikat/internal/users"
@@ -63,6 +64,8 @@ type Deps struct {
 	PushSender notifications.Sender
 	// DisableBackup mematikan backup terjadwal (test).
 	DisableBackup bool
+	// Employees menggantikan sumber nama pegawai SIMRS (test). Nil = dari Config.
+	Employees tickets.EmployeeSource
 }
 
 // App adalah server yang sudah dirakit.
@@ -171,12 +174,24 @@ func New(ctx context.Context, d Deps) (*App, error) {
 	}
 	qrH := &qrcodes.Handler{Service: qrSvc, Renderer: renderer}
 	priorityH := &priority.Handler{DB: d.DB, Renderer: renderer}
+	employees := d.Employees
+	if employees == nil {
+		if p := simrs.NewPegawai(simrs.PegawaiConfig{URL: d.Config.SimrsPegawaiURL, Token: d.Config.SimrsToken,
+			Cookie: d.Config.SimrsCookie, Timeout: d.Config.SimrsTimeout}, d.Log); p != nil {
+			p.Warm(ctx)
+			employees = p
+		}
+	}
 	ticketH := &tickets.Handler{Service: ticketSvc, Settings: settingsSvc, Renderer: renderer, Sessions: sessions,
-		BaseURL: d.Config.BaseURL, Require: guard.Require, OnView: notifSvc.MarkTicketRead}
+		BaseURL: d.Config.BaseURL, Require: guard.Require, OnView: notifSvc.MarkTicketRead, Employees: employees}
 	publicLimiter := middleware.NewRateLimiter(d.PublicRate, 10*time.Minute, d.PublicRate)
 	qrLimiter := middleware.NewRateLimiter(d.QRRate, 10*time.Minute, d.QRRate)
 	go publicLimiter.Cleanup(ctx, 5*time.Minute)
 	go qrLimiter.Cleanup(ctx, 5*time.Minute)
+	// Pencarian nama pegawai di form publik: longgar untuk banyak pelapor di balik satu IP
+	// (NAT Wi-Fi RS), tetapi cukup untuk mencegah daftar pegawai disedot.
+	suggestLimiter := middleware.NewRateLimiter(120, time.Minute, 60)
+	go suggestLimiter.Cleanup(ctx, 5*time.Minute)
 	activitySvc := activities.NewService(d.DB, d.Clock, store)
 	activityH := &activities.Handler{Service: activitySvc, Settings: settingsSvc, Renderer: renderer}
 	maintSvc := maintenance.NewService(d.DB, d.Clock, settingsSvc)
@@ -269,7 +284,8 @@ func New(ctx context.Context, d Deps) (*App, error) {
 		},
 	}}}
 	publicH := &tickets.PublicHandler{Service: ticketSvc, QR: qrSvc, Settings: settingsSvc, Renderer: renderer,
-		BaseURL: d.Config.BaseURL, IPLimiter: publicLimiter, QRLimiter: qrLimiter}
+		BaseURL: d.Config.BaseURL, IPLimiter: publicLimiter, QRLimiter: qrLimiter,
+		Employees: employees, SuggestLimiter: suggestLimiter}
 	userH := &users.Handler{Service: users.NewService(d.DB, d.Clock), Renderer: renderer}
 	settingsH := &settings.Handler{Service: settingsSvc, Renderer: renderer}
 	integH := &integration.Handler{Service: integSvc, Renderer: renderer}

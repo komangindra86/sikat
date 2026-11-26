@@ -72,6 +72,22 @@ SIKAT_BACKUP_HOUR=2
 SIKAT_BACKUP_KEEP_DAYS=14
 ```
 
+Saran nama pelapor dari API pegawai SIMRS (opsional, sama dengan aplikasi CSSD).
+Kosong = form "Catat tiket" tanpa saran nama; nama pelapor tetap diisi bebas.
+Server butuh akses HTTPS keluar ke host SIMRS.
+
+```ini
+SIKAT_SIMRS_PEGAWAI_URL=https://app.balimandarahospital.com/service/emr/dropdown/pegawai_m?
+SIKAT_SIMRS_TOKEN=<token SIMRS, sama dengan BALI_MANDARA_TOKEN di CSSD>
+SIKAT_SIMRS_COOKIE=<cookie SIMRS bila diperlukan, sama dengan BALI_MANDARA_COOKIE>
+SIKAT_SIMRS_TIMEOUT_SECONDS=30
+```
+
+Daftar disimpan di memori 1 jam; bila SIMRS gangguan, daftar terakhir tetap dipakai.
+Hanya nama yang disimpan (data mentah SIMRS memuat NIK dan data pribadi lain).
+Form pelapor publik tidak memuat daftar ini: nama dicari per ketikan (min. 3 huruf,
+maks. 8 hasil, dibatasi per IP).
+
 Web Push (opsional): `sudo -u sikat /opt/sikat/sikat vapid-keys` lalu salin tiga
 baris hasilnya ke `.env` (`SIKAT_VAPID_SUBJECT` diisi `mailto:` alamat tim IT).
 Kunci VAPID jangan diganti setelah dipakai.

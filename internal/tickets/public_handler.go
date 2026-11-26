@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 
@@ -25,6 +27,10 @@ type PublicHandler struct {
 	BaseURL   string
 	IPLimiter *middleware.RateLimiter // batas kiriman per IP
 	QRLimiter *middleware.RateLimiter // batas kiriman per QR (lokasi)
+	// Employees (opsional): nama pegawai SIMRS untuk saran nama pelapor. Form publik
+	// tidak memuat seluruh daftar; nama dicari per ketikan (min. 3 huruf, maks. 8 hasil).
+	Employees      EmployeeSource
+	SuggestLimiter *middleware.RateLimiter // batas pencarian nama per IP
 }
 
 // Routes mendaftarkan rute publik.
@@ -32,6 +38,7 @@ func (h *PublicHandler) Routes(r chi.Router) {
 	r.Get("/q/{token}", h.form)
 	r.Post("/q/{token}", h.submit)
 	r.Get("/q/{token}/ruangan", h.rooms)
+	r.Get("/q/{token}/pegawai", h.employees)
 	r.Get("/t/{token}", h.track)
 	r.Get("/t/{token}/foto/{id}", h.photo)
 	r.Post("/t/{token}/konfirmasi", h.feedback)
@@ -50,6 +57,8 @@ type reportData struct {
 	MaxFiles    int
 	MaxMB       int
 	Incident    []struct{ Value, Label string }
+	Suggest     bool     // saran nama pegawai tersedia
+	Names       []string // hasil pencarian nama (fragmen HTMX)
 }
 
 type invalidData struct {
@@ -140,7 +149,7 @@ func (h *PublicHandler) renderForm(w http.ResponseWriter, r *http.Request, statu
 		Data: reportData{
 			Token: token, Target: t, Groups: groupCategories(cats), OpenField: open, Departments: depts, Rooms: rooms, Assets: assets, Form: form,
 			MaxFiles: h.Settings.Int(ctx, settings.KeyUploadMaxFiles), MaxMB: h.Settings.Int(ctx, settings.KeyUploadMaxMB),
-			Incident: IncidentOptions,
+			Incident: IncidentOptions, Suggest: h.Employees != nil,
 		},
 	})
 }
@@ -237,6 +246,35 @@ func (h *PublicHandler) rooms(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Renderer.Fragment(w, r, http.StatusOK, "public/report", "room-options", web.Page{
 		Data: reportData{Rooms: rooms, Form: map[string]string{}},
+	})
+}
+
+// Batas pencarian nama pegawai di form publik.
+const (
+	SuggestMinChars = 3
+	SuggestMax      = 8
+)
+
+// employees mengembalikan <option> nama pegawai SIMRS yang cocok dengan ketikan
+// pelapor (HTMX). Hanya lewat QR aktif; di bawah 3 huruf atau melewati batas
+// per IP, hasilnya kosong (form tetap bisa diisi bebas).
+func (h *PublicHandler) employees(w http.ResponseWriter, r *http.Request) {
+	if h.Employees == nil {
+		h.Renderer.Error(w, r, http.StatusNotFound, "")
+		return
+	}
+	if _, _, ok := h.target(w, r); !ok {
+		return
+	}
+	var names []string
+	q := strings.TrimSpace(r.URL.Query().Get("reporter_name"))
+	if utf8.RuneCountInString(q) >= SuggestMinChars && utf8.RuneCountInString(q) <= 120 &&
+		(h.SuggestLimiter == nil || h.SuggestLimiter.Allow(reqctx.InfoFrom(r.Context()).IP)) {
+		names = MatchNames(h.Employees.Names(r.Context()), q, SuggestMax)
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	h.Renderer.Fragment(w, r, http.StatusOK, "public/report", "employee-options", web.Page{
+		Data: reportData{Names: names, Form: map[string]string{}},
 	})
 }
 

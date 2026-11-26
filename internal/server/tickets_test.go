@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"image"
 	"image/png"
@@ -327,5 +328,84 @@ func TestRedactPath(t *testing.T) {
 		if got := middleware.RedactPath(in); got != want {
 			t.Errorf("RedactPath(%q) = %q, ingin %q", in, got, want)
 		}
+	}
+}
+
+// fakeEmployees menggantikan API pegawai SIMRS.
+type fakeEmployees []string
+
+func (f fakeEmployees) Names(context.Context) []string { return f }
+
+func TestStaffFormSuggestsSimrsEmployees(t *testing.T) {
+	_, newClient, _ := newAppDB(t, server.Deps{Employees: fakeEmployees{"Ners Ani Lestari", "Wayan <Sari>"}})
+	tech := newClient()
+	tech.login("budi", "password-budi-123")
+	_, body := tech.get("/app/tickets/new")
+	if !strings.Contains(body, `list="pegawai"`) || !strings.Contains(body, `<option value="Ners Ani Lestari"></option>`) ||
+		!strings.Contains(body, `<option value="Wayan &lt;Sari&gt;"></option>`) || !strings.Contains(body, "daftar pegawai SIMRS") {
+		t.Fatal("form catat tiket menyarankan nama pegawai dari SIMRS")
+	}
+
+	// SIMRS tidak tersedia: form tetap bisa dipakai, nama diisi bebas.
+	_, newClient2, _ := newAppDB(t, server.Deps{Employees: fakeEmployees(nil)})
+	tech2 := newClient2()
+	tech2.login("budi", "password-budi-123")
+	if resp, body := tech2.get("/app/tickets/new"); resp.StatusCode != 200 || strings.Contains(body, `list="pegawai"`) || !strings.Contains(body, `name="reporter_name"`) {
+		t.Fatalf("tanpa daftar pegawai form tetap tampil tanpa saran: %d", resp.StatusCode)
+	}
+}
+
+func TestPublicFormSearchesSimrsEmployees(t *testing.T) {
+	names := fakeEmployees{"Ani <Wayan>", "Ani Lestari"}
+	for i := 0; i < 12; i++ {
+		names = append(names, "Pegawai Anindya "+string(rune('A'+i)))
+	}
+	_, newClient, db := newAppDB(t, server.Deps{Employees: names})
+	token := seedLocation(t, db)
+	c := newClient()
+
+	// Form publik tidak memuat daftar pegawai; nama dicari per ketikan.
+	_, body := c.get("/q/" + token)
+	if !strings.Contains(body, `list="saran-pegawai"`) || !strings.Contains(body, `hx-get="/q/`+token+`/pegawai"`) ||
+		strings.Contains(body, "Ani Lestari") {
+		t.Fatal("form pelapor mencari nama per ketikan tanpa memuat seluruh daftar")
+	}
+	search := func(q string) (int, string) {
+		resp, body := c.get("/q/" + token + "/pegawai?reporter_name=" + url.QueryEscape(q))
+		return resp.StatusCode, body
+	}
+	if code, body := search("an"); code != 200 || strings.Contains(body, "<option") {
+		t.Fatalf("kurang dari 3 huruf: tanpa hasil (%d)", code)
+	}
+	code, body := search("ani")
+	if code != 200 || !strings.Contains(body, `<option value="Ani Lestari"></option>`) || !strings.Contains(body, `<option value="Ani &lt;Wayan&gt;"></option>`) {
+		t.Fatalf("pencarian nama: %d %s", code, body)
+	}
+	if n := strings.Count(body, "<option"); n != 8 {
+		t.Fatalf("hasil dibatasi 8 nama, dapat %d", n)
+	}
+	if resp, _ := c.get("/q/TIDAKADA0000000000000/pegawai?reporter_name=ani"); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("hanya lewat QR yang dikenal, dapat %d", resp.StatusCode)
+	}
+	// Batas per IP: setelah melewati batas, hasil kosong (bukan error).
+	limited := false
+	for i := 0; i < 80 && !limited; i++ {
+		if _, body := search("ani"); !strings.Contains(body, "<option") {
+			limited = true
+		}
+	}
+	if !limited {
+		t.Fatal("pencarian nama dibatasi per IP")
+	}
+
+	// Tanpa API pegawai: form tanpa saran, endpoint tidak ada.
+	_, newClient2, db2 := newAppDB(t, server.Deps{})
+	token2 := seedLocation(t, db2)
+	c2 := newClient2()
+	if _, body := c2.get("/q/" + token2); strings.Contains(body, "saran-pegawai") {
+		t.Fatal("tanpa API pegawai form tidak memuat saran")
+	}
+	if resp, _ := c2.get("/q/" + token2 + "/pegawai?reporter_name=ani"); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("tanpa API pegawai endpoint pencarian 404, dapat %d", resp.StatusCode)
 	}
 }

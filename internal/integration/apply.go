@@ -101,7 +101,6 @@ type entityTable struct {
 var tables = map[string]entityTable{
 	EntityDepartment: {"departments", true},
 	EntityRoom:       {"rooms", true},
-	EntityEmployee:   {"employees", true},
 	EntityAsset:      {"assets", false},
 }
 
@@ -421,12 +420,8 @@ func markMissing(ctx context.Context, tx *sql.Tx, tbl entityTable, entity string
 }
 
 func labelOf(ctx context.Context, tx *sql.Tx, tbl entityTable, id int64) string {
-	col := "name"
-	if tbl.Table == "employees" {
-		col = "full_name"
-	}
 	var s string
-	_ = tx.QueryRowContext(ctx, `SELECT `+col+` FROM `+tbl.Table+` WHERE id = ?`, id).Scan(&s)
+	_ = tx.QueryRowContext(ctx, `SELECT name FROM `+tbl.Table+` WHERE id = ?`, id).Scan(&s)
 	return s
 }
 
@@ -494,28 +489,6 @@ func prepare(ctx context.Context, tx *sql.Tx, b Batch, source string) ([]input, 
 			out = append(out, input{Row: r.Row, ExternalID: r.ExternalID, Label: r.Name, NatCol: "code", NatVal: strings.ToUpper(r.Code),
 				Cols: []string{"department_id", "code", "name", "location_note", "is_active"},
 				Vals: []any{dept, strings.ToUpper(r.Code), r.Name, nullStr(r.LocationNote), r.Active}, Err: strings.Join(errs, "; ")})
-		}
-	case EntityEmployee:
-		for _, e := range b.Employees {
-			var errs []string
-			checkLen(&errs, "NIP", e.ExternalID, 30)
-			checkLen(&errs, "Nama", e.Name, 150)
-			checkLen(&errs, "Jabatan", e.Position, 100)
-			checkLen(&errs, "Telepon", e.Phone, 30)
-			var dept sql.NullInt64
-			if e.DepartmentRef != "" {
-				id, ok, err := resolveRef(ctx, tx, source, EntityDepartment, "departments", "code", e.DepartmentRef)
-				if err != nil {
-					return nil, err
-				}
-				if !ok {
-					errs = append(errs, "Unit "+e.DepartmentRef+" tidak ditemukan")
-				}
-				dept = sql.NullInt64{Int64: id, Valid: ok}
-			}
-			out = append(out, input{Row: e.Row, ExternalID: e.ExternalID, Label: e.Name, NatCol: "nip", NatVal: e.ExternalID,
-				Cols: []string{"nip", "full_name", "department_id", "position", "phone", "is_active"},
-				Vals: []any{e.ExternalID, e.Name, dept, nullStr(e.Position), nullStr(e.Phone), e.Active}, Err: strings.Join(errs, "; ")})
 		}
 	case EntityAsset:
 		for _, a := range b.Assets {

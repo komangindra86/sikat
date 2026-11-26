@@ -15,7 +15,8 @@ pegawai), **petugas IT**, dan **koordinator IT**. Admin IT: lihat ADMIN_GUIDE.md
    **QR global** (poster "Ada gangguan IT?" di area umum), pilih sendiri **unit**
    dan **ruangan** tempat gangguan terjadi.
 2. Isi formulir singkat:
-   - **Nama** dan **unit/bagian** Anda (nama diingat di HP untuk laporan berikutnya).
+   - **Nama** dan **unit/bagian** Anda. Ketik minimal 3 huruf nama Anda lalu pilih
+     dari saran, atau isi bebas. Nama diingat di HP untuk laporan berikutnya.
    - **Apa masalahnya?** Pilih **bagian** yang paling sesuai (Pelayanan & Support,
      Administrasi & Inventaris, Mutu, ERM, System Developer, Keamanan Sistem), lalu
      pilih masalahnya. Tiap bagian punya pilihan **Lainnya** untuk masalah yang tidak
@@ -83,7 +84,8 @@ hampir habis, merah terlambat).
 ### Mencatat tiket dari telepon/WA/datang langsung
 
 Menu Tiket → **Catat tiket**. Pilih sumber laporan, lokasi, perangkat, dan nama
-pelapor (ketik untuk memilih dari direktori pegawai). Anda dapat langsung
+pelapor (ketik untuk memilih dari daftar pegawai SIMRS, atau isi bebas bila
+namanya tidak ada). Anda dapat langsung
 mengambil tiket tersebut dan membagikan link pemantauan ke pelapor.
 
 ### Pelapor kehilangan link pemantauan

@@ -481,7 +481,7 @@ erDiagram
     }
     integration_configs {
         bigint id PK
-        enum entity_type UK "DEPARTMENT ROOM EMPLOYEE ASSET"
+        enum entity_type UK "DEPARTMENT ROOM ASSET"
         enum provider "LOCAL CSV SIMRS_API SIMRS_DB"
         boolean is_enabled
         int schedule_minutes
@@ -554,7 +554,6 @@ erDiagram
     users ||--o{ it_categories : "koordinator bidang"
     it_categories ||--o{ tickets : "bidang"
     ticket_categories ||--o{ tickets : "jenis (pilihan pelapor: reported_ticket_category_id)"
-    departments ||--o{ employees : "unit"
     notifications ||--o{ push_deliveries : "dikirim ke"
     push_subscriptions ||--o{ push_deliveries : "perangkat"
     integration_configs ||--o{ integration_sync_logs : "riwayat"
@@ -565,13 +564,6 @@ erDiagram
         bigint id PK
         bigint coordinator_user_id FK "satu koordinator per bidang"
         bool is_triage "unik: bidang Triase"
-    }
-    employees {
-        bigint id PK
-        varchar nip UK
-        varchar full_name
-        bigint department_id FK
-        enum source "LOCAL/CSV/SIMRS"
     }
     external_id_mappings {
         varchar source

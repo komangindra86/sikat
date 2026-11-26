@@ -89,6 +89,13 @@ mencetak, karena alamat itulah yang dikodekan di QR.
 
 Health check untuk monitoring/reverse proxy: `GET /healthz` → `ok` bila database terjangkau.
 
+### Saran nama pegawai dari SIMRS
+
+Opsional. Isi `SIKAT_SIMRS_PEGAWAI_URL`, `SIKAT_SIMRS_TOKEN`, dan (bila perlu)
+`SIKAT_SIMRS_COOKIE` dengan nilai yang sama seperti `BALI_MANDARA_PEGAWAI_URL`,
+`BALI_MANDARA_TOKEN`, dan `BALI_MANDARA_COOKIE` di `.env` aplikasi CSSD. Tanpa
+itu, form "Catat tiket" tetap berjalan tanpa saran nama.
+
 ### Web Push (notifikasi ke HP/komputer)
 
 Opsional; tanpa konfigurasi ini notifikasi tetap tersedia di inbox aplikasi.

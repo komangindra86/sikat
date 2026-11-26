@@ -617,7 +617,6 @@ untuk error sementara, waktu eksekusi tercatat.
 ```go
 type OrganizationProvider interface { ListDepartments(ctx context.Context) ([]ExtDepartment, error) }
 type RoomProvider         interface { ListRooms(ctx context.Context) ([]ExtRoom, error) }
-type EmployeeProvider     interface { ListEmployees(ctx context.Context) ([]ExtEmployee, error) }
 type AssetProvider        interface { ListAssets(ctx context.Context) ([]ExtAsset, error) }
 ```
 
@@ -630,8 +629,9 @@ type AssetProvider        interface { ListAssets(ctx context.Context) ([]ExtAsse
 Implementasi PHASE 8 (`internal/integration`, migrasi `00011`): `LocalProvider`
 (default), impor CSV dengan pratinjau (transaksi yang dibatalkan), tabel
 `integration_configs`, `integration_sync_logs`, `external_id_mappings`,
-`integration_imports`, direktori `employees` (bukan akun login; saran nama pelapor
-di form catat tiket). Worker `sinkron-master` menjalankan sinkron terjadwal &
+`integration_imports`. Direktori `employees` dihapus di migrasi `00018`: saran
+nama pelapor di form catat tiket diambil dari API pegawai SIMRS (`internal/simrs`,
+sama dengan aplikasi CSSD), disimpan di memori 1 jam tanpa data pribadi. Worker `sinkron-master` menjalankan sinkron terjadwal &
 percobaan ulang untuk provider SIMRS yang terdaftar (`RegisterProvider`) — kosong
 sampai spesifikasi SIMRS tersedia. Rincian & format CSV: `docs/INTEGRATION.md`.
 

@@ -49,7 +49,7 @@ func TestIntegrationPagesOverHTTP(t *testing.T) {
 	admin := newClient()
 	admin.login("admin", "password-admin-123")
 	_, body := admin.get("/app/integrations")
-	if !strings.Contains(body, "SIMRS belum terhubung") || !strings.Contains(body, "Impor CSV") || !strings.Contains(body, "Pegawai") {
+	if !strings.Contains(body, "SIMRS belum terhubung") || !strings.Contains(body, "Impor CSV") || strings.Contains(body, `value="EMPLOYEE"`) {
 		t.Fatal("halaman integrasi menjelaskan status SIMRS & menyediakan impor CSV")
 	}
 	resp, tpl := admin.get("/app/integrations/template/DEPARTMENT.csv")
@@ -91,19 +91,13 @@ func TestIntegrationPagesOverHTTP(t *testing.T) {
 		t.Fatalf("CSV tanpa kolom wajib: %d", resp.StatusCode)
 	}
 
-	// Direktori pegawai: impor → master data → saran nama di form catat tiket.
-	resp, body = admin.postFile("/app/integrations/imports", tok, map[string]string{"entity": "EMPLOYEE"}, "file", "pegawai.csv",
-		[]byte("nip,nama,unit\n1987,Ners Ani Lestari,U-1\n"))
-	action = regexp.MustCompile(`action="(/app/integrations/imports/\d+/apply)"`).FindStringSubmatch(body)
-	if resp.StatusCode != 200 || action == nil {
-		t.Fatalf("pratinjau pegawai: %d", resp.StatusCode)
+	// Pegawai tidak lagi diimpor ke SIKAT (diambil dari API pegawai SIMRS).
+	if resp, _ := admin.postFile("/app/integrations/imports", tok, map[string]string{"entity": "EMPLOYEE"}, "file", "pegawai.csv",
+		[]byte("nip,nama,unit\n1987,Ners Ani Lestari,U-1\n")); resp.StatusCode == http.StatusOK {
+		t.Fatal("impor pegawai harus ditolak")
 	}
-	admin.post(action[1], map[string][]string{"csrf_token": {tok}})
-	if _, body := admin.get("/app/master/employees"); !strings.Contains(body, "Ners Ani Lestari") {
-		t.Fatal("master data pegawai menampilkan hasil impor")
-	}
-	if _, body := koor.get("/app/tickets/new"); !strings.Contains(body, `<option value="Ners Ani Lestari">Instalasi Gawat Darurat</option>`) {
-		t.Fatal("form catat tiket menyarankan nama pegawai")
+	if resp, _ := admin.get("/app/master/employees"); resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("master data pegawai sudah dihapus, dapat %d", resp.StatusCode)
 	}
 	if _, body := admin.get("/app"); !strings.Contains(body, "Impor terakhir") {
 		t.Fatal("dashboard admin menampilkan aktivitas integrasi")

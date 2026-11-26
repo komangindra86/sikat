@@ -129,13 +129,13 @@ func TestUniformCodesMigration(t *testing.T) {
 		t.Fatalf("%d bidang belum berformat BDG-NN", n)
 	}
 
-	// Down 00017, 00016, lalu 00015 → nama dan kode lama kembali.
+	// Down 00018, 00017, 00016, lalu 00015 → nama dan kode lama kembali.
 	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
 	m, err := database.NewMigrator(db, mfs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []string{"00017", "00016", "00015"} {
+	for _, v := range []string{"00018", "00017", "00016", "00015"} {
 		if _, err := m.Down(ctx); err != nil {
 			t.Fatalf("down %s: %v", v, err)
 		}
@@ -276,9 +276,9 @@ func TestBidangFungsiMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// down00016 membatalkan 00017 lebih dulu (migrasi terbaru) lalu 00016.
+	// down00016 membatalkan 00018 dan 00017 lebih dulu (migrasi terbaru) lalu 00016.
 	down00016 := func() error {
-		for _, want := range []string{"00017", "00016"} {
+		for _, want := range []string{"00018", "00017", "00016"} {
 			got, err := m.Down(ctx)
 			if err != nil {
 				return err
@@ -448,8 +448,10 @@ func TestLaporPerBidangMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, "00017") {
-		t.Fatalf("down 00017: %s %v", got, err)
+	for _, want := range []string{"00018", "00017"} {
+		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
+			t.Fatalf("down %s: %s %v", want, got, err)
+		}
 	}
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM qr_codes WHERE token LIKE 'GLOBAL%'`); n != 0 {
 		t.Fatal("QR global harus terhapus setelah down")
@@ -469,10 +471,73 @@ func TestLaporPerBidangMigration(t *testing.T) {
 	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM ticket_categories WHERE name LIKE 'Lainnya (%' AND is_active`); n != 6 {
 		t.Fatalf("setelah up lagi, jenis Lainnya per bidang = %d, harus 6", n)
 	}
-	if _, err := m.Down(ctx); err != nil {
-		t.Fatalf("down 00017 kedua: %v", err)
+	for _, want := range []string{"00018", "00017"} {
+		if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, want) {
+			t.Fatalf("down %s kedua: %s %v", want, got, err)
+		}
 	}
 	if _, err := m.Up(ctx); err != nil {
 		t.Fatalf("up 00017 terakhir: %v", err)
+	}
+}
+
+func TestPegawaiDariSimrsMigration(t *testing.T) {
+	db := testutil.DB(t) // sudah Up, termasuk 00018
+	ctx := context.Background()
+	now := time.Now().UTC()
+	tableExists := func() bool {
+		return testutil.Count(t, db, `SELECT COUNT(*) FROM information_schema.tables
+			WHERE table_schema = DATABASE() AND table_name = 'employees'`) == 1
+	}
+	if tableExists() {
+		t.Fatal("tabel employees harus sudah dihapus")
+	}
+	if _, err := db.Exec(`INSERT INTO external_id_mappings (source, entity_type, external_id, local_id, last_synced_at, created_at)
+		VALUES ('CSV', 'EMPLOYEE', '1', 1, ?, ?)`, now, now); err == nil {
+		t.Fatal("entity_type EMPLOYEE harus ditolak")
+	}
+
+	mfs, _ := fs.Sub(sikat.MigrationsFS, "migrations")
+	m, err := database.NewMigrator(db, mfs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := m.Down(ctx); err != nil || !strings.HasPrefix(got, "00018") {
+		t.Fatalf("down 00018: %s %v", got, err)
+	}
+	if !tableExists() || testutil.Count(t, db, `SELECT COUNT(*) FROM integration_configs WHERE entity_type = 'EMPLOYEE' AND provider = 'LOCAL'`) != 1 {
+		t.Fatal("down membuat ulang tabel employees dan konfigurasi integrasinya")
+	}
+
+	// Data pegawai dan jejak impornya (termasuk impor yang merujuk log) tidak menggagalkan Up.
+	uid := testutil.CreateUser(t, db, "admin", "ADMIN", "password-admin-123", false)
+	for _, q := range []string{
+		`INSERT INTO employees (nip, full_name, created_at, updated_at) VALUES ('1987', 'Ani', ?, ?)`,
+		`INSERT INTO external_id_mappings (source, entity_type, external_id, local_id, last_synced_at, created_at)
+			VALUES ('CSV', 'EMPLOYEE', '1987', LAST_INSERT_ID(), ?, ?)`,
+		`INSERT INTO integration_sync_logs (config_id, entity_type, provider, trigger_type, status, started_at, finished_at)
+			SELECT id, 'EMPLOYEE', 'CSV', 'MANUAL', 'SUCCESS', ?, ? FROM integration_configs WHERE entity_type = 'EMPLOYEE'`,
+	} {
+		if _, err := db.Exec(q, now, now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.Exec(`INSERT INTO integration_imports (entity_type, file_name, status, log_id, uploaded_by, created_at)
+		SELECT 'EMPLOYEE', 'pegawai.csv', 'APPLIED', MAX(id), ?, ? FROM integration_sync_logs`, uid, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Up(ctx); err != nil {
+		t.Fatalf("up 00018: %v", err)
+	}
+	if tableExists() {
+		t.Fatal("up menghapus tabel employees")
+	}
+	for _, tbl := range []string{"integration_sync_logs", "external_id_mappings", "integration_imports"} {
+		if n := testutil.Count(t, db, `SELECT COUNT(*) FROM `+tbl); n != 0 {
+			t.Fatalf("%s masih berisi jejak pegawai", tbl)
+		}
+	}
+	if n := testutil.Count(t, db, `SELECT COUNT(*) FROM integration_configs`); n != 3 {
+		t.Fatalf("konfigurasi integrasi = %d, harus 3 (unit, ruangan, perangkat)", n)
 	}
 }

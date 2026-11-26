@@ -6,7 +6,7 @@
 > mesin sinkron yang sama dipakai oleh adapter API nanti (§6).
 
 Status: **siap integrasi (PHASE 8)**. SIKAT berjalan penuh tanpa SIMRS. Master data
-(unit, ruangan, pegawai, perangkat) selalu tersimpan di database SIKAT; sumber luar
+(unit, ruangan, perangkat) selalu tersimpan di database SIKAT; sumber luar
 hanya mengisi atau memperbarui data lokal. Adapter SIMRS **belum dibuat** karena
 spesifikasi koneksi SIMRS belum tersedia — sesuai prinsip "jangan membuat integrasi
 palsu".
@@ -41,7 +41,7 @@ Menu **Administrasi › Integrasi** (Admin IT, permission `integration.manage`).
    Galat / Dinonaktifkan). Belum ada data yang berubah.
 5. **Terapkan**. Baris konflik & galat dilewati; hasil tercatat di log dan jejak audit.
 
-Urutan impor: **Unit → Ruangan → Pegawai → Perangkat** (referensi lebih dulu).
+Urutan impor: **Unit → Ruangan → Perangkat** (referensi lebih dulu).
 Maksimal 5 MB / 20.000 baris per file. File yang tidak diterapkan dibuang setelah 7 hari.
 
 ### Kolom
@@ -50,7 +50,6 @@ Maksimal 5 MB / 20.000 baris per file. File yang tidak diterapkan dibuang setela
 |---|---|---|
 | Unit | **external_id**, **kode**, **nama**, layanan_kritis, aktif | `layanan_kritis`/`aktif`: ya/tidak |
 | Ruangan | **external_id**, **kode**, **nama**, **unit**, lokasi, aktif | `unit` = external_id unit di sumber yang sama, atau kode unit SIKAT |
-| Pegawai | **nip**, **nama**, unit, jabatan, telepon, aktif | NIP dipakai sebagai external_id. Direktori, bukan akun login. |
 | Perangkat | **external_id**, **kode_aset**, **nama**, **kategori**, unit, ruangan, merek, model, nomor_seri | `kategori` = kode/nama kategori perangkat yang sudah ada; status perangkat tidak disinkronkan |
 
 ## 4. Aturan sinkronisasi
@@ -93,7 +92,6 @@ type Provider interface {
 }
 type OrganizationProvider interface { Departments(ctx context.Context) ([]Department, error) }
 type RoomProvider         interface { Rooms(ctx context.Context) ([]Room, error) }
-type EmployeeProvider     interface { Employees(ctx context.Context) ([]Employee, error) }
 type AssetProvider        interface { Assets(ctx context.Context) ([]Asset, error) }
 ```
 

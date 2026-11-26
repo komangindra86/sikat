@@ -13,12 +13,11 @@ import (
 const (
 	EntityDepartment = "DEPARTMENT"
 	EntityRoom       = "ROOM"
-	EntityEmployee   = "EMPLOYEE"
 	EntityAsset      = "ASSET"
 )
 
 // Entities dalam urutan impor yang disarankan (referensi lebih dulu).
-var Entities = []string{EntityDepartment, EntityRoom, EntityEmployee, EntityAsset}
+var Entities = []string{EntityDepartment, EntityRoom, EntityAsset}
 
 // ValidEntity memeriksa jenis entitas.
 func ValidEntity(e string) bool {
@@ -66,17 +65,6 @@ type Room struct {
 	Active        bool
 }
 
-// Employee adalah pegawai dari sumber luar (external_id = NIP).
-type Employee struct {
-	Row           int
-	ExternalID    string
-	Name          string
-	DepartmentRef string
-	Position      string
-	Phone         string
-	Active        bool
-}
-
 // Asset adalah perangkat/inventaris dari sumber luar. CategoryRef = kode atau
 // nama kategori perangkat lokal; status perangkat tidak disinkronkan (dikelola
 // lewat pemeliharaan).
@@ -101,9 +89,6 @@ type (
 	}
 	RoomProvider interface {
 		Rooms(ctx context.Context) ([]Room, error)
-	}
-	EmployeeProvider interface {
-		Employees(ctx context.Context) ([]Employee, error)
 	}
 	AssetProvider interface {
 		Assets(ctx context.Context) ([]Asset, error)
@@ -140,9 +125,6 @@ func (LocalProvider) Departments(context.Context) ([]Department, error) { return
 // Rooms selalu ErrLocalSource.
 func (LocalProvider) Rooms(context.Context) ([]Room, error) { return nil, ErrLocalSource }
 
-// Employees selalu ErrLocalSource.
-func (LocalProvider) Employees(context.Context) ([]Employee, error) { return nil, ErrLocalSource }
-
 // Assets selalu ErrLocalSource.
 func (LocalProvider) Assets(context.Context) ([]Asset, error) { return nil, ErrLocalSource }
 
@@ -151,7 +133,6 @@ type Batch struct {
 	Entity      string
 	Departments []Department
 	Rooms       []Room
-	Employees   []Employee
 	Assets      []Asset
 	// RowErrors: baris CSV yang tidak dapat dibaca (nomor baris → pesan).
 	RowErrors map[int]string
@@ -159,7 +140,7 @@ type Batch struct {
 
 // Len adalah jumlah baris valid di batch.
 func (b Batch) Len() int {
-	return len(b.Departments) + len(b.Rooms) + len(b.Employees) + len(b.Assets)
+	return len(b.Departments) + len(b.Rooms) + len(b.Assets)
 }
 
 // fetch mengambil data entitas dari provider.
@@ -179,12 +160,6 @@ func fetch(ctx context.Context, p Provider, entity string) (Batch, error) {
 			return b, ErrUnsupported
 		}
 		b.Rooms, err = pp.Rooms(ctx)
-	case EntityEmployee:
-		pp, ok := p.(EmployeeProvider)
-		if !ok {
-			return b, ErrUnsupported
-		}
-		b.Employees, err = pp.Employees(ctx)
 	case EntityAsset:
 		pp, ok := p.(AssetProvider)
 		if !ok {

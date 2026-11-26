@@ -80,7 +80,7 @@ var labelGroups = map[string][]Option{
 		{"SLA_BREACH", "SLA terlewati"}, {"REPEAT_DAMAGE", "Perangkat sering rusak"}, {"TEST", "Notifikasi uji"},
 	},
 	"integration_entity": {
-		{"DEPARTMENT", "Unit"}, {"ROOM", "Ruangan"}, {"EMPLOYEE", "Pegawai"}, {"ASSET", "Perangkat"},
+		{"DEPARTMENT", "Unit"}, {"ROOM", "Ruangan"}, {"ASSET", "Perangkat"},
 	},
 	"integration_provider": {
 		{"LOCAL", "Lokal (dikelola di SIKAT)"}, {"CSV", "Impor CSV"}, {"SIMRS_API", "SIMRS (API)"}, {"SIMRS_DB", "SIMRS (database read-only)"},

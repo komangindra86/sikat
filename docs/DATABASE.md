@@ -1,7 +1,7 @@
 # SIKAT — Rancangan Database
 
 > Status: **sesuai implementasi (PHASE 9).** Sumber kebenaran skema adalah migrasi
-> goose di folder [`migrations/`](../migrations) (00001–00012, 00015–00017); dokumen ini
+> goose di folder [`migrations/`](../migrations) (00001–00012, 00015–00018); dokumen ini
 > menjelaskan maksud & aturannya. `schema-draft.sql` adalah rancangan PHASE 0
 > (referensi sejarah; perbedaan dicatat di §0). Diagram relasi: [`ERD.md`](ERD.md).
 
@@ -24,12 +24,13 @@
 | 00013–00014 | Dipakai tim server di produksi (kompatibilitas data lama); belum ada di repositori ini |
 | 00015_uniform_codes | Kode lama diseragamkan ke format otomatis (UNT/RNG/BDG/KAT/ALS/SPR/PRK); `legacy_codes` (kode sebelum diseragamkan); `pending_reasons.requires_note` |
 | 00017_lapor_per_bidang | QR jenis `GLOBAL` (satu yang aktif, `active_global`); `it_categories.reporter_help` (penjelasan bidang untuk pelapor); jenis gangguan Mutu, hak akses, dan "Lainnya (bidang)"; `lapor_per_bidang_lama` (untuk Down) |
+| 00018_pegawai_dari_simrs | Tabel `employees` dihapus (nama pegawai diambil dari API pegawai SIMRS); jejak integrasi pegawai dihapus dan `EMPLOYEE` dibuang dari `entity_type` tabel integrasi. Down membuat ulang tabel kosong |
 | 00016_bidang_fungsi | Bidang mengikuti 6 koordinator (Pelayanan & Support, Administrasi & Inventaris, Mutu, ERM, System Developer, Keamanan Sistem); bidang teknis lama dilebur dan dinonaktifkan, rujukannya dipindah; jenis gangguan & jenis kegiatan baru; `bidang_lama`, `bidang_lama_relasi` (untuk Down) |
 
 Perbedaan penting dari rancangan: `push_deliveries` ditambahkan (antrean push per
 perangkat dengan retry); `integration_configs` belum menyimpan rahasia terenkripsi
-(belum ada adapter SIMRS); `employees` ditambahkan sebagai direktori pegawai
-(bukan akun login); penomoran memakai tabel `number_sequences`.
+(belum ada adapter SIMRS); `employees` sempat ditambahkan sebagai direktori pegawai
+lalu dihapus di 00018 (diganti API pegawai SIMRS); penomoran memakai tabel `number_sequences`.
 
 ---
 
@@ -67,7 +68,6 @@ Tabel dari master prompt (✓) dan tambahan yang diperlukan (＋) beserta alasan
 | `users` | ✓ | Akun petugas IT | Argon2id, lockout (`failed_login_count`, `locked_until`), wajib ganti password pertama kali |
 | `user_competencies` | ＋ | Petugas ↔ bidang | Filter antrean "sesuai kemampuan saya" (master prompt §10) |
 | `departments` | ✓ | Unit/bagian | `is_critical_service` → input otomatis mesin prioritas |
-| `employees` | ＋ | Direktori pegawai (bukan akun login) | NIP unik; saran nama pelapor saat petugas mencatat tiket; dapat diisi dari CSV/SIMRS |
 | `rooms` | ✓ | Ruangan milik unit | `is_critical_service` NULL = ikut unit |
 
 ### 2.2 Katalog
@@ -266,7 +266,7 @@ ORDER BY tanggal, nomor;
 ## 5. Konfigurasi Awal (seed, bukan data produksi palsu)
 
 Hanya data **konfigurasi** yang dibutuhkan agar sistem dapat berjalan; semuanya
-dapat diubah admin. Master data rumah sakit (unit, ruangan, perangkat, pegawai)
+dapat diubah admin. Master data rumah sakit (unit, ruangan, perangkat)
 **tidak** di-seed.
 
 | Data | Isi awal |

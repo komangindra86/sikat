@@ -53,8 +53,8 @@
       <div>
         <label class="label" for="reporter_name">Nama pelapor <span class="text-bad" aria-hidden="true">*</span></label>
         <input class="input {{if $p.Err "reporter_name"}}input-error{{end}}" id="reporter_name" name="reporter_name" maxlength="120" value="{{index $d.Form "reporter_name"}}" required {{if $d.Employees}}list="pegawai" autocomplete="off"{{end}}>
-        {{if $d.Employees}}<datalist id="pegawai">{{range $d.Employees}}<option value="{{.Name}}">{{.Department}}</option>{{end}}</datalist>
-        <p class="help">Ketik untuk memilih dari direktori pegawai, atau isi bebas.</p>{{end}}
+        {{if $d.Employees}}<datalist id="pegawai">{{range $d.Employees}}<option value="{{.}}"></option>{{end}}</datalist>
+        <p class="help">Ketik untuk memilih dari daftar pegawai SIMRS, atau isi bebas.</p>{{end}}
         {{with $p.Err "reporter_name"}}<p class="error-text">{{.}}</p>{{end}}
       </div>
       <div>

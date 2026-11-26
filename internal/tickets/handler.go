@@ -28,6 +28,8 @@ type Handler struct {
 	Require func(rbac.Permission) func(http.Handler) http.Handler
 	// OnView (opsional) dipanggil saat detail tiket dibuka (menandai notifikasi tiket dibaca).
 	OnView func(ctx context.Context, userID, ticketID int64)
+	// Employees (opsional): nama pegawai SIMRS untuk saran nama pelapor.
+	Employees EmployeeSource
 }
 
 // Routes mendaftarkan rute di bawah /app/tickets.
@@ -92,8 +94,8 @@ type newData struct {
 	MaxMB       int
 	Incident    []struct{ Value, Label string }
 	CanClaim    bool
-	// Employees: saran nama pelapor dari direktori pegawai (Master Data › Pegawai).
-	Employees []EmployeeOption
+	// Employees: saran nama pelapor dari daftar pegawai SIMRS.
+	Employees []string
 }
 
 func (h *Handler) queue(w http.ResponseWriter, r *http.Request) {
@@ -247,10 +249,9 @@ func (h *Handler) renderNew(w http.ResponseWriter, r *http.Request, status int, 
 		h.Renderer.ServerError(w, r, err)
 		return
 	}
-	employees, err := h.Service.EmployeeOptions(ctx)
-	if err != nil {
-		h.Renderer.ServerError(w, r, err)
-		return
+	var employees []string
+	if h.Employees != nil {
+		employees = h.Employees.Names(ctx)
 	}
 	h.Renderer.Render(w, r, status, "tickets/new", web.Page{
 		Title: "Catat tiket", Nav: "tickets", Errors: errs,

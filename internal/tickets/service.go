@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"sikat/internal/attachments"
@@ -492,27 +493,44 @@ func (s *Service) RelatedToAsset(ctx context.Context, assetID int64, limit int) 
 	return out, rows.Err()
 }
 
-// EmployeeOption adalah saran nama pelapor dari direktori pegawai.
-type EmployeeOption struct {
-	Name, Department string
+// EmployeeSource menyediakan nama pegawai untuk saran nama pelapor (API pegawai
+// SIMRS). Daftar kosong bila tidak tersedia; nama pelapor tetap boleh diisi bebas.
+type EmployeeSource interface {
+	Names(ctx context.Context) []string
 }
 
-// EmployeeOptions mengembalikan pegawai aktif (maks. 3000) untuk saran nama pelapor.
-func (s *Service) EmployeeOptions(ctx context.Context) ([]EmployeeOption, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT e.full_name, COALESCE(d.name, '') FROM employees e LEFT JOIN departments d ON d.id = e.department_id
-		 WHERE e.is_active = TRUE ORDER BY e.full_name LIMIT 3000`)
-	if err != nil {
-		return nil, err
+// MatchNames mencari nama yang memuat semua kata ketikan (tanpa membedakan huruf
+// besar/kecil). Nama yang diawali ketikan atau salah satu katanya diawali kata
+// pertama ketikan didahulukan; urutan abjad dipertahankan. Maksimal limit hasil.
+func MatchNames(names []string, q string, limit int) []string {
+	words := strings.Fields(strings.ToLower(q))
+	if len(words) == 0 || limit <= 0 {
+		return nil
 	}
-	defer rows.Close()
-	var out []EmployeeOption
-	for rows.Next() {
-		var o EmployeeOption
-		if err := rows.Scan(&o.Name, &o.Department); err != nil {
-			return nil, err
+	var first, rest []string
+	for _, n := range names {
+		ln := strings.ToLower(n)
+		ok := true
+		for _, w := range words {
+			if !strings.Contains(ln, w) {
+				ok = false
+				break
+			}
 		}
-		out = append(out, o)
+		if !ok {
+			continue
+		}
+		if strings.HasPrefix(ln, words[0]) || strings.Contains(ln, " "+words[0]) {
+			if first = append(first, n); len(first) == limit {
+				break
+			}
+		} else if len(rest) < limit {
+			rest = append(rest, n)
+		}
 	}
-	return out, rows.Err()
+	out := append(first, rest...)
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out
 }
